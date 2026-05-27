@@ -1,0 +1,243 @@
+@use './tokens' as blog;
+
+html {
+  min-width: 320px;
+  background: transparent;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@include blog.block {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  color: var(--argon-text);
+  background: var(--argon-page);
+  font-family: var(--argon-font-family);
+  font-size: 16px;
+
+  &::before,
+  &::after {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    content: '';
+  }
+
+  &::before {
+    background: url('/argon/theme/img-2-1200x1000.jpg') center top / cover fixed no-repeat;
+  }
+
+  &--no-banner::before {
+    background: var(--argon-page);
+  }
+
+  &::after {
+    background: transparent;
+    backdrop-filter: blur(0.4px);
+  }
+
+  &--dark::after {
+    background: rgba(40, 38, 42, 0.34);
+  }
+
+  &--no-banner::after {
+    background: transparent;
+  }
+
+  &--shadow-big &__card {
+    box-shadow:
+      0 15px 35px rgba(50, 50, 93, 0.1),
+      0 5px 15px rgba(0, 0, 0, 0.07);
+  }
+
+  &--filter-sunset {
+    filter: sepia(30%);
+  }
+
+  &--filter-grayscale {
+    filter: grayscale(1);
+  }
+
+  &--filter-darkness &__primary::after {
+    position: fixed;
+    inset: 0;
+    z-index: 999999999;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    content: '';
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  &__card {
+    border: 0;
+    border-radius: var(--card-radius);
+    background: var(--argon-card);
+    animation: kt-blog-card-show 0.25s ease-out;
+    box-shadow: var(--argon-shadow);
+    transform-origin: center top;
+
+    .kt-blog__card {
+      animation: none;
+    }
+  }
+
+  &__card-body {
+    padding: 0;
+  }
+
+  &__card--gradient-secondary {
+    background: var(--argon-card-deep);
+  }
+
+  &__card--large-shadow {
+    box-shadow: 0 18px 45px rgba(15, 13, 18, 0.16);
+  }
+
+  &__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: var(--card-radius);
+    cursor: pointer;
+    box-shadow: none;
+
+    &:hover,
+    &:focus {
+      color: #fff;
+    }
+  }
+
+  &__button--primary,
+  &__button--secondary {
+    color: #fff;
+    background: var(--themecolor);
+  }
+
+  &__button--success {
+    color: #fff;
+    background: #2dce89;
+  }
+
+  &__button--warning {
+    color: #fff;
+    background: #fb6340;
+  }
+
+  &__button--default,
+  &__button--neutral {
+    color: var(--argon-text);
+    background: var(--argon-control-soft);
+  }
+
+  &__button--icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  &__button--small {
+    min-height: 32px;
+    padding: 0 12px;
+  }
+
+  &__button--block {
+    width: 100%;
+  }
+
+  &__button-icon-inner {
+    display: inline-flex;
+  }
+
+  &__tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 2px 10px;
+    border-radius: var(--card-radius);
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  &__tag--secondary {
+    color: var(--argon-text);
+    background: var(--argon-pill);
+  }
+
+  &__hidden {
+    display: none !important;
+  }
+
+  &__input-group {
+    display: flex;
+    min-height: 36px;
+    align-items: center;
+    overflow: hidden;
+    border-radius: var(--card-radius);
+    background: var(--argon-control-soft);
+  }
+
+  &__input-group--spaced {
+    margin-bottom: 1.5rem;
+  }
+
+  &__input-addon {
+    display: inline-flex;
+    padding: 0 10px;
+    color: var(--argon-muted);
+  }
+
+  &__input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    color: var(--argon-text);
+    background: transparent;
+
+    &::placeholder {
+      color: var(--argon-placeholder);
+    }
+  }
+
+  &__form-group--spaced {
+    margin-bottom: 1rem;
+  }
+}
+
+@keyframes kt-blog-card-show {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}

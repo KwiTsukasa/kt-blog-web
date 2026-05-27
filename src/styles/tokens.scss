@@ -1,0 +1,6 @@
+// Keep the blog selector in one namespace so every partial shares the same BEM root.
+@mixin block {
+  .kt-blog {
+    @content;
+  }
+}

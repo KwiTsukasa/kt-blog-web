@@ -1,0 +1,20 @@
+@use './tokens' as blog;
+
+@include blog.block {
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-checkbox-wrapper,
+  .ant-empty-description {
+    color: var(--argon-text);
+  }
+
+  .ant-input,
+  .ant-input-affix-wrapper {
+    border-color: var(--argon-border);
+    background: var(--argon-control-soft);
+  }
+
+  .ant-input::placeholder {
+    color: var(--argon-placeholder);
+  }
+}

@@ -1,0 +1,41 @@
+@use './tokens' as blog;
+
+@include blog.block {
+  &__rightbar-widget {
+    width: 250px;
+    margin: 0 0 18px;
+    padding: 20px;
+    background: var(--argon-card-soft);
+  }
+
+  &__rightbar-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    color: var(--argon-title);
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+
+  &__rightbar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__rightbar-list-item,
+  &__rightbar-comment,
+  &__rightbar-category,
+  &__rightbar-list a {
+    color: var(--argon-widget-text);
+    line-height: 1.55;
+  }
+
+  &__rightbar-list a:hover {
+    color: var(--argon-title);
+  }
+}

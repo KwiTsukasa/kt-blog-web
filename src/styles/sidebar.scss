@@ -1,0 +1,164 @@
+@use './tokens' as blog;
+
+@include blog.block {
+  &__sidebar-banner {
+    display: flex;
+    min-height: 86px;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--themecolor-gradient);
+    text-align: center;
+  }
+
+  &__sidebar-banner-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  &__sidebar-menu {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__sidebar-menu-item {
+    a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 20px;
+      color: var(--argon-text);
+      background: transparent;
+    }
+
+    &--current a,
+    a:hover {
+      background: var(--argon-control);
+    }
+  }
+
+  &__sidebar-menu-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--argon-muted);
+  }
+
+  &__sidebar-search {
+    position: relative;
+    display: grid;
+    padding: 16px 20px 20px;
+    text-align: center;
+  }
+
+  &__sidebar-search-trigger {
+    grid-area: 1 / 1;
+    display: flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    overflow: hidden;
+    border: 1px solid transparent;
+    transition:
+      border-color 0.32s ease,
+      background-color 0.32s ease,
+      opacity 0.28s ease,
+      transform 0.42s cubic-bezier(0.4, 0, 0, 1);
+
+    &:hover {
+      border-color: var(--argon-border);
+      transform: translateY(-1px);
+    }
+  }
+
+  &__sidebar-search-input {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 36px;
+    min-width: 0;
+    border: 1px solid var(--argon-border);
+    box-shadow: 0 10px 24px rgba(15, 13, 18, 0.14);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px) scale(0.98);
+    transition:
+      border-color 0.32s ease,
+      box-shadow 0.32s ease,
+      opacity 0.3s ease,
+      transform 0.42s cubic-bezier(0.4, 0, 0, 1);
+
+    &:focus {
+      border-color: var(--themecolor);
+      box-shadow: 0 10px 28px rgba(var(--themecolor-rgbstr), 0.22);
+    }
+  }
+
+  &__sidebar-search--open {
+    .kt-blog__sidebar-search-trigger {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px) scale(0.98);
+    }
+
+    .kt-blog__sidebar-search-input {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+  }
+
+  &__sidebar-overview {
+    padding: 18px 18px 22px;
+  }
+
+  &__sidebar-overview-panel {
+    text-align: center;
+  }
+
+  &__sidebar-author-image {
+    margin: 8px auto 12px;
+  }
+
+  &__sidebar-author-avatar {
+    width: 92px;
+    height: 92px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: url('/argon/theme/profile.jpg') center / cover no-repeat;
+    box-shadow: var(--argon-shadow);
+  }
+
+  &__sidebar-author-name {
+    margin: 0 0 14px;
+    color: var(--argon-text);
+    font-size: 18px;
+  }
+
+  &__site-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 18px;
+
+    a {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+    }
+  }
+
+  &__site-stats-count {
+    color: var(--argon-text);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  &__site-stats-name {
+    color: var(--argon-muted);
+    font-size: 12px;
+  }
+}

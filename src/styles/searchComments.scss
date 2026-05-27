@@ -1,0 +1,119 @@
+@use './tokens' as blog;
+
+@include blog.block {
+  &__page-search-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  &__share {
+    position: fixed;
+    right: 18px;
+    bottom: 190px;
+    z-index: 79;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  &__share-panel {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__share--opened &__share-panel {
+    display: flex;
+  }
+
+  &__comments,
+  &__comment-form {
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+  }
+
+  &__form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  &__form-col--full {
+    grid-column: 1 / -1;
+  }
+
+  &__timeline {
+    position: relative;
+    padding-left: 22px;
+
+    &::before {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 5px;
+      width: 2px;
+      content: '';
+      background: rgba(222, 204, 245, 0.22);
+    }
+  }
+
+  &__timeline-group,
+  &__timeline-node {
+    position: relative;
+    margin: 12px 0;
+  }
+
+  &__timeline-node::before {
+    position: absolute;
+    top: 12px;
+    left: -22px;
+    width: 12px;
+    height: 12px;
+    content: '';
+    border-radius: 50%;
+    background: var(--argon-title);
+  }
+
+  &__timeline-time,
+  &__timeline-month {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__timeline-time {
+    color: var(--argon-muted);
+  }
+
+  &__timeline-month {
+    margin: 0 0 12px;
+    color: var(--argon-title);
+  }
+
+  &__timeline-card {
+    display: inline-flex;
+    margin-left: 14px;
+    padding: 9px 14px;
+    background: var(--argon-control-soft) !important;
+
+    a {
+      color: var(--argon-text);
+    }
+  }
+
+  &__footer {
+    padding: 25px 20px;
+    background: var(--themecolor-gradient) !important;
+    text-align: center;
+  }
+
+  &__footer-info {
+    color: #fff;
+    font-weight: 700;
+  }
+}

@@ -1,0 +1,25 @@
+@use './tokens' as blog;
+
+@include blog.block {
+  &__banner {
+    position: relative;
+    min-height: 790px;
+    margin: 0 0 25px;
+    padding: 96px 0;
+    color: var(--argon-text);
+    background: transparent;
+  }
+
+  &__banner-container {
+    position: relative;
+    z-index: 1;
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+    padding-top: 34px;
+    text-align: center;
+  }
+
+  &--no-banner &__banner {
+    display: none;
+  }
+}

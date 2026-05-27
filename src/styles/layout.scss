@@ -1,0 +1,105 @@
+@use './tokens' as blog;
+
+@include blog.block {
+  &__content {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: min(1440px, 100%);
+    grid-template-columns: 280px minmax(0, 860px) 280px;
+    gap: 0;
+    margin: -330px auto 0;
+    padding: 0 5px;
+  }
+
+  &--no-banner &__content {
+    margin: 85px auto 0;
+  }
+
+  &__page-info-wrap {
+    grid-column: 1 / -1;
+    min-height: 1px;
+  }
+
+  &__page-info {
+    width: 830px;
+    margin: 0 auto 25px;
+    background: var(--argon-card-deep);
+  }
+
+  &__page-info-body {
+    padding: 24px 30px;
+  }
+
+  &__page-info-title {
+    margin: 0;
+    color: var(--argon-title);
+    font-size: 26px;
+    line-height: 1.3;
+  }
+
+  &__page-info-description,
+  &__page-info-meta {
+    margin-top: 1rem;
+    color: var(--argon-muted);
+    line-height: 1.75;
+  }
+
+  &__page-info-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    opacity: 0.8;
+  }
+
+  &__sidebar {
+    grid-column: 1;
+    grid-row: 2;
+    width: 280px;
+    margin: 0 0 25px;
+    padding: 0 10px 0 20px;
+  }
+
+  &__rightbar {
+    grid-column: 3;
+    grid-row: 2;
+    width: 280px;
+    margin: 0 0 25px;
+    padding: 0 20px 0 10px;
+  }
+
+  &__primary {
+    grid-column: 2;
+    grid-row: 2;
+    width: 860px;
+  }
+
+  &__main {
+    width: 860px;
+  }
+
+  &__sidebar-panel {
+    width: 250px;
+    overflow: hidden;
+  }
+
+  &__sidebar-panel--menu {
+    margin: 0;
+  }
+
+  &__sidebar-panel--overview {
+    margin: 10px 0 0;
+  }
+
+  &__sidebar-panel--sticky {
+    position: fixed;
+    top: 90px;
+    width: 250px;
+    animation: none;
+  }
+
+  &--leftbar-can-headroom &__sidebar-panel--sticky {
+    top: 10px;
+  }
+}

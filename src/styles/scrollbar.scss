@@ -1,0 +1,91 @@
+@use './tokens' as blog;
+
+html {
+  scrollbar-color: var(--kt-blog-scrollbar-thumb, rgba(0, 0, 0, 0.25))
+    var(--kt-blog-scrollbar-track, transparent);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+body {
+  overflow-y: auto;
+}
+
+::-webkit-scrollbar {
+  width: var(--kt-blog-scrollbar-size, 10px);
+  height: calc(var(--kt-blog-scrollbar-size, 10px) - 2px);
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--kt-blog-scrollbar-track, transparent);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 100px;
+  background-color: var(--kt-blog-scrollbar-thumb, rgba(0, 0, 0, 0.25));
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--kt-blog-scrollbar-thumb-hover, rgba(0, 0, 0, 0.7));
+}
+
+::-webkit-scrollbar-corner {
+  background-color: transparent;
+}
+
+@include blog.block {
+  scrollbar-color: var(--argon-scrollbar-thumb) var(--argon-scrollbar-track);
+  scrollbar-width: thin;
+
+  * {
+    scrollbar-color: var(--argon-scrollbar-thumb) var(--argon-scrollbar-track);
+    scrollbar-width: thin;
+  }
+
+  *::-webkit-scrollbar {
+    width: var(--argon-scrollbar-size);
+    height: calc(var(--argon-scrollbar-size) - 2px);
+    background-color: transparent;
+  }
+
+  *::-webkit-scrollbar-track {
+    background-color: var(--argon-scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 100px;
+    background-color: var(--argon-scrollbar-thumb);
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--argon-scrollbar-thumb-hover);
+  }
+
+  &__sidebar-panel {
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-width: 1px;
+      background-color: var(--argon-scrollbar-thin-thumb);
+    }
+
+    &::-webkit-scrollbar-button {
+      height: 5px;
+      pointer-events: none;
+    }
+  }
+
+  &__related-posts-list {
+    scrollbar-gutter: stable;
+  }
+}

@@ -1,0 +1,62 @@
+@use './tokens' as blog;
+
+@include blog.block {
+  &__modal-host {
+    position: relative;
+    z-index: 1000;
+  }
+
+  &__modal-wrap {
+    .ant-modal-content {
+      overflow: hidden;
+      color: var(--argon-text);
+      border-radius: var(--card-radius);
+      background: var(--argon-card);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.38);
+    }
+
+    .ant-modal-header {
+      margin: 0;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--argon-border);
+      background: transparent;
+    }
+
+    .ant-modal-title {
+      color: var(--argon-title);
+      font-size: 18px;
+    }
+
+    .ant-modal-close {
+      color: var(--argon-muted);
+    }
+  }
+
+  &__modal-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 20px 22px 24px;
+  }
+
+  &__modal-enter-active,
+  &__modal-leave-active,
+  &__popover-enter-active,
+  &__popover-leave-active {
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  &__modal-enter-from,
+  &__modal-leave-to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  &__popover-enter-from,
+  &__popover-leave-to {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
