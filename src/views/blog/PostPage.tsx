@@ -1,5 +1,5 @@
 import { CalendarOutlined, CommentOutlined, EyeOutlined, ReadOutlined, TagsOutlined } from '@antdv-next/icons';
-import { computed, defineComponent, onBeforeUnmount, ref, Transition } from 'vue';
+import { computed, defineComponent, onBeforeUnmount, ref, Transition, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 
 import BlogLayout from '@/components/blog/BlogLayout';
@@ -10,7 +10,7 @@ import {
   BlogInput,
   BlogTextArea,
 } from '@/components/blog/antdvComponents';
-import { articles, getArticleBySlug, getRelatedArticles, getTagSlugByLabel } from '@/data/blog';
+import { useBlogArticles } from '@/hooks/useBlogArticles';
 import {
   clearBlogPostRefs,
   setBlogPostArticleRef,
@@ -22,17 +22,25 @@ export default defineComponent({
   name: 'BlogPostPage',
   setup() {
     const route = useRoute();
-    const article = computed(() => getArticleBySlug(String(route.params.slug)) ?? articles[0]);
-    const articleIndex = computed(() => articles.findIndex((item) => item.slug === article.value?.slug));
+    const {
+      articles,
+      getArticleBySlug,
+      getRelatedArticles,
+      getTagSlugByLabel,
+      loadArticle,
+    } = useBlogArticles();
+    const slug = computed(() => String(route.params.slug ?? ''));
+    const article = computed(() => getArticleBySlug(slug.value) ?? articles.value[0]);
+    const articleIndex = computed(() => articles.value.findIndex((item) => item.slug === article.value?.slug));
     const previousArticle = computed(() => {
       const index = articleIndex.value;
 
-      return articles[index > 0 ? index - 1 : articles.length - 1] ?? article.value;
+      return articles.value[index > 0 ? index - 1 : articles.value.length - 1] ?? article.value;
     });
     const nextArticle = computed(() => {
       const index = articleIndex.value;
 
-      return articles[index >= 0 && index < articles.length - 1 ? index + 1 : 0] ?? article.value;
+      return articles.value[index >= 0 && index < articles.value.length - 1 ? index + 1 : 0] ?? article.value;
     });
     const relatedArticles = computed(() => (article.value ? getRelatedArticles(article.value) : []));
     const commentContent = ref('');
@@ -42,6 +50,14 @@ export default defineComponent({
     onBeforeUnmount(() => {
       clearBlogPostRefs();
     });
+
+    watch(
+      slug,
+      (value) => {
+        if (value) void loadArticle(value);
+      },
+      { immediate: true },
+    );
 
     return () => {
       const currentArticle = article.value;
@@ -116,11 +132,18 @@ export default defineComponent({
               </div>
             </header>
 
-            <div class="kt-blog__post-content kt-blog__post-content--full">
-              {currentArticle.content.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
+            {currentArticle.contentHtml ? (
+              <div
+                class="kt-blog__post-content kt-blog__post-content--full"
+                innerHTML={currentArticle.contentHtml}
+              />
+            ) : (
+              <div class="kt-blog__post-content kt-blog__post-content--full">
+                {currentArticle.content.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            )}
 
             <div class="kt-blog__post-tags">
               <TagsOutlined />

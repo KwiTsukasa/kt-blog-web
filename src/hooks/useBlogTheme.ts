@@ -1,18 +1,99 @@
 import { theme } from 'antdv-next';
 import { computed, reactive, watch } from 'vue';
 
-type BlogThemeMode = 'dark' | 'light';
-type BlogFontMode = 'sans' | 'serif';
-type BlogShadowMode = 'small' | 'big';
-type BlogFilterMode = 'off' | 'sunset' | 'darkness' | 'grayscale';
+export type BlogThemeMode = 'dark' | 'light';
+export type BlogFontMode = 'sans' | 'serif';
+export type BlogShadowMode = 'small' | 'big';
+export type BlogFilterMode = 'off' | 'sunset' | 'darkness' | 'grayscale';
 
-interface BlogThemePreferences {
+export interface BlogThemePreferences {
   colorPrimary: string;
   filter: BlogFilterMode;
   font: BlogFontMode;
   mode: BlogThemeMode;
   radius: number;
   shadow: BlogShadowMode;
+}
+
+export interface BlogThemeMenuItem {
+  external?: boolean;
+  href: string;
+  icon?: string;
+  label: string;
+}
+
+export interface WordpressArgonThemeConfig {
+  argonConfig?: {
+    codeHighlight?: {
+      breakLine?: boolean;
+      enable?: boolean;
+      hideLinenumber?: boolean;
+      transparentLinenumber?: boolean;
+    };
+    dateFormat?: string;
+    disablePjax?: boolean;
+    foldLongComments?: boolean;
+    foldLongShuoshuo?: boolean;
+    headroom?: boolean | string;
+    language?: string;
+    lazyload?: {
+      effect?: string;
+      threshold?: number;
+    };
+    pangu?: string;
+    pjaxAnimationDuration?: number;
+    waterflowColumns?: number | string;
+    wpPath?: string;
+    zoomify?: boolean;
+  };
+  backgroundDarkBrightness?: number | string;
+  backgroundDarkImage?: string;
+  backgroundDarkOpacity?: number | string;
+  backgroundImage?: string;
+  backgroundOpacity?: number | string;
+  bodyClass?: string | string[];
+  darkmodeAutoSwitch?: 'alwaysoff' | 'alwayson' | 'system' | 'time' | string;
+  enableCustomThemeColor?: boolean;
+  headerMenu?: BlogThemeMenuItem[];
+  htmlClass?: string | string[];
+  site?: {
+    authorAvatar?: string;
+    authorName?: string;
+    description?: string;
+    home?: string;
+    title?: string;
+    url?: string;
+  };
+  sidebarMenu?: BlogThemeMenuItem[];
+  themeCardRadius?: number | string;
+  themeColor?: string;
+  themeColorRgb?: string;
+  themeVersion?: string;
+  [key: string]: unknown;
+}
+
+interface BlogRuntimeThemeConfig {
+  articleHeaderStyle: 'default' | string;
+  backgroundDarkBrightness: number;
+  backgroundDarkImage: string;
+  backgroundDarkOpacity: number;
+  backgroundImage: string;
+  backgroundOpacity: number;
+  bodyClass: string[];
+  headerMenu: BlogThemeMenuItem[];
+  siteAuthorAvatar: string;
+  htmlClass: string[];
+  immersionColor: boolean;
+  siteAuthorName: string;
+  siteDescription: string;
+  siteHome: string;
+  siteTitle: string;
+  siteUrl: string;
+  sidebarMenu: BlogThemeMenuItem[];
+  themeVersion: string;
+  toolbarBlur: boolean;
+  tripleColumn: boolean;
+  wordpressThemeConfig: WordpressArgonThemeConfig | null;
 }
 
 const STORAGE_KEY = 'KT_BLOG_THEME_PREFERENCES';
@@ -24,6 +105,19 @@ const ARGON_SERIF_FONT_FAMILY = 'Georgia, "Times New Roman", "Noto Serif SC", se
 const ARGON_DEFAULT_COLOR_PRIMARY = '#6f5f89';
 const ARGON_PRIMARY_SOFT = '#4a4058';
 const ARGON_CARD_SHADOW = '0 2px 4px rgba(0, 0, 0, 0.075)';
+const ARGON_DEFAULT_BACKGROUND = '/argon/theme/img-2-1200x1000.jpg';
+const ARGON_DEFAULT_AUTHOR_AVATAR = '/argon/theme/profile.jpg';
+const defaultHeaderMenu: BlogThemeMenuItem[] = [
+  { href: '/', label: '首页' },
+  { href: '/archives', label: '归档' },
+  { href: '/category/nas', label: 'NAS' },
+  { href: '/category/vue', label: 'Vue' },
+  { href: '/category/node', label: 'Node' },
+];
+const defaultSidebarMenu: BlogThemeMenuItem[] = [
+  { href: '/', icon: 'fa-home', label: '首页' },
+  { href: '/category/node', icon: 'fa-user', label: '管理' },
+];
 
 const defaultPreferences: BlogThemePreferences = {
   colorPrimary: ARGON_DEFAULT_COLOR_PRIMARY,
@@ -35,17 +129,62 @@ const defaultPreferences: BlogThemePreferences = {
 };
 
 const preferences = reactive<BlogThemePreferences>(loadPreferences());
+const runtimeConfig = reactive<BlogRuntimeThemeConfig>({
+  articleHeaderStyle: 'default',
+  backgroundDarkBrightness: 0.65,
+  backgroundDarkImage: ARGON_DEFAULT_BACKGROUND,
+  backgroundDarkOpacity: 1,
+  backgroundImage: ARGON_DEFAULT_BACKGROUND,
+  backgroundOpacity: 1,
+  bodyClass: ['home', 'blog', 'wp-theme-argon'],
+  headerMenu: [...defaultHeaderMenu],
+  htmlClass: [
+    'triple-column',
+    'immersion-color',
+    'toolbar-blur',
+    'article-header-style-default',
+  ],
+  immersionColor: true,
+  siteAuthorAvatar: ARGON_DEFAULT_AUTHOR_AVATAR,
+  siteAuthorName: 'KwiTsukasa',
+  siteDescription: '',
+  siteHome: '',
+  siteTitle: 'KwiTsukasa的小站',
+  siteUrl: '',
+  sidebarMenu: [...defaultSidebarMenu],
+  themeVersion: '',
+  toolbarBlur: true,
+  tripleColumn: true,
+  wordpressThemeConfig: null,
+});
 let themeWatcherReady = false;
+let systemThemeMediaQuery: MediaQueryList | null = null;
+let systemThemeChangeHandler:
+  | ((event: MediaQueryList | MediaQueryListEvent) => void)
+  | null = null;
 
 const isDarkTheme = computed(() => preferences.mode === 'dark');
+const siteConfig = computed(() => ({
+  authorAvatar: runtimeConfig.siteAuthorAvatar,
+  authorName: runtimeConfig.siteAuthorName,
+  description: runtimeConfig.siteDescription,
+  headerMenu: runtimeConfig.headerMenu,
+  home: runtimeConfig.siteHome,
+  sidebarMenu: runtimeConfig.sidebarMenu,
+  title: runtimeConfig.siteTitle,
+  url: runtimeConfig.siteUrl,
+}));
+const wordpressThemeConfig = computed(() => runtimeConfig.wordpressThemeConfig);
 const themeRootClass = computed(() => [
   BLOG_THEME_BLOCK_CLASS,
   `${BLOG_THEME_BLOCK_CLASS}--wp-argon`,
   `${BLOG_THEME_BLOCK_CLASS}--home`,
   `${BLOG_THEME_BLOCK_CLASS}--blog`,
-  `${BLOG_THEME_BLOCK_CLASS}--triple-column`,
-  `${BLOG_THEME_BLOCK_CLASS}--toolbar-blur`,
-  `${BLOG_THEME_BLOCK_CLASS}--article-header-default`,
+  runtimeConfig.tripleColumn && `${BLOG_THEME_BLOCK_CLASS}--triple-column`,
+  runtimeConfig.immersionColor && `${BLOG_THEME_BLOCK_CLASS}--immersion-color`,
+  runtimeConfig.toolbarBlur && `${BLOG_THEME_BLOCK_CLASS}--toolbar-blur`,
+  `${BLOG_THEME_BLOCK_CLASS}--article-header-${runtimeConfig.articleHeaderStyle}`,
+  runtimeConfig.themeVersion && `${BLOG_THEME_BLOCK_CLASS}--argon-${runtimeConfig.themeVersion.replace(/\./g, '-')}`,
   `${BLOG_THEME_BLOCK_CLASS}--${preferences.mode}`,
   preferences.font === 'serif' && `${BLOG_THEME_BLOCK_CLASS}--font-serif`,
   preferences.shadow === 'big' && `${BLOG_THEME_BLOCK_CLASS}--shadow-big`,
@@ -134,6 +273,87 @@ function setPrimaryColor(nextColor: string) {
   preferences.colorPrimary = nextColor;
 }
 
+function applyWordpressThemeConfig(config: WordpressArgonThemeConfig) {
+  const nextHtmlClass = normalizeClassList(config.htmlClass);
+  const nextBodyClass = normalizeClassList(config.bodyClass);
+  const nextBackgroundDarkBrightness = normalizePositiveNumber(config.backgroundDarkBrightness);
+  const nextBackgroundDarkOpacity = normalizeOpacity(config.backgroundDarkOpacity);
+  const nextBackgroundOpacity = normalizeOpacity(config.backgroundOpacity);
+  const nextColor = normalizeHexColor(config.themeColor);
+  const nextRadius = normalizeRadius(config.themeCardRadius);
+  const hasRemoteHtmlClass = nextHtmlClass.length > 0;
+
+  runtimeConfig.wordpressThemeConfig = config;
+
+  runtimeConfig.htmlClass = nextHtmlClass.length ? nextHtmlClass : runtimeConfig.htmlClass;
+  runtimeConfig.bodyClass = nextBodyClass.length ? nextBodyClass : runtimeConfig.bodyClass;
+  if (Array.isArray(config.headerMenu)) {
+    runtimeConfig.headerMenu = normalizeMenuItems(
+      config.headerMenu,
+      config.site?.home || config.site?.url || runtimeConfig.siteHome || runtimeConfig.siteUrl,
+    );
+  }
+  runtimeConfig.tripleColumn = hasRemoteHtmlClass
+    ? nextHtmlClass.includes('triple-column')
+    : runtimeConfig.tripleColumn;
+  runtimeConfig.immersionColor = hasRemoteHtmlClass
+    ? nextHtmlClass.includes('immersion-color')
+    : runtimeConfig.immersionColor;
+  runtimeConfig.toolbarBlur = hasRemoteHtmlClass
+    ? nextHtmlClass.includes('toolbar-blur')
+    : runtimeConfig.toolbarBlur;
+  runtimeConfig.articleHeaderStyle =
+    getArticleHeaderStyle(nextHtmlClass) ||
+    (hasRemoteHtmlClass ? 'default' : runtimeConfig.articleHeaderStyle);
+  runtimeConfig.backgroundDarkBrightness =
+    typeof nextBackgroundDarkBrightness === 'number'
+      ? nextBackgroundDarkBrightness
+      : runtimeConfig.backgroundDarkBrightness;
+  runtimeConfig.backgroundDarkImage = normalizeCssImage(config.backgroundDarkImage) || runtimeConfig.backgroundDarkImage;
+  runtimeConfig.backgroundDarkOpacity =
+    typeof nextBackgroundDarkOpacity === 'number'
+      ? nextBackgroundDarkOpacity
+      : runtimeConfig.backgroundDarkOpacity;
+  runtimeConfig.backgroundImage = normalizeCssImage(config.backgroundImage) || runtimeConfig.backgroundImage;
+  runtimeConfig.backgroundOpacity =
+    typeof nextBackgroundOpacity === 'number'
+      ? nextBackgroundOpacity
+      : runtimeConfig.backgroundOpacity;
+  runtimeConfig.siteAuthorAvatar =
+    normalizeThemeAsset(config.site?.authorAvatar) || runtimeConfig.siteAuthorAvatar;
+  runtimeConfig.siteDescription = config.site?.description ?? runtimeConfig.siteDescription;
+  runtimeConfig.siteAuthorName = config.site?.authorName || runtimeConfig.siteAuthorName;
+  runtimeConfig.siteHome = config.site?.home || runtimeConfig.siteHome;
+  runtimeConfig.siteTitle = config.site?.title || runtimeConfig.siteTitle;
+  runtimeConfig.siteUrl = config.site?.url || runtimeConfig.siteUrl;
+  if (Array.isArray(config.sidebarMenu)) {
+    runtimeConfig.sidebarMenu = normalizeMenuItems(
+      config.sidebarMenu,
+      config.site?.home || config.site?.url || runtimeConfig.siteHome || runtimeConfig.siteUrl,
+    );
+  }
+  runtimeConfig.themeVersion = config.themeVersion || runtimeConfig.themeVersion;
+
+  if (nextColor && config.enableCustomThemeColor !== false) {
+    preferences.colorPrimary = nextColor;
+  }
+
+  if (hasRemoteHtmlClass) {
+    preferences.font = nextHtmlClass.includes('use-serif') ? 'serif' : 'sans';
+    preferences.shadow = nextHtmlClass.includes('use-big-shadow') ? 'big' : 'small';
+  }
+
+  if (typeof nextRadius === 'number') {
+    preferences.radius = nextRadius;
+  }
+
+  syncSystemThemeMode(config);
+  const nextMode = getModeFromWordpressConfig(config);
+  if (nextMode) {
+    preferences.mode = nextMode;
+  }
+}
+
 /**
  * @returns 当前 Blog Web 的主题偏好、Antdv token 配置与偏好更新函数。
  */
@@ -143,6 +363,8 @@ export function useBlogTheme() {
   return {
     isDarkTheme,
     preferences,
+    applyWordpressThemeConfig,
+    siteConfig,
     setFilterMode,
     setFontMode,
     setPrimaryColor,
@@ -151,6 +373,7 @@ export function useBlogTheme() {
     setThemeMode,
     themeConfig,
     themeRootClass,
+    wordpressThemeConfig,
   };
 }
 
@@ -187,8 +410,11 @@ function ensureThemeWatcher() {
 
   themeWatcherReady = true;
   watch(
-    () => ({ ...preferences }),
-    (currentPreferences) => {
+    () => ({
+      preferences: { ...preferences },
+      runtimeConfig: { ...runtimeConfig },
+    }),
+    ({ preferences: currentPreferences }) => {
       if (typeof document === 'undefined') {
         return;
       }
@@ -212,6 +438,16 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
   const primaryDark = shadeHexColor(currentPreferences.colorPrimary, -18);
   const primaryDark2 = shadeHexColor(currentPreferences.colorPrimary, -30);
   const fontFamily = getThemeFontFamily(currentPreferences.font);
+  const backgroundImage =
+    normalizeCssImage(
+      currentPreferences.mode === 'dark'
+        ? runtimeConfig.backgroundDarkImage || runtimeConfig.backgroundImage
+        : runtimeConfig.backgroundImage,
+    ) || `url('${ARGON_DEFAULT_BACKGROUND}')`;
+  const backgroundOpacity =
+    currentPreferences.mode === 'dark'
+      ? runtimeConfig.backgroundDarkOpacity
+      : runtimeConfig.backgroundOpacity;
 
   const primaryHsl = rgbToHsl(primaryRgb.r, primaryRgb.g, primaryRgb.b);
   document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', currentPreferences.colorPrimary);
@@ -230,6 +466,14 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
 .${BLOG_THEME_BLOCK_CLASS} {
   --radius: ${currentPreferences.radius}px;
   --card-radius: ${currentPreferences.radius}px;
+  --argon-background-image: ${backgroundImage};
+  --argon-background-light-image: ${normalizeCssImage(runtimeConfig.backgroundImage) || `url('${ARGON_DEFAULT_BACKGROUND}')`};
+  --argon-background-dark-image: ${normalizeCssImage(runtimeConfig.backgroundDarkImage) || backgroundImage};
+  --argon-background-filter: ${currentPreferences.mode === 'dark' ? `brightness(${runtimeConfig.backgroundDarkBrightness})` : 'none'};
+  --argon-background-opacity: ${backgroundOpacity};
+  --argon-background-light-opacity: ${runtimeConfig.backgroundOpacity};
+  --argon-background-dark-opacity: ${runtimeConfig.backgroundDarkOpacity};
+  --argon-author-avatar: ${normalizeCssImage(runtimeConfig.siteAuthorAvatar) || `url('${ARGON_DEFAULT_AUTHOR_AVATAR}')`};
   --argon-font-family: ${fontFamily};
   --argon-shadow: ${ARGON_CARD_SHADOW};
   --argon-primary-soft: ${ARGON_PRIMARY_SOFT};
@@ -455,4 +699,187 @@ function isThemeColorTooDark(hexColor: string) {
   const { b, g, r } = hexToRgb(hexColor);
 
   return getGray(r, g, b) < 50;
+}
+
+function normalizeClassList(value?: string | string[]): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeClassList(item));
+  }
+
+  return String(value || '')
+    .split(/\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeHexColor(value?: string) {
+  if (!value) return '';
+  const normalized = value.trim();
+
+  if (/^#[0-9a-f]{6}$/i.test(normalized)) return normalized.toUpperCase();
+  if (/^#[0-9a-f]{3}$/i.test(normalized)) {
+    return `#${normalized
+      .slice(1)
+      .split('')
+      .map((item) => item + item)
+      .join('')}`.toUpperCase();
+  }
+
+  return '';
+}
+
+function normalizeRadius(value?: number | string) {
+  if (value === undefined || value === null || value === '') return null;
+  const numericValue = Number(value);
+
+  return Number.isFinite(numericValue) ? Math.max(0, numericValue) : null;
+}
+
+function normalizeOpacity(value?: number | string) {
+  if (value === undefined || value === null || value === '') return null;
+  const numericValue = Number(value);
+
+  return Number.isFinite(numericValue)
+    ? Math.min(Math.max(numericValue, 0), 1)
+    : null;
+}
+
+function normalizePositiveNumber(value?: number | string) {
+  if (value === undefined || value === null || value === '') return null;
+  const numericValue = Number(value);
+
+  return Number.isFinite(numericValue) ? Math.max(0, numericValue) : null;
+}
+
+function normalizeCssImage(value?: string) {
+  if (!value) return '';
+  const normalized = value.trim();
+
+  if (normalized.startsWith('url(')) return normalized;
+  if (/^https?:\/\//i.test(normalized) || normalized.startsWith('/')) {
+    return `url('${normalized.replace(/'/g, "\\'")}')`;
+  }
+
+  return '';
+}
+
+function normalizeThemeAsset(value?: string) {
+  if (!value) return '';
+  const normalized = value.trim();
+  const cssImage = /^url\((.*)\)$/i.exec(normalized)?.[1]?.trim();
+  const asset = cssImage
+    ? cssImage.replace(/^['"]|['"]$/g, '')
+    : normalized;
+
+  return /^https?:\/\//i.test(asset) || asset.startsWith('/') ? asset : '';
+}
+
+function normalizeMenuItems(items: BlogThemeMenuItem[], siteHome = ''): BlogThemeMenuItem[] {
+  return items.reduce<BlogThemeMenuItem[]>((result, item) => {
+    const label = `${item.label || ''}`.trim();
+    const href = normalizeMenuHref(`${item.href || ''}`.trim(), siteHome);
+
+    if (!label || !href) return result;
+
+    const isInternalHref = href.startsWith('/') && !href.startsWith('//');
+    result.push({
+      external: !isInternalHref && (item.external || /^https?:\/\//i.test(href)),
+      href,
+      ...(item.icon ? { icon: item.icon } : {}),
+      label,
+    });
+
+    return result;
+  }, []);
+}
+
+function normalizeMenuHref(href: string, siteHome = '') {
+  if (!href) return '';
+  const normalizedSiteHome = siteHome.replace(/\/+$/g, '');
+
+  if (normalizedSiteHome && href.replace(/\/+$/g, '') === normalizedSiteHome) {
+    return '/';
+  }
+
+  if (normalizedSiteHome && href.startsWith(`${normalizedSiteHome}/`)) {
+    return href.slice(normalizedSiteHome.length) || '/';
+  }
+
+  return href;
+}
+
+function getModeFromWordpressConfig(config: WordpressArgonThemeConfig): BlogThemeMode | '' {
+  const htmlClass = normalizeClassList(config.htmlClass);
+  const switchMode = `${config.darkmodeAutoSwitch || ''}`.toLowerCase();
+
+  if (htmlClass.includes('darkmode')) return 'dark';
+  if (switchMode === 'alwayson') return 'dark';
+  if (switchMode === 'alwaysoff' || switchMode === 'false') return 'light';
+  if (switchMode === 'system') return getSystemThemeMode();
+  if (switchMode === 'time') return getTimeThemeMode();
+
+  return '';
+}
+
+function getSystemThemeMode(): BlogThemeMode | '' {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return '';
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+}
+
+function syncSystemThemeMode(config: WordpressArgonThemeConfig) {
+  stopSystemThemeModeSync();
+  if (
+    `${config.darkmodeAutoSwitch || ''}`.toLowerCase() !== 'system' ||
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
+    return;
+  }
+
+  systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  systemThemeChangeHandler = (event) => {
+    preferences.mode = event.matches ? 'dark' : 'light';
+  };
+
+  if (typeof systemThemeMediaQuery.addEventListener === 'function') {
+    systemThemeMediaQuery.addEventListener('change', systemThemeChangeHandler);
+  } else {
+    systemThemeMediaQuery.addListener(systemThemeChangeHandler);
+  }
+}
+
+function stopSystemThemeModeSync() {
+  if (!systemThemeMediaQuery || !systemThemeChangeHandler) {
+    return;
+  }
+
+  if (typeof systemThemeMediaQuery.removeEventListener === 'function') {
+    systemThemeMediaQuery.removeEventListener(
+      'change',
+      systemThemeChangeHandler,
+    );
+  } else {
+    systemThemeMediaQuery.removeListener(systemThemeChangeHandler);
+  }
+
+  systemThemeMediaQuery = null;
+  systemThemeChangeHandler = null;
+}
+
+function getTimeThemeMode(): BlogThemeMode {
+  const hour = new Date().getHours();
+
+  return hour < 7 || hour >= 22 ? 'dark' : 'light';
+}
+
+function getArticleHeaderStyle(htmlClass: string[]) {
+  const prefix = 'article-header-style-';
+  const className = htmlClass.find((item) => item.startsWith(prefix));
+
+  return className?.slice(prefix.length) || '';
 }

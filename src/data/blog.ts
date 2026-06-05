@@ -14,6 +14,7 @@ export interface BlogArticle {
   comments: number;
   words: number;
   content: string[];
+  contentHtml?: string;
 }
 
 export interface BlogCategory {
@@ -93,7 +94,7 @@ export const articles: BlogArticle[] = [
     content: [
       '本方案面向小型私有化部署场景，目标是在飞牛 NAS 上把 Docker、Jenkins、前端静态发布和后端 API 容器发布整合成一套可持续迭代的标准流程。',
       '飞牛 NAS 作为内网计算与数据承载节点，Jenkins 负责编排流水线，k3d/K8s 承载后端服务，Nginx 承载前端静态站点与反向代理。',
-      '后续 kt-blog-web 对接 WordPress 后，这类文章会直接来自 WordPress 文章接口，前台只负责还原 Argon 的展示结构。',
+      '后续 kt-blog-web 对接本地 Markdown 博客接口后，这类文章会直接来自本地文章接口，前台只负责还原 Argon 的展示结构。',
     ],
   },
   {

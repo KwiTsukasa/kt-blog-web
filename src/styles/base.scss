@@ -34,7 +34,10 @@ body {
   }
 
   &::before {
-    background: url('/argon/theme/img-2-1200x1000.jpg') center top / cover fixed no-repeat;
+    background: var(--argon-background-image, url('/argon/theme/img-2-1200x1000.jpg')) center top / cover fixed no-repeat;
+    filter: var(--argon-background-filter, none);
+    opacity: var(--argon-background-opacity, 1);
+    transition: opacity 0.5s ease;
   }
 
   &--no-banner::before {

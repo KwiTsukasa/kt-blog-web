@@ -3,16 +3,9 @@ import { defineComponent, nextTick, type ComponentPublicInstance, type PropType,
 import { RouterLink, useRouter } from 'vue-router';
 
 import { useBlogEventBus } from '@/hooks/useBlogEventBus';
+import { useBlogTheme } from '@/hooks/useBlogTheme';
 
 import { BlogButton, BlogInput } from './antdvComponents';
-
-const navItems = [
-  { label: '首页', to: '/' },
-  { label: '归档', to: '/archives' },
-  { label: 'NAS', to: '/category/nas' },
-  { label: 'Vue', to: '/category/vue' },
-  { label: 'Node', to: '/category/node' },
-];
 
 export default defineComponent({
   name: 'BlogHeader',
@@ -25,6 +18,7 @@ export default defineComponent({
   setup(props) {
     const router = useRouter();
     const eventBus = useBlogEventBus();
+    const { siteConfig } = useBlogTheme();
     const keyword = ref('');
     const navSearchOpen = ref(false);
     const navSearchInputRef = ref<any>(null);
@@ -71,7 +65,7 @@ export default defineComponent({
 
               <div class="kt-blog__header-brand">
                 <RouterLink class="kt-blog__header-title" to="/">
-                  KwiTsukasa的小站
+                  {siteConfig.value.title}
                 </RouterLink>
               </div>
 
@@ -94,11 +88,22 @@ export default defineComponent({
                 </div>
 
                 <ul class="kt-blog__header-nav kt-blog__header-nav--hover">
-                  {navItems.map((item) => (
+                  {siteConfig.value.headerMenu.map((item) => (
                     <li key={item.label} class="kt-blog__header-nav-item">
-                      <RouterLink class="kt-blog__header-nav-link" to={item.to}>
-                        {item.label}
-                      </RouterLink>
+                      {item.external ? (
+                        <a
+                          class="kt-blog__header-nav-link"
+                          href={item.href}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          {item.label}
+                        </a>
+                      ) : (
+                        <RouterLink class="kt-blog__header-nav-link" to={item.href}>
+                          {item.label}
+                        </RouterLink>
+                      )}
                     </li>
                   ))}
                 </ul>

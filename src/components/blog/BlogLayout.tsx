@@ -1,9 +1,10 @@
-import { onBeforeUnmount, onMounted, type PropType } from 'vue';
+import { onBeforeUnmount, onMounted, type PropType, watch } from 'vue';
 import { defineComponent, ref } from 'vue';
 
-import { articles, categories, tags } from '@/data/blog';
 import { type BlogTaxonomyModal, useBlogEventBus } from '@/hooks/useBlogEventBus';
+import { useBlogArticles } from '@/hooks/useBlogArticles';
 import { useArgonEffects } from '@/hooks/useArgonEffects';
+import { useBlogTheme } from '@/hooks/useBlogTheme';
 
 import BlogFloatActions from './BlogFloatActions';
 import BlogHeader from './BlogHeader';
@@ -46,6 +47,8 @@ export default defineComponent({
     const leftbarPart1Ref = ref<HTMLElement | null>(null);
     const leftbarPart2Ref = ref<HTMLElement | null>(null);
     const eventBus = useBlogEventBus();
+    const { articles, categories, tags } = useBlogArticles();
+    const { siteConfig } = useBlogTheme();
 
     useArgonEffects({
       bannerContainerRef,
@@ -69,8 +72,15 @@ export default defineComponent({
     onMounted(() => {
       eventBus.on('blog:search:open', openSearchModal);
       eventBus.on('blog:taxonomy:open', openTaxonomyModal);
-      document.title = 'KwiTsukasa的小站';
     });
+
+    watch(
+      () => siteConfig.value.title,
+      (title) => {
+        document.title = title;
+      },
+      { immediate: true },
+    );
 
     onBeforeUnmount(() => {
       eventBus.off('blog:search:open', openSearchModal);
@@ -110,21 +120,21 @@ export default defineComponent({
 
           <div class="kt-blog__sidebar-mask" />
           <BlogSidebar
-            categories={categories}
-            tags={tags}
-            articles={articles}
+            categories={categories.value}
+            tags={tags.value}
+            articles={articles.value}
             part1Ref={leftbarPart1Ref}
             part2Ref={leftbarPart2Ref}
           />
           <BlogTaxonomyModals
             active={activeModal.value}
-            categories={categories}
-            tags={tags}
+            categories={categories.value}
+            tags={tags.value}
             onClose={() => {
               activeModal.value = null;
             }}
           />
-          <BlogRightbar articles={articles} categories={categories} />
+          <BlogRightbar articles={articles.value} categories={categories.value} />
 
           <div class="kt-blog__primary">
             <main class={['kt-blog__main', props.mainClass]} role="main">

@@ -8,7 +8,8 @@ import {
 import { defineComponent, type PropType } from 'vue';
 import { RouterLink } from 'vue-router';
 
-import { getTagSlugByLabel, type BlogArticle } from '@/data/blog';
+import type { BlogArticle } from '@/data/blog';
+import { useBlogArticles } from '@/hooks/useBlogArticles';
 
 export default defineComponent({
   name: 'ArticleCard',
@@ -19,6 +20,8 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const { getTagSlugByLabel } = useBlogArticles();
+
     return () => (
       <article class="kt-blog__post kt-blog__post--preview kt-blog__card">
         <header class="kt-blog__post-header kt-blog__post-header--center">

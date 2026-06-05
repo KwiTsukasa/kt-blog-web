@@ -6,7 +6,7 @@ import ArticleList from '@/components/blog/ArticleList';
 import BlogLayout from '@/components/blog/BlogLayout';
 import PageInfoCard from '@/components/blog/PageInfoCard';
 import { BlogButton, BlogCheckbox, BlogForm, BlogInput } from '@/components/blog/antdvComponents';
-import { searchArticles } from '@/data/blog';
+import { useBlogArticles } from '@/hooks/useBlogArticles';
 
 export default defineComponent({
   name: 'BlogSearchPage',
@@ -15,6 +15,7 @@ export default defineComponent({
     const router = useRouter();
     const keyword = ref(String(route.query.q ?? ''));
     const filters = ref(['post', 'page']);
+    const { searchArticles } = useBlogArticles();
     const resultArticles = computed(() => searchArticles(keyword.value));
 
     watch(

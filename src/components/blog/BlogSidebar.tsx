@@ -4,13 +4,9 @@ import { RouterLink, useRouter } from 'vue-router';
 
 import type { BlogArticle, BlogCategory, BlogTag } from '@/data/blog';
 import { useBlogEventBus } from '@/hooks/useBlogEventBus';
+import { useBlogTheme } from '@/hooks/useBlogTheme';
 
 import { BlogButton, BlogInput } from './antdvComponents';
-
-const menuItems = [
-  { label: '首页', to: '/', icon: 'fa-home' },
-  { label: '管理', to: '/category/node', icon: 'fa-user' },
-];
 
 export default defineComponent({
   name: 'BlogSidebar',
@@ -39,6 +35,7 @@ export default defineComponent({
   setup(props) {
     const router = useRouter();
     const eventBus = useBlogEventBus();
+    const { siteConfig } = useBlogTheme();
     const keyword = ref('');
     const leftbarSearchOpen = ref(false);
     const leftbarSearchInputRef = ref<any>(null);
@@ -67,16 +64,23 @@ export default defineComponent({
       <aside class="kt-blog__sidebar" role="complementary">
         <div ref={props.part1Ref} class="kt-blog__sidebar-panel kt-blog__sidebar-panel--menu kt-blog__card">
           <div class="kt-blog__sidebar-banner kt-blog__card-body">
-            <span class="kt-blog__sidebar-banner-title">KwiTsukasa的小站</span>
+            <span class="kt-blog__sidebar-banner-title">{siteConfig.value.title}</span>
           </div>
 
           <ul class="kt-blog__sidebar-menu">
-            {menuItems.map((item, index) => (
+            {siteConfig.value.sidebarMenu.map((item, index) => (
               <li key={item.label} class={['kt-blog__sidebar-menu-item', index === 0 && 'kt-blog__sidebar-menu-item--current']}>
-                <RouterLink to={item.to}>
+                {item.external ? (
+                  <a href={item.href} rel="noopener noreferrer" target="_blank">
+                    <i class="kt-blog__sidebar-menu-icon" data-icon={item.icon || 'fa-circle'} />
+                    {item.label}
+                  </a>
+                ) : (
+                <RouterLink to={item.href}>
                   <i class="kt-blog__sidebar-menu-icon" data-icon={item.icon} />
                   {item.label}
                 </RouterLink>
+                )}
               </li>
             ))}
           </ul>
@@ -118,7 +122,7 @@ export default defineComponent({
                 <div class="kt-blog__sidebar-author-image">
                   <div class="kt-blog__sidebar-author-avatar" />
                 </div>
-                <h6 class="kt-blog__sidebar-author-name">KwiTsukasa</h6>
+                <h6 class="kt-blog__sidebar-author-name">{siteConfig.value.authorName}</h6>
                 <nav class="kt-blog__site-stats">
                   <div class="kt-blog__site-stats-item kt-blog__site-stats-item--posts">
                     <RouterLink to="/archives">

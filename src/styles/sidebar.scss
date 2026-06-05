@@ -127,7 +127,7 @@
     height: 92px;
     margin: 0 auto;
     border-radius: 50%;
-    background: url('/argon/theme/profile.jpg') center / cover no-repeat;
+    background: var(--argon-author-avatar, url('/argon/theme/profile.jpg')) center / cover no-repeat;
     box-shadow: var(--argon-shadow);
   }
 

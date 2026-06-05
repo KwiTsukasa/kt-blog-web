@@ -3,17 +3,18 @@ import { useRoute } from 'vue-router';
 
 import ArticleList from '@/components/blog/ArticleList';
 import BlogLayout from '@/components/blog/BlogLayout';
-import {
-  getArticlesByCategory,
-  getArticlesByTag,
-  getCategoryBySlug,
-  getTagBySlug,
-} from '@/data/blog';
+import { useBlogArticles } from '@/hooks/useBlogArticles';
 
 export default defineComponent({
   name: 'BlogTermPage',
   setup() {
     const route = useRoute();
+    const {
+      getArticlesByCategory,
+      getArticlesByTag,
+      getCategoryBySlug,
+      getTagBySlug,
+    } = useBlogArticles();
     const mode = computed(() => String(route.meta.termMode ?? 'category'));
     const slug = computed(() => String(route.params.slug ?? ''));
     const category = computed(() => getCategoryBySlug(slug.value));
