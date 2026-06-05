@@ -231,7 +231,7 @@ describe('useBlogTheme', () => {
     expect(preferences.mode).toBe('light');
 
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-06-05T14:00:00+08:00'));
+    vi.setSystemTime(new Date(2026, 5, 5, 14, 0, 0));
     applyWordpressThemeConfig({
       darkmodeAutoSwitch: 'time',
     });
@@ -239,7 +239,7 @@ describe('useBlogTheme', () => {
     expect(removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
     expect(preferences.mode).toBe('light');
 
-    vi.setSystemTime(new Date('2026-06-05T22:30:00+08:00'));
+    vi.setSystemTime(new Date(2026, 5, 5, 22, 30, 0));
     applyWordpressThemeConfig({
       darkmodeAutoSwitch: 'time',
     });
