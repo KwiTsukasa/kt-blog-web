@@ -4,7 +4,6 @@ import {
   fetchBlogArticleDetail,
   fetchBlogArticleList,
   type WordpressPublicArticle,
-  type WordpressResolvedTerm,
 } from '@/api/blogArticles';
 import {
   articles as fallbackArticles,
@@ -170,10 +169,10 @@ async function loadArticle(slug: string) {
 }
 
 function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle {
-  const category = getFirstTerm(article.categoriesResolved, {
+  const category = article.categoriesResolved?.[0] || {
     name: '未分类',
     slug: 'uncategorized',
-  });
+  };
   const contentHtml =
     article.contentHtml ||
     (typeof article.content === 'object' ? article.content.rendered || article.content.raw : article.content) ||
@@ -192,7 +191,7 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
     author: article.authorName || 'KwiTsukasa',
     category: decodeHtml(category.name || '未分类'),
     categorySlug: decodeSlug(category.slug || 'uncategorized'),
-    comments: article.comment_status === 'open' ? 0 : 0,
+    comments: 0,
     content: contentText ? [contentText] : [],
     contentHtml,
     cover: article.cover || coverPool[article.id % coverPool.length] || defaultCover,
@@ -247,10 +246,6 @@ function buildTags(articles: BlogArticle[]): BlogTag[] {
   });
 
   return Array.from(groups.values());
-}
-
-function getFirstTerm(terms: WordpressResolvedTerm[] | undefined, fallback: WordpressResolvedTerm) {
-  return terms?.[0] || fallback;
 }
 
 function getRenderedText(value: WordpressPublicArticle['title']) {
