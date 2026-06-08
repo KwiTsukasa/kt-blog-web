@@ -24,3 +24,9 @@ pnpm run type-check
 pnpm run build
 pnpm test:unit
 ```
+
+## 来源与许可证
+
+| 一级来源 | 使用方式 | License |
+| --- | --- | --- |
+| [Argon Theme](https://github.com/solstice23/argon-theme) | 博客视觉资产、主题样式、滚动/搜索/过渡参考和页脚主题署名 | GPL-3.0 |
