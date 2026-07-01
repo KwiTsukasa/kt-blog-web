@@ -106,26 +106,28 @@ export default defineComponent({
                   </div>
                 </div>
 
-                <ul class="kt-blog__header-nav kt-blog__header-nav--hover">
-                  {siteConfig.value.headerMenu.map((item) => (
-                    <li key={item.label} class="kt-blog__header-nav-item">
-                      {item.external ? (
-                        <a
-                          class="kt-blog__header-nav-link"
-                          href={item.href}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          {item.label}
-                        </a>
-                      ) : (
-                        <RouterLink class="kt-blog__header-nav-link" to={item.href}>
-                          {item.label}
-                        </RouterLink>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                {siteConfig.value.headerMenuVisible && siteConfig.value.headerMenu.length > 0 && (
+                  <ul class="kt-blog__header-nav kt-blog__header-nav--hover">
+                    {siteConfig.value.headerMenu.map((item) => (
+                      <li key={item.label} class="kt-blog__header-nav-item">
+                        {item.external ? (
+                          <a
+                            class="kt-blog__header-nav-link"
+                            href={item.href}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
+                            {item.label}
+                          </a>
+                        ) : (
+                          <RouterLink class="kt-blog__header-nav-link" to={item.href}>
+                            {item.label}
+                          </RouterLink>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
                 <ul class="kt-blog__header-nav kt-blog__header-nav--end">
                   <li class="kt-blog__header-search-item">

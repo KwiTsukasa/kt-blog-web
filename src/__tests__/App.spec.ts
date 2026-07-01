@@ -137,7 +137,8 @@ describe('App', () => {
     });
 
     expect(wrapper.find('.kt-blog__header-collapse').exists()).toBe(true);
-    expect(wrapper.find('.kt-blog__header-nav').exists()).toBe(true);
+    expect(wrapper.find('.kt-blog__header-nav--hover').exists()).toBe(false);
+    expect(wrapper.find('.kt-blog__header-nav--end').exists()).toBe(true);
   });
 
   it('loads local blog theme config by default', async () => {

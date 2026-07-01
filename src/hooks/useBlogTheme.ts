@@ -66,6 +66,7 @@ export interface WordpressArgonThemeConfig {
   darkmodeAutoSwitch?: 'alwaysoff' | 'alwayson' | 'system' | 'time' | string;
   enableCustomThemeColor?: boolean;
   headerMenu?: BlogThemeMenuItem[];
+  headerMenuVisible?: boolean | string;
   htmlClass?: string | string[];
   site?: {
     authorAvatar?: string;
@@ -92,6 +93,7 @@ interface BlogRuntimeThemeConfig {
   backgroundOpacity: number;
   bodyClass: string[];
   headerMenu: BlogThemeMenuItem[];
+  headerMenuVisible: boolean;
   siteAuthorAvatar: string;
   htmlClass: string[];
   immersionColor: boolean;
@@ -142,6 +144,7 @@ const runtimeConfig = reactive<BlogRuntimeThemeConfig>({
   backgroundOpacity: 1,
   bodyClass: ['home', 'blog', 'wp-theme-argon'],
   headerMenu: [...defaultHeaderMenu],
+  headerMenuVisible: false,
   htmlClass: [
     'triple-column',
     'immersion-color',
@@ -173,6 +176,7 @@ const siteConfig = computed(() => ({
   authorName: runtimeConfig.siteAuthorName,
   description: runtimeConfig.siteDescription,
   headerMenu: runtimeConfig.headerMenu,
+  headerMenuVisible: runtimeConfig.headerMenuVisible,
   home: runtimeConfig.siteHome,
   sidebarMenu: runtimeConfig.sidebarMenu,
   title: runtimeConfig.siteTitle,
@@ -296,6 +300,7 @@ function applyWordpressThemeConfig(config: WordpressArgonThemeConfig) {
       config.site?.home || config.site?.url || runtimeConfig.siteHome || runtimeConfig.siteUrl,
     );
   }
+  runtimeConfig.headerMenuVisible = normalizeHeaderMenuVisible(config);
   runtimeConfig.tripleColumn = hasRemoteHtmlClass
     ? nextHtmlClass.includes('triple-column')
     : runtimeConfig.tripleColumn;
@@ -913,6 +918,41 @@ function normalizePositiveNumber(value?: number | string) {
   const numericValue = Number(value);
 
   return Number.isFinite(numericValue) ? Math.max(0, numericValue) : null;
+}
+
+/**
+ * @param config WordPress/Argon 主题配置，`headerMenu` 只表示菜单数据，不表示 toolbar 菜单位置已启用。
+ * @returns 是否渲染顶部工具栏菜单；未提供显式开关时默认关闭，复现当前线上 WordPress 未启用顶部菜单位置的行为。
+ */
+function normalizeHeaderMenuVisible(config: WordpressArgonThemeConfig) {
+  const rawValue = config.headerMenuVisible ?? config.toolbarMenuVisible ?? config.showHeaderMenu ?? config.showToolbarMenu;
+
+  return normalizeBooleanFlag(rawValue) === true;
+}
+
+/**
+ * @param value 后端或内联配置给出的布尔语义值，兼容 WordPress 字符串选项和真实 boolean。
+ * @returns 可识别的布尔值；无法识别时返回 undefined，避免把菜单数据误当成显隐开关。
+ */
+function normalizeBooleanFlag(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on', 'show', 'visible', 'enabled'].includes(normalized)) {
+    return true;
+  }
+
+  if (['0', 'false', 'no', 'off', 'hide', 'hidden', 'disabled'].includes(normalized)) {
+    return false;
+  }
+
+  return undefined;
 }
 
 /**

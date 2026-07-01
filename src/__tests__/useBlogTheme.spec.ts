@@ -109,6 +109,7 @@ describe('useBlogTheme', () => {
           label: '首页',
         },
       ],
+      headerMenuVisible: false,
       home: 'https://blog.kwitsukasa.top',
       sidebarMenu: [
         {
@@ -145,6 +146,55 @@ describe('useBlogTheme', () => {
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--argon-background-opacity: 1;');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--argon-background-dark-opacity: 1;');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain("url('http://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg')");
+  });
+
+  it('keeps toolbar menu hidden unless WordPress exposes an explicit visibility flag', async () => {
+    const { applyWordpressThemeConfig, siteConfig } = useBlogTheme();
+
+    applyWordpressThemeConfig({
+      headerMenu: [
+        {
+          href: 'https://blog.kwitsukasa.top',
+          label: '首页',
+        },
+      ],
+      site: {
+        home: 'https://blog.kwitsukasa.top',
+      },
+    });
+    await nextTick();
+
+    expect(siteConfig.value.headerMenu).toEqual([
+      {
+        external: false,
+        href: '/',
+        label: '首页',
+      },
+    ]);
+    expect(siteConfig.value.headerMenuVisible).toBe(false);
+
+    applyWordpressThemeConfig({
+      headerMenu: [
+        {
+          href: 'https://blog.kwitsukasa.top/archives',
+          label: '归档',
+        },
+      ],
+      headerMenuVisible: 'true',
+      site: {
+        home: 'https://blog.kwitsukasa.top',
+      },
+    });
+    await nextTick();
+
+    expect(siteConfig.value.headerMenu).toEqual([
+      {
+        external: false,
+        href: '/archives',
+        label: '归档',
+      },
+    ]);
+    expect(siteConfig.value.headerMenuVisible).toBe(true);
   });
 
   it('maps legacy Argon placeholder image config back to previous blog static assets', async () => {
