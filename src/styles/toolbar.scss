@@ -46,11 +46,10 @@
     font-weight: 700;
   }
 
-  &__header-collapse {
+  &__header-nav--hover {
     display: flex;
     flex: 1;
     align-items: center;
-    justify-content: space-between;
   }
 
   &__header-nav {

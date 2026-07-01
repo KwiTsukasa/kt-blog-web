@@ -240,8 +240,11 @@
     height: 100px;
     margin: 0 auto;
     border-radius: 50%;
-    background: var(--argon-author-avatar, url('/argon/theme/profile.jpg')) center / cover no-repeat;
     background-color: rgba(127, 127, 127, 0.1);
+    background-image: var(--argon-author-avatar, url('/blog-assets/avatar-tsukasa-1.jpg'));
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
     box-shadow: var(--argon-shadow);
   }
 

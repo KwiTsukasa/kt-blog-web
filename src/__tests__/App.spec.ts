@@ -126,6 +126,20 @@ describe('App', () => {
     expect(wrapper.text()).toContain('KwiTsukasa的小站');
   });
 
+  it('renders Argon header without the old collapse container', async () => {
+    await router.push('/');
+    await router.isReady();
+
+    const wrapper = mount(App, {
+      global: {
+        plugins: [router],
+      },
+    });
+
+    expect(wrapper.find('.kt-blog__header-collapse').exists()).toBe(false);
+    expect(wrapper.find('.kt-blog__header-nav').exists()).toBe(true);
+  });
+
   it('loads local blog theme config by default', async () => {
     const fetchMock = vi.fn((url: string | URL | Request) => {
       const target = `${url}`;
@@ -225,10 +239,10 @@ describe('App', () => {
     expect(styleText).toContain('--themecolor: #C3A1ED;');
     expect(styleText).toContain('--radius: 6px;');
     expect(styleText).toContain(
-      "--argon-background-dark-image: url('https://s3.kwitsukasa.top/images/bg-冬滚滚.png');",
+      "--argon-background-dark-image: url('https://s3.kwitsukasa.top/images/bg-冬滚滚.png'), url('/blog-assets/bg-donggungun.png');",
     );
     expect(styleText).toContain(
-      "--argon-author-avatar: url('http://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg');",
+      "--argon-author-avatar: url('http://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg'), url('/blog-assets/avatar-tsukasa-1.jpg');",
     );
   });
 
@@ -359,10 +373,10 @@ describe('App', () => {
     expect(styleText).toContain('--radius: 10px;');
     expect(styleText).toContain('--argon-background-opacity: 0.8;');
     expect(styleText).toContain(
-      "--argon-background-dark-image: url('https://s3.kwitsukasa.top/images/wp-dark.png');",
+      "--argon-background-dark-image: url('https://s3.kwitsukasa.top/images/wp-dark.png'), url('/blog-assets/bg-donggungun.png');",
     );
     expect(styleText).toContain(
-      "--argon-author-avatar: url('http://s3.kwitsukasa.top/images/wp-avatar.jpg');",
+      "--argon-author-avatar: url('http://s3.kwitsukasa.top/images/wp-avatar.jpg'), url('/blog-assets/avatar-tsukasa-1.jpg');",
     );
   });
 });

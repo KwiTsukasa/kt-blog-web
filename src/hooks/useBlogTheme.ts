@@ -1,6 +1,14 @@
 import { theme } from 'antdv-next';
 import { computed, reactive, watch } from 'vue';
 
+import {
+  PREVIOUS_BLOG_AUTHOR_AVATAR,
+  PREVIOUS_BLOG_BACKGROUND_IMAGE,
+  LOCAL_BLOG_AUTHOR_AVATAR,
+  LOCAL_BLOG_BACKGROUND_IMAGE,
+  resolveBlogStaticAsset,
+  unwrapBlogCssImage,
+} from '@/data/blogStaticAssets';
 import { createBlogMotionCssVariables } from '@/factories/blogAnimationFactory';
 import { BLOG_META_NAMES, blogDomId, blogDomSelector, blogMetaSelector } from '@/factories/blogDomFactory';
 
@@ -107,8 +115,8 @@ const ARGON_SERIF_FONT_FAMILY = 'Georgia, "Times New Roman", "Noto Serif SC", se
 const ARGON_DEFAULT_COLOR_PRIMARY = '#c3a1ed';
 const ARGON_PRIMARY_SOFT = '#4a4058';
 const ARGON_CARD_SHADOW = '0 2px 4px rgba(0, 0, 0, 0.075)';
-const ARGON_DEFAULT_BACKGROUND = 'https://s3.kwitsukasa.top/images/bg-冬滚滚.png';
-const ARGON_DEFAULT_AUTHOR_AVATAR = 'https://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg';
+const ARGON_DEFAULT_BACKGROUND = PREVIOUS_BLOG_BACKGROUND_IMAGE;
+const ARGON_DEFAULT_AUTHOR_AVATAR = PREVIOUS_BLOG_AUTHOR_AVATAR;
 const defaultHeaderMenu: BlogThemeMenuItem[] = [];
 const defaultSidebarMenu: BlogThemeMenuItem[] = [
   { href: '/', icon: 'fa-home', label: '首页' },
@@ -304,7 +312,8 @@ function applyWordpressThemeConfig(config: WordpressArgonThemeConfig) {
     typeof nextBackgroundDarkBrightness === 'number'
       ? nextBackgroundDarkBrightness
       : runtimeConfig.backgroundDarkBrightness;
-  runtimeConfig.backgroundDarkImage = normalizeCssImage(config.backgroundDarkImage) || runtimeConfig.backgroundDarkImage;
+  runtimeConfig.backgroundDarkImage =
+    normalizeCssImage(config.backgroundDarkImage) || runtimeConfig.backgroundDarkImage;
   runtimeConfig.backgroundDarkOpacity =
     typeof nextBackgroundDarkOpacity === 'number'
       ? nextBackgroundDarkOpacity
@@ -432,12 +441,14 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
   const palette = createThemePalette(currentPreferences.colorPrimary, currentPreferences.mode);
   const fontFamily = getThemeFontFamily(currentPreferences.font);
   const argonColorVariables = createArgonColorVariables(primaryRgb, currentPreferences.mode);
-  const backgroundImage =
+  const backgroundImage = appendCssImageFallback(
     normalizeCssImage(
       currentPreferences.mode === 'dark'
         ? runtimeConfig.backgroundDarkImage || runtimeConfig.backgroundImage
         : runtimeConfig.backgroundImage,
-    ) || `url('${ARGON_DEFAULT_BACKGROUND}')`;
+    ) || `url('${ARGON_DEFAULT_BACKGROUND}')`,
+    LOCAL_BLOG_BACKGROUND_IMAGE,
+  );
   const backgroundOpacity =
     currentPreferences.mode === 'dark'
       ? runtimeConfig.backgroundDarkOpacity
@@ -505,13 +516,13 @@ ${serializeCssVariables(argonColorVariables.current)}
   --radius: ${currentPreferences.radius}px;
   --card-radius: ${currentPreferences.radius}px;
   --argon-background-image: ${backgroundImage};
-  --argon-background-light-image: ${normalizeCssImage(runtimeConfig.backgroundImage) || `url('${ARGON_DEFAULT_BACKGROUND}')`};
-  --argon-background-dark-image: ${normalizeCssImage(runtimeConfig.backgroundDarkImage) || backgroundImage};
+  --argon-background-light-image: ${appendCssImageFallback(normalizeCssImage(runtimeConfig.backgroundImage) || `url('${ARGON_DEFAULT_BACKGROUND}')`, LOCAL_BLOG_BACKGROUND_IMAGE)};
+  --argon-background-dark-image: ${appendCssImageFallback(normalizeCssImage(runtimeConfig.backgroundDarkImage) || backgroundImage, LOCAL_BLOG_BACKGROUND_IMAGE)};
   --argon-background-filter: ${currentPreferences.mode === 'dark' ? `brightness(${runtimeConfig.backgroundDarkBrightness})` : 'none'};
   --argon-background-opacity: ${backgroundOpacity};
   --argon-background-light-opacity: ${runtimeConfig.backgroundOpacity};
   --argon-background-dark-opacity: ${runtimeConfig.backgroundDarkOpacity};
-  --argon-author-avatar: ${normalizeCssImage(runtimeConfig.siteAuthorAvatar) || `url('${ARGON_DEFAULT_AUTHOR_AVATAR}')`};
+  --argon-author-avatar: ${appendCssImageFallback(normalizeCssImage(runtimeConfig.siteAuthorAvatar) || `url('${ARGON_DEFAULT_AUTHOR_AVATAR}')`, LOCAL_BLOG_AUTHOR_AVATAR)};
   --argon-font-family: ${fontFamily};
   --argon-shadow: ${ARGON_CARD_SHADOW};
   --argon-primary-soft: ${ARGON_PRIMARY_SOFT};
@@ -904,9 +915,12 @@ function normalizePositiveNumber(value?: number | string) {
   return Number.isFinite(numericValue) ? Math.max(0, numericValue) : null;
 }
 
+/**
+ * @param value Theme image URL returned by the API or static defaults.
+ * @returns CSS `url(...)` token after replacing legacy Argon demo placeholders with previous blog assets.
+ */
 function normalizeCssImage(value?: string) {
-  if (!value) return '';
-  const normalized = value.trim();
+  const normalized = resolveBlogStaticAsset(value, '');
 
   if (normalized.startsWith('url(')) return normalized;
   if (/^https?:\/\//i.test(normalized) || normalized.startsWith('/')) {
@@ -916,13 +930,27 @@ function normalizeCssImage(value?: string) {
   return '';
 }
 
+/**
+ * @param primaryCssImage CSS `url(...)` token for the preferred remote image.
+ * @param localFallback Local packaged image path used when the remote image cannot load.
+ * @returns A CSS background-image layer list with the remote image first and local backup second.
+ */
+function appendCssImageFallback(primaryCssImage: string, localFallback: string) {
+  const fallbackCssImage = normalizeCssImage(localFallback);
+
+  if (!fallbackCssImage || primaryCssImage.includes(fallbackCssImage)) {
+    return primaryCssImage;
+  }
+
+  return `${primaryCssImage}, ${fallbackCssImage}`;
+}
+
+/**
+ * @param value Theme asset URL returned by WordPress-compatible config.
+ * @returns Plain URL/path after replacing legacy Argon demo placeholders, suitable for component state.
+ */
 function normalizeThemeAsset(value?: string) {
-  if (!value) return '';
-  const normalized = value.trim();
-  const cssImage = /^url\((.*)\)$/i.exec(normalized)?.[1]?.trim();
-  const asset = cssImage
-    ? cssImage.replace(/^['"]|['"]$/g, '')
-    : normalized;
+  const asset = resolveBlogStaticAsset(unwrapBlogCssImage(value), '');
 
   return /^https?:\/\//i.test(asset) || asset.startsWith('/') ? asset : '';
 }

@@ -145,6 +145,40 @@ describe('useBlogArticles', () => {
     expect(blogArticles.articles.value).toEqual(fallbackArticles);
   });
 
+  it('keeps fallback article covers on previous blog assets instead of Argon demo images', async () => {
+    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/landing.jpg');
+    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/img-2-1200x1000.jpg');
+    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/img-1-1200x1000.jpg');
+    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/promo-1.png');
+    expect(fallbackArticles.every((article) => article.cover.startsWith('https://s3.kwitsukasa.top/images/'))).toBe(true);
+  });
+
+  it('uses the previous blog cover when public API articles have no cover', async () => {
+    mockFetch([
+      {
+        body: {
+          code: 200,
+          data: {
+            list: [
+              {
+                ...publicArticle,
+                cover: '',
+              },
+            ],
+            total: 1,
+          },
+        },
+        status: 200,
+      },
+    ]);
+    const { useBlogArticles } = await import('@/hooks/useBlogArticles');
+    const blogArticles = useBlogArticles();
+
+    await blogArticles.loadArticles();
+
+    expect(blogArticles.articles.value[0]?.cover).toBe('https://s3.kwitsukasa.top/images/bg-冬滚滚.png');
+  });
+
   it('fetches public article detail when cached list data does not include html content', async () => {
     const fetchMock = mockFetch([
       {

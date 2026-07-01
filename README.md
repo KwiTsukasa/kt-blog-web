@@ -8,7 +8,7 @@ KT 博客前台 demo，基于 Argon WordPress 主题的视觉资产重新实现�
 - 组件库：antdv-next。
 - 样式：SCSS，类名按 BEM 组织。
 - 路由：hash 模式，便于静态部署。
-- 静态资产：只从 Argon 主题包抽取 demo 需要的图片，不引入 WordPress PHP 与主题脚本。
+- 静态资产：默认使用旧线上博客真实资源，`public/blog-assets/` 保留本地备份兜底；不得把 Argon demo 图片作为默认背景、头像或 fallback 封面。
 
 ## 本地运行
 
@@ -28,14 +28,15 @@ pnpm exec playwright test e2e/argon-parity/interactions.spec.ts --project=chromi
 pnpm exec playwright test e2e/argon-parity/baseline.spec.ts --project=chromium
 ```
 
-`baseline.spec.ts` 只在需要重新抓线上 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。线上 `https://blog.kwitsukasa.top/` 是只读视觉/交互基准，不是 Admin iframe 预览目标。
+`baseline.spec.ts` 只在需要重新抓旧 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。公开域名 `https://blog.kwitsukasa.top/` 当前是 KT Blog Web 静态站入口，不是只读基准站；旧 WordPress 端口只作为视觉/交互基准和回滚入口。
 
 ## Argon 还原范围
 
-- `e2e/argon-parity` 保存与线上 `https://blog.kwitsukasa.top/` 对齐的页面、视口和交互矩阵。
+- `e2e/argon-parity` 保存与旧 WordPress Argon 基准对齐的页面、视口和交互矩阵；公开域名切到 KT Blog Web 后，基准抓取必须显式使用旧 WordPress 入口。
 - 本地 hash 路由按语义映射 WordPress query 路由：文章、分类、标签、搜索和月份归档都用同一套矩阵验证。
 - 页面根节点通过 `kt-blog--home/search/category/tag/archive/post` 暴露 Argon 页面语义，方便样式、测试和 Admin iframe 预览复用。
 - 公开 Blog API 返回非空文章列表时优先使用 API；API 不可用或返回空列表时保留内置 WordPress 抓取文章种子，避免数据未迁移期间线上静态站变成空站。
+- 主题接口若仍返回 `/argon/theme/*` 历史 demo 占位图，前端必须映射回旧线上博客资源；本地备份只用于兜底，避免静态站重新露出模板图。
 - 文章正文以线上 WordPress `#post_content` 渲染结果和 Argon `style.css` / `argontheme.js` 为准；代码块控制条、复制 toast、Fancybox 图片预览、正文链接 hover、分隔线和图片 lazyload 都必须有 Playwright 断言。
 - `hljs-codeblock` 静态快照需要恢复 Argon `highlightjs-line-numbers` 运行时生成的 `data-line-number` 与 `.hljs-ln-n::before`，否则行号列会坍塌成 0px。
 - 左栏 overview sticky/relative 切换用 no-headroom 回归用例固定，解除 fixed 后不得重放卡片入场动画或产生缩放闪烁。

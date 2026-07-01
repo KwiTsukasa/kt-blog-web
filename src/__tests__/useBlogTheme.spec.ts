@@ -140,11 +140,32 @@ describe('useBlogTheme', () => {
     expect(themeRootClass.value).toContain('kt-blog--shadow-big');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--themecolor: #C3A1ED;');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain("url('https://s3.kwitsukasa.top/images/bg-冬滚滚.png')");
-    expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--argon-background-dark-image: url(\'https://s3.kwitsukasa.top/images/bg-冬滚滚.png\');');
+    expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--argon-background-dark-image: url(\'https://s3.kwitsukasa.top/images/bg-冬滚滚.png\'), url(\'/blog-assets/bg-donggungun.png\');');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--argon-background-filter: brightness(0.65);');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--argon-background-opacity: 1;');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain('--argon-background-dark-opacity: 1;');
     expect(document.querySelector('#kt-blog-theme-style')?.textContent).toContain("url('http://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg')");
+  });
+
+  it('maps legacy Argon placeholder image config back to previous blog static assets', async () => {
+    const { applyWordpressThemeConfig, siteConfig } = useBlogTheme();
+
+    applyWordpressThemeConfig({
+      backgroundDarkImage: '/argon/theme/img-2-1200x1000.jpg',
+      backgroundImage: '/argon/theme/img-2-1200x1000.jpg',
+      site: {
+        authorAvatar: '/argon/theme/profile.jpg',
+      },
+    });
+    await nextTick();
+
+    const styleText = document.querySelector('#kt-blog-theme-style')?.textContent || '';
+    expect(styleText).toContain("url('https://s3.kwitsukasa.top/images/bg-冬滚滚.png')");
+    expect(styleText).toContain("url('/blog-assets/bg-donggungun.png')");
+    expect(styleText).toContain("url('https://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg')");
+    expect(styleText).toContain("url('/blog-assets/avatar-tsukasa-1.jpg')");
+    expect(styleText).not.toContain('/argon/theme/');
+    expect(siteConfig.value.authorAvatar).toBe('https://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg');
   });
 
   it('mirrors remote layout class switches instead of keeping stale defaults', async () => {

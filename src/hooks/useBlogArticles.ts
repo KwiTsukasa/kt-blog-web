@@ -16,14 +16,9 @@ import {
   type BlogCategory,
   type BlogTag,
 } from '@/data/blog';
+import { PREVIOUS_BLOG_BACKGROUND_IMAGE, resolveBlogStaticAsset } from '@/data/blogStaticAssets';
 
-const coverPool = [
-  '/argon/theme/img-2-1200x1000.jpg',
-  '/argon/theme/img-1-1200x1000.jpg',
-  '/argon/theme/landing.jpg',
-  '/argon/theme/promo-1.png',
-];
-const defaultCover = coverPool[0] || '/argon/theme/img-2-1200x1000.jpg';
+const defaultCover = PREVIOUS_BLOG_BACKGROUND_IMAGE;
 const colorPool = ['blue', 'purple', 'green', 'orange', 'geekblue', 'cyan', 'volcano', 'magenta'];
 const blogArticles = ref<BlogArticle[]>(fallbackArticles);
 const loading = ref(false);
@@ -222,7 +217,7 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
     comments: 0,
     content: contentText ? [contentText] : [],
     contentHtml,
-    cover: article.cover || coverPool[article.id % coverPool.length] || defaultCover,
+    cover: resolveBlogStaticAsset(article.cover, defaultCover),
     date: formatDate(article.date || article.modified),
     excerpt,
     id: article.id,

@@ -1,4 +1,5 @@
 import { articleContentHtml } from './blogArticleContent';
+import { PREVIOUS_BLOG_BACKGROUND_IMAGE } from './blogStaticAssets';
 
 export interface BlogArticle {
   id: number;
@@ -252,7 +253,7 @@ export const articles: BlogArticle[] = [
     category: 'public',
     categorySlug: 'public',
     tags: [],
-    cover: '/argon/theme/landing.jpg',
+    cover: PREVIOUS_BLOG_BACKGROUND_IMAGE,
     date: '2026-06-18 11:11',
     readTime: '18 分钟',
     author: 'KwiTsukasa',
@@ -274,7 +275,7 @@ export const articles: BlogArticle[] = [
     category: 'NAS',
     categorySlug: 'nas',
     tags: ['NAS'],
-    cover: '/argon/theme/img-2-1200x1000.jpg',
+    cover: PREVIOUS_BLOG_BACKGROUND_IMAGE,
     date: '2026-05-16 16:43',
     readTime: '14 分钟',
     author: 'KwiTsukasa',
@@ -298,7 +299,7 @@ export const articles: BlogArticle[] = [
     category: 'NAS',
     categorySlug: 'nas',
     tags: ['NAS'],
-    cover: '/argon/theme/img-1-1200x1000.jpg',
+    cover: PREVIOUS_BLOG_BACKGROUND_IMAGE,
     date: '2026-05-12 12:00',
     readTime: '16 分钟',
     author: 'KwiTsukasa',
@@ -321,7 +322,7 @@ export const articles: BlogArticle[] = [
     category: 'NAS',
     categorySlug: 'nas',
     tags: ['NAS'],
-    cover: '/argon/theme/landing.jpg',
+    cover: PREVIOUS_BLOG_BACKGROUND_IMAGE,
     date: '2026-05-12 11:58',
     readTime: '14 分钟',
     author: 'KwiTsukasa',
@@ -344,7 +345,7 @@ export const articles: BlogArticle[] = [
     category: 'Vue',
     categorySlug: 'vue',
     tags: ['Vue'],
-    cover: '/argon/theme/promo-1.png',
+    cover: PREVIOUS_BLOG_BACKGROUND_IMAGE,
     date: '2025-10-31 16:16',
     readTime: '11 分钟',
     author: 'KwiTsukasa',
@@ -369,7 +370,7 @@ export const articles: BlogArticle[] = [
       { slug: 'vue', label: 'Vue' },
     ],
     tags: ['MQTT', 'Vue'],
-    cover: '/argon/theme/img-2-1200x1000.jpg',
+    cover: PREVIOUS_BLOG_BACKGROUND_IMAGE,
     date: '2025-10-29 16:50',
     readTime: '17 分钟',
     author: 'KwiTsukasa',
@@ -392,7 +393,7 @@ export const articles: BlogArticle[] = [
     category: 'Node',
     categorySlug: 'node',
     tags: ['Node'],
-    cover: '/argon/theme/img-1-1200x1000.jpg',
+    cover: PREVIOUS_BLOG_BACKGROUND_IMAGE,
     date: '2025-10-29 15:38',
     readTime: '13 分钟',
     author: 'KwiTsukasa',
