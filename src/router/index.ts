@@ -13,17 +13,24 @@ const router = createRouter({
       path: '/',
       name: 'BlogHome',
       component: BlogHomePage,
+      meta: {
+        argonKind: 'home',
+      },
     },
     {
       path: '/post/:slug',
       name: 'BlogPost',
       component: PostPage,
+      meta: {
+        argonKind: 'post',
+      },
     },
     {
       path: '/category/:slug',
       name: 'BlogCategory',
       component: TermPage,
       meta: {
+        argonKind: 'category',
         termMode: 'category',
       },
     },
@@ -32,6 +39,7 @@ const router = createRouter({
       name: 'BlogTag',
       component: TermPage,
       meta: {
+        argonKind: 'tag',
         termMode: 'tag',
       },
     },
@@ -39,11 +47,17 @@ const router = createRouter({
       path: '/archives',
       name: 'BlogArchive',
       component: ArchivePage,
+      meta: {
+        argonKind: 'archive',
+      },
     },
     {
       path: '/search',
       name: 'BlogSearch',
       component: SearchPage,
+      meta: {
+        argonKind: 'search',
+      },
     },
   ],
 });

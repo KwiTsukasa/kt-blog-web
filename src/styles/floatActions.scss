@@ -3,15 +3,18 @@
 @include blog.block {
   &__float-actions {
     position: fixed;
-    right: 18px;
-    bottom: 28px;
-    z-index: 120;
+    right: 20px;
+    bottom: 35px;
+    z-index: 1000;
     display: block;
+    height: max-content;
+    pointer-events: auto;
+    transition: all 0.3s ease;
   }
 
   &__float-actions--left {
-    right: unset;
-    left: 18px;
+    right: auto;
+    left: 20px;
   }
 
   &__float-action {
@@ -22,7 +25,10 @@
     margin-top: 8px;
     overflow: visible;
     color: var(--argon-text) !important;
+    border: none !important;
     background: var(--argon-control-soft) !important;
+    padding: 0 !important;
+    pointer-events: auto;
     transition:
       color 0.3s ease,
       background-color 0.3s ease,
@@ -102,14 +108,6 @@
     content: attr(tooltip-move-to-right);
   }
 
-  &__float-action--theme::before {
-    content: attr(tooltip-darkmode);
-  }
-
-  &--dark &__float-action--theme::before {
-    content: attr(tooltip-lightmode);
-  }
-
   &__float-actions--settings-open &__float-action {
     overflow: hidden;
     opacity: 0.25;
@@ -134,10 +132,12 @@
     max-height: calc(100vh - 70px);
     flex-direction: column;
     gap: 14px;
-    padding: 10px 25px 18px;
+    padding: 10px 25px;
     color: var(--argon-text);
     background: var(--argon-card) !important;
+    pointer-events: auto;
     transform-origin: right bottom;
+    z-index: 150;
   }
 
   &__float-actions--left &__settings-panel {
@@ -200,7 +200,9 @@
     margin-left: 5px;
     border: 0 !important;
     border-radius: 50% !important;
+    padding: 0 !important;
     font-size: 14px;
+    white-space: nowrap;
     transition: all 0.3s ease;
 
     &:hover {
@@ -214,22 +216,38 @@
 
   &__settings-filter-button--off {
     color: var(--themecolor);
-    background: var(--argon-control-soft) !important;
+    background: rgba(var(--themecolor-rgbstr), 0.05) !important;
+
+    &.kt-blog__settings-filter-button--active {
+      border-color: var(--themecolor) !important;
+    }
   }
 
   &__settings-filter-button--sunset {
     color: #6e5a00;
     background: rgb(255, 255, 200) !important;
+
+    &.kt-blog__settings-filter-button--active {
+      border-color: #6e5a00 !important;
+    }
   }
 
   &__settings-filter-button--darkness {
     color: #eee;
-    background: rgb(80, 80, 80) !important;
+    background: rgba(80, 80, 80, 0.7) !important;
+
+    &.kt-blog__settings-filter-button--active {
+      border-color: #111 !important;
+    }
   }
 
   &__settings-filter-button--grayscale {
     color: #333;
-    background: rgb(200, 200, 200) !important;
+    background: rgba(200, 200, 200, 0.8) !important;
+
+    &.kt-blog__settings-filter-button--active {
+      border-color: #333 !important;
+    }
   }
 
   &__settings-color {

@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router';
 
 import ArticleList from '@/components/blog/ArticleList';
 import BlogLayout from '@/components/blog/BlogLayout';
+import PageInfoCard from '@/components/blog/PageInfoCard';
 import { useBlogArticles } from '@/hooks/useBlogArticles';
 
 export default defineComponent({
@@ -22,21 +23,25 @@ export default defineComponent({
     const termArticles = computed(() =>
       mode.value === 'tag' ? getArticlesByTag(slug.value) : getArticlesByCategory(slug.value),
     );
-    const title = computed(() =>
-      mode.value === 'tag' ? `标签：${tag.value?.label ?? slug.value}` : `分类：${category.value?.label ?? slug.value}`,
-    );
-    const description = computed(() =>
-      mode.value === 'tag'
-        ? `与 ${tag.value?.label ?? slug.value} 相关的文章。`
-        : category.value?.description ?? '当前分类下的文章列表。',
+    const termLabel = computed(() => (mode.value === 'tag' ? tag.value?.label : category.value?.label) ?? slug.value);
+    const pageInfoTitle = computed(() =>
+      mode.value === 'tag' ? `标签： ${termLabel.value}` : `分类： ${termLabel.value}`,
     );
 
     return () => (
       <BlogLayout
         mainClass="kt-blog__main--article-list"
-        pageTitle={title.value}
-        pageDescription={description.value}
+        pageTitle={termLabel.value}
+        pageDescription=""
         pageMeta={`${termArticles.value.length} 篇文章`}
+        v-slots={{
+          pageInfo: () => (
+            <PageInfoCard
+              title={pageInfoTitle.value}
+              meta={`${termArticles.value.length} 篇文章`}
+            />
+          ),
+        }}
       >
         <ArticleList articles={termArticles.value} />
       </BlogLayout>

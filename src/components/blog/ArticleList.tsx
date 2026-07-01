@@ -29,7 +29,7 @@ export default defineComponent({
     },
     initialCount: {
       type: Number,
-      default: 3,
+      default: 7,
     },
   },
   setup(props) {

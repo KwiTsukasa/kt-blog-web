@@ -1,12 +1,21 @@
-import { SearchOutlined } from '@antdv-next/icons';
-import { computed, defineComponent, ref, watch } from 'vue';
+import { computed, defineComponent, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import ArticleList from '@/components/blog/ArticleList';
 import BlogLayout from '@/components/blog/BlogLayout';
 import PageInfoCard from '@/components/blog/PageInfoCard';
-import { BlogButton, BlogCheckbox, BlogForm, BlogInput } from '@/components/blog/antdvComponents';
+import { BlogCheckbox } from '@/components/blog/antdvComponents';
+import { blogSearchFilterId } from '@/factories/blogDomFactory';
 import { useBlogArticles } from '@/hooks/useBlogArticles';
+
+type SearchPostType = 'page' | 'post' | 'shuoshuo';
+
+const defaultSearchPostTypes: SearchPostType[] = ['post', 'page'];
+const searchPostTypeOptions: Array<{ label: string; value: SearchPostType }> = [
+  { label: '文章', value: 'post' },
+  { label: '页面', value: 'page' },
+  { label: '说说', value: 'shuoshuo' },
+];
 
 export default defineComponent({
   name: 'BlogSearchPage',
@@ -14,9 +23,34 @@ export default defineComponent({
     const route = useRoute();
     const router = useRouter();
     const keyword = ref(String(route.query.q ?? ''));
-    const filters = ref(['post', 'page']);
     const { searchArticles } = useBlogArticles();
-    const resultArticles = computed(() => searchArticles(keyword.value));
+    const selectedPostTypes = computed(() => normalizeSearchPostTypes(route.query.post_type));
+    const matchedArticles = computed(() => searchArticles(keyword.value));
+    const resultArticles = computed(() =>
+      selectedPostTypes.value.includes('post') ? matchedArticles.value : [],
+    );
+
+    /**
+     * @param type Search result type toggled by the Argon filter checkbox.
+     * @param checked Whether the user expects this result type to stay active.
+     */
+    const updateFilter = (type: SearchPostType, checked: boolean) => {
+      const nextTypes = new Set(selectedPostTypes.value);
+      if (checked) {
+        nextTypes.add(type);
+      } else {
+        nextTypes.delete(type);
+      }
+
+      const postTypeQuery = serializeSearchPostTypes(Array.from(nextTypes));
+      router.push({
+        path: '/search',
+        query: {
+          q: keyword.value || undefined,
+          ...(postTypeQuery === undefined ? {} : { post_type: postTypeQuery }),
+        },
+      });
+    };
 
     watch(
       () => route.query.q,
@@ -24,13 +58,15 @@ export default defineComponent({
         keyword.value = String(value ?? '');
       },
     );
+    watch(
+      () => resultArticles.value.length,
+      (count) => syncSearchBodyClass(count > 0),
+      { immediate: true, flush: 'post' },
+    );
 
-    const submitSearch = () => {
-      router.push({
-        name: 'BlogSearch',
-        query: { q: keyword.value.trim() },
-      });
-    };
+    onBeforeUnmount(() => {
+      document.body.classList.remove('search-results', 'search-no-results');
+    });
 
     return () => (
       <BlogLayout
@@ -44,23 +80,17 @@ export default defineComponent({
               title={keyword.value ? keyword.value : '搜索'}
               description={keyword.value ? '的搜索结果' : '搜索文章标题、摘要、分类、标签与正文内容。'}
               meta={`${resultArticles.value.length} 个结果`}
+              variant="search"
             >
               <div class="kt-blog__search-filters">
                 <div class="kt-blog__search-filter-group">
-                  {[
-                    { label: '文章', value: 'post' },
-                    { label: '页面', value: 'page' },
-                    { label: '说说', value: 'shuoshuo' },
-                  ].map((item) => (
+                  {searchPostTypeOptions.map((item) => (
                     <BlogCheckbox
+                      id={blogSearchFilterId(item.value)}
                       key={item.value}
-                      checked={filters.value.includes(item.value)}
+                      checked={selectedPostTypes.value.includes(item.value)}
                       onChange={(event: { target: { checked: boolean } }) => {
-                        const nextValues = filters.value.filter((value) => value !== item.value);
-                        if (event.target.checked) {
-                          nextValues.push(item.value);
-                        }
-                        filters.value = nextValues;
+                        updateFilter(item.value, event.target.checked);
                       }}
                     >
                       {item.label}
@@ -68,34 +98,68 @@ export default defineComponent({
                   ))}
                 </div>
               </div>
-              <BlogForm
-                class="kt-blog__page-search-form"
-                onFinish={submitSearch}
-              >
-                <div class="kt-blog__input-group">
-                  <div class="kt-blog__input-addon-wrap">
-                    <span class="kt-blog__input-addon">
-                      <SearchOutlined />
-                    </span>
-                  </div>
-                  <BlogInput
-                    name="s"
-                    class="kt-blog__input"
-                    placeholder="搜索什么..."
-                    autocomplete="off"
-                    v-model:value={keyword.value}
-                  />
-                </div>
-                <BlogButton class="kt-blog__button kt-blog__button--primary" htmlType="submit">
-                  搜索
-                </BlogButton>
-              </BlogForm>
             </PageInfoCard>
           ),
         }}
       >
-        <ArticleList articles={resultArticles.value} />
+        {resultArticles.value.length > 0 ? (
+          <ArticleList articles={resultArticles.value} />
+        ) : (
+          <div class="kt-blog__search-no-results kt-blog__card">
+            <div class="kt-blog__card-body">
+              <h3>没有搜索结果</h3>
+              <p>换个关键词试试 ?</p>
+              <button
+                class="kt-blog__search-no-results-back"
+                type="button"
+                onClick={() => window.history.back()}
+              >
+                返回上一页
+              </button>
+            </div>
+          </div>
+        )}
       </BlogLayout>
     );
   },
 });
+
+/**
+ * @param rawPostType WordPress `post_type` query value from the search route.
+ * @returns Enabled result types; absent query mirrors live Argon's default post+page checkboxes.
+ */
+function normalizeSearchPostTypes(rawPostType: unknown): SearchPostType[] {
+  if (!rawPostType) {
+    return [...defaultSearchPostTypes];
+  }
+
+  const rawValues = Array.isArray(rawPostType) ? rawPostType : `${rawPostType}`.split(',');
+  const normalizedValues = rawValues.filter((value): value is SearchPostType =>
+    searchPostTypeOptions.some((option) => option.value === value),
+  );
+
+  return normalizedValues.length ? normalizedValues : [...defaultSearchPostTypes];
+}
+
+/**
+ * @param postTypes Enabled result types after a checkbox change.
+ * @returns Compact URL query value, or undefined when the selection equals live Argon defaults.
+ */
+function serializeSearchPostTypes(postTypes: SearchPostType[]) {
+  const normalizedTypes = searchPostTypeOptions
+    .map((option) => option.value)
+    .filter((value) => postTypes.includes(value));
+  const isDefault =
+    normalizedTypes.length === defaultSearchPostTypes.length &&
+    defaultSearchPostTypes.every((value) => normalizedTypes.includes(value));
+
+  return isDefault ? undefined : normalizedTypes.join(',');
+}
+
+/**
+ * @param hasResults Whether the current local search route has visible post results.
+ */
+function syncSearchBodyClass(hasResults: boolean) {
+  document.body.classList.toggle('search-results', hasResults);
+  document.body.classList.toggle('search-no-results', !hasResults);
+}

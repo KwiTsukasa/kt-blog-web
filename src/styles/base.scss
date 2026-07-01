@@ -8,17 +8,49 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background: transparent;
+  background: var(--argon-page, rgb(40, 38, 42));
 }
 
 * {
   box-sizing: border-box;
 }
 
+html.darkmode body.wp-theme-argon::before {
+  position: fixed;
+  inset: 0;
+  z-index: 999999999;
+  pointer-events: none;
+  content: '';
+  background: rgba(0, 0, 0, 0.2);
+  transition: var(--kt-blog-motion-background-ease, background 0.3s ease);
+}
+
+html.filter-sunset {
+  filter: sepia(30%);
+}
+
+html.filter-grayscale {
+  filter: grayscale(1);
+}
+
+html.filter-darkness .kt-blog__primary::after {
+  position: fixed;
+  inset: 0;
+  z-index: 999999999;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  content: '';
+  background: rgba(0, 0, 0, 0.4);
+}
+
 @include blog.block {
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  overflow-x: clip;
   color: var(--argon-text);
   background: var(--argon-page);
   font-family: var(--argon-font-family);
@@ -26,60 +58,53 @@ body {
 
   &::before,
   &::after {
+    content: '';
+    display: none;
+  }
+
+  &__content::before,
+  &__content::after {
     position: fixed;
     inset: 0;
-    z-index: 0;
+    z-index: -2;
     pointer-events: none;
     content: '';
+    background-position: center center;
+    background-size: cover;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    transition: var(--kt-blog-motion-background-image-opacity, opacity 0.5s ease);
   }
 
-  &::before {
-    background: var(--argon-background-image, url('/argon/theme/img-2-1200x1000.jpg')) center top / cover fixed no-repeat;
+  &__content::before {
+    background-image: var(--argon-background-light-image, var(--argon-background-image));
     filter: var(--argon-background-filter, none);
+    opacity: 0;
+  }
+
+  &__content::after {
+    background-image: var(--argon-background-dark-image, var(--argon-background-image));
     opacity: var(--argon-background-opacity, 1);
-    transition: opacity 0.5s ease;
   }
 
-  &--no-banner::before {
+  &--light &__content::before {
+    filter: none;
+    opacity: var(--argon-background-light-opacity, 1);
+  }
+
+  &--light &__content::after {
+    opacity: 0;
+  }
+
+  &--no-banner &__content::before,
+  &--no-banner &__content::after {
     background: var(--argon-page);
-  }
-
-  &::after {
-    background: transparent;
-    backdrop-filter: blur(0.4px);
-  }
-
-  &--dark::after {
-    background: rgba(40, 38, 42, 0.34);
-  }
-
-  &--no-banner::after {
-    background: transparent;
   }
 
   &--shadow-big &__card {
     box-shadow:
       0 15px 35px rgba(50, 50, 93, 0.1),
       0 5px 15px rgba(0, 0, 0, 0.07);
-  }
-
-  &--filter-sunset {
-    filter: sepia(30%);
-  }
-
-  &--filter-grayscale {
-    filter: grayscale(1);
-  }
-
-  &--filter-darkness &__primary::after {
-    position: fixed;
-    inset: 0;
-    z-index: 999999999;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    content: '';
-    background: rgba(0, 0, 0, 0.4);
   }
 
   a {
@@ -99,6 +124,7 @@ body {
   }
 
   &__card {
+    position: relative;
     border: 0;
     border-radius: var(--card-radius);
     background: var(--argon-card);
@@ -109,6 +135,10 @@ body {
     .kt-blog__card {
       animation: none;
     }
+  }
+
+  &__card:not(.border-0) {
+    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   &__card-body {
@@ -142,6 +172,18 @@ body {
   &__button--secondary {
     color: #fff;
     background: var(--themecolor);
+  }
+
+  &__button--outline-primary {
+    color: var(--themecolor);
+    border: 1px solid var(--themecolor);
+    background: transparent;
+
+    &:hover,
+    &:focus {
+      color: #fff;
+      background: var(--themecolor);
+    }
   }
 
   &__button--success {
@@ -230,6 +272,45 @@ body {
 
   &__form-group--spaced {
     margin-bottom: 1rem;
+  }
+
+  &__live2d-fallback {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 80;
+    width: 280px;
+    height: 250px;
+    pointer-events: none;
+
+    #live2d {
+      width: 280px;
+      height: 250px;
+    }
+
+    #live2dChatText,
+    #live2dSend,
+    #live2dSendClose {
+      position: absolute;
+      bottom: 0;
+      pointer-events: auto;
+    }
+
+    #live2dChatText {
+      left: 111px;
+      width: 6px;
+      height: 29px;
+    }
+
+    #live2dSend {
+      left: 116px;
+      height: 29px;
+    }
+
+    #live2dSendClose {
+      left: 166px;
+      bottom: 7px;
+    }
   }
 }
 

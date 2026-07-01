@@ -1,11 +1,13 @@
-import {
-  BgColorsOutlined,
-  CommentOutlined,
-  SettingOutlined,
-  VerticalAlignTopOutlined,
-} from '@antdv-next/icons';
+import { SettingOutlined, VerticalAlignTopOutlined } from '@antdv-next/icons';
 import { computed, defineComponent, onBeforeUnmount, onMounted, ref, Transition } from 'vue';
 
+import {
+  BLOG_ANIMATION_TIMING_MS,
+  BLOG_SCROLL_GEOMETRY,
+  clearBlogDelay,
+  runAfterBlogDelay,
+} from '@/factories/blogAnimationFactory';
+import { blogDomId, blogSettingsFilterId } from '@/factories/blogDomFactory';
 import { useBlogDomRefs } from '@/hooks/useBlogDomRefs';
 import { onArgonScroll, smoothScrollTo } from '@/hooks/useArgonEffects';
 import { useBlogTheme } from '@/hooks/useBlogTheme';
@@ -19,7 +21,7 @@ const filterOptions = [
   { label: '灰度', value: 'grayscale' },
 ] as const;
 
-const themeColors = ['#6f5f89', '#5e72e4', '#2dce89', '#fb6340'] as const;
+const themeColors = ['#c3a1ed', '#5e72e4', '#2dce89', '#fb6340'] as const;
 
 export default defineComponent({
   name: 'BlogFloatActions',
@@ -34,14 +36,14 @@ export default defineComponent({
       setShadowMode,
       setThemeMode,
     } = useBlogTheme();
-    const { postArticleRef, postCommentInputRef, postCommentRef } = useBlogDomRefs();
+    const { postArticleRef } = useBlogDomRefs();
     const panelOpen = ref(false);
     const floatLeft = ref(false);
     const floatUnloaded = ref(false);
     const showBackTop = ref(false);
-    const showComment = ref(false);
     const readingProgress = ref(0);
     let cleanupScroll: (() => void) | null = null;
+    let floatSideTimer: number | null = null;
 
     const darkChecked = computed({
       get: () => isDarkTheme.value,
@@ -49,7 +51,9 @@ export default defineComponent({
     });
 
     /**
-     * @param color 取色器或预设色传入的主题色，统一成大写十六进制便于和持久化值比较。
+     * 更新 Argon 主题色，并把取色器或预设按钮传入的颜色规范成大写十六进制。
+     *
+     * @param color 取色器 value、CSS 色值或预设按钮色值；空值来自控件中间态，需要忽略。
      */
     const updatePrimaryColor = (color: string) => {
       if (!color) {
@@ -59,6 +63,10 @@ export default defineComponent({
       const nextColor = color.startsWith('#') ? color : `#${color}`;
       setPrimaryColor(nextColor.toUpperCase());
     };
+    const themeColorValue = computed({
+      get: () => preferences.colorPrimary,
+      set: updatePrimaryColor,
+    });
 
     const rootClass = computed(() => [
       'kt-blog__float-actions',
@@ -68,20 +76,10 @@ export default defineComponent({
     ]);
 
     /**
-     * @param target antdv-next 输入组件实例或原生表单控件。
-     */
-    const focusInput = (target: any) => {
-      target?.focus?.();
-      target?.input?.focus?.();
-      target?.$el?.querySelector?.('textarea,input')?.focus?.();
-    };
-
-    /**
      * 同步阅读进度、评论按钮与回顶按钮显隐，保持 Argon 悬浮按钮滚动逻辑。
      */
     const syncFabStatus = () => {
-      showComment.value = Boolean(postCommentRef.value);
-      showBackTop.value = window.scrollY >= 400;
+      showBackTop.value = window.scrollY >= BLOG_SCROLL_GEOMETRY.backTopVisibleScrollY;
 
       const article = postArticleRef.value;
       if (!article) {
@@ -89,8 +87,11 @@ export default defineComponent({
         return;
       }
 
-      const articleTop = article.getBoundingClientRect().top + window.scrollY - 80;
-      const availableDistance = article.offsetHeight + 50 - window.innerHeight;
+      const articleTop = article.getBoundingClientRect().top + window.scrollY - BLOG_SCROLL_GEOMETRY.readingArticleOffsetPx;
+      const availableDistance = Math.max(
+        article.offsetHeight + BLOG_SCROLL_GEOMETRY.readingExtraHeightPx - window.innerHeight,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
       if (availableDistance <= 0) {
         readingProgress.value = 0;
         return;
@@ -105,24 +106,13 @@ export default defineComponent({
      */
     const toggleFloatSide = () => {
       floatUnloaded.value = true;
-      window.setTimeout(() => {
+      clearBlogDelay(floatSideTimer);
+      floatSideTimer = runAfterBlogDelay(() => {
         floatLeft.value = !floatLeft.value;
         window.localStorage.setItem('Argon_fabs_Floating_Status', floatLeft.value ? 'left' : 'right');
         floatUnloaded.value = false;
-      }, 300);
-    };
-
-    /**
-     * 滚动到评论区并聚焦评论框。
-     */
-    const goToComment = () => {
-      const commentTarget = postCommentRef.value;
-      if (!commentTarget) {
-        return;
-      }
-
-      smoothScrollTo(commentTarget.getBoundingClientRect().top + window.scrollY - 90, 600);
-      window.setTimeout(() => focusInput(postCommentInputRef.value), 620);
+        floatSideTimer = null;
+      }, BLOG_ANIMATION_TIMING_MS.floatSideUnload);
     };
 
     onMounted(() => {
@@ -131,12 +121,14 @@ export default defineComponent({
     });
 
     onBeforeUnmount(() => {
+      clearBlogDelay(floatSideTimer);
       cleanupScroll?.();
     });
 
     return () => (
       <div class={rootClass.value}>
         <BlogButton
+          id={blogDomId('floatToggleSides')}
           aria-hidden="true"
           class="kt-blog__float-action kt-blog__float-action--toggle-side kt-blog__button kt-blog__button--icon kt-blog__button--neutral"
           tooltip-move-to-left="移至左侧"
@@ -147,6 +139,7 @@ export default defineComponent({
         </BlogButton>
 
         <BlogButton
+          id={blogDomId('floatBackToTop')}
           aria-label="Back To Top"
           class={['kt-blog__float-action kt-blog__float-action--back-top kt-blog__button kt-blog__button--icon kt-blog__button--neutral', !showBackTop.value && 'kt-blog__float-action--hidden']}
           tooltip="回到顶部"
@@ -156,26 +149,7 @@ export default defineComponent({
         </BlogButton>
 
         <BlogButton
-          aria-label="Comment"
-          class={['kt-blog__float-action kt-blog__float-action--comment kt-blog__button kt-blog__button--icon kt-blog__button--neutral', !showComment.value && 'kt-blog__hidden']}
-          tooltip="评论"
-          onClick={goToComment}
-        >
-          <CommentOutlined />
-        </BlogButton>
-
-        <BlogButton
-          aria-label="Toggle Darkmode"
-          class="kt-blog__float-action kt-blog__float-action--theme kt-blog__button kt-blog__button--icon kt-blog__button--neutral"
-          tooltip-blackmode="暗黑模式"
-          tooltip-darkmode="夜间模式"
-          tooltip-lightmode="日间模式"
-          onClick={() => setThemeMode(isDarkTheme.value ? 'light' : 'dark')}
-        >
-          <BgColorsOutlined />
-        </BlogButton>
-
-        <BlogButton
+          id={blogDomId('floatSettingsToggle')}
           aria-label="Open Blog Settings Menu"
           class="kt-blog__float-action kt-blog__float-action--settings kt-blog__button kt-blog__button--icon kt-blog__button--neutral"
           tooltip="设置"
@@ -188,7 +162,7 @@ export default defineComponent({
 
         <Transition name="kt-blog__popover" appear>
           {panelOpen.value ? (
-            <div class="kt-blog__settings-panel kt-blog__card" aria-hidden={!panelOpen.value}>
+            <div id={blogDomId('blogSettingsPopup')} class="kt-blog__settings-panel kt-blog__card" aria-hidden={!panelOpen.value}>
               <div class="kt-blog__settings-close" onClick={() => {
                 panelOpen.value = false;
               }}>
@@ -208,12 +182,14 @@ export default defineComponent({
               <div class="kt-blog__settings-item">
                 <span>字体</span>
                 <BlogButton
+                  id={blogDomId('settingsFontSansSerif')}
                   class={['kt-blog__settings-button kt-blog__settings-button--font kt-blog__settings-button--left', preferences.font === 'sans' && 'kt-blog__settings-button--active']}
                   onClick={() => setFontMode('sans')}
                 >
                   Sans Serif
                 </BlogButton>
                 <BlogButton
+                  id={blogDomId('settingsFontSerif')}
                   class={['kt-blog__settings-button kt-blog__settings-button--font kt-blog__settings-button--right', preferences.font === 'serif' && 'kt-blog__settings-button--active']}
                   onClick={() => setFontMode('serif')}
                 >
@@ -224,12 +200,14 @@ export default defineComponent({
               <div class="kt-blog__settings-item">
                 <span>阴影</span>
                 <BlogButton
+                  id={blogDomId('settingsShadowSmall')}
                   class={['kt-blog__settings-button kt-blog__settings-button--shadow kt-blog__settings-button--left', preferences.shadow === 'small' && 'kt-blog__settings-button--active']}
                   onClick={() => setShadowMode('small')}
                 >
                   浅阴影
                 </BlogButton>
                 <BlogButton
+                  id={blogDomId('settingsShadowBig')}
                   class={['kt-blog__settings-button kt-blog__settings-button--shadow kt-blog__settings-button--right', preferences.shadow === 'big' && 'kt-blog__settings-button--active']}
                   onClick={() => setShadowMode('big')}
                 >
@@ -241,6 +219,7 @@ export default defineComponent({
                 <span>滤镜</span>
                 {filterOptions.map((item) => (
                   <BlogButton
+                    id={blogSettingsFilterId(item.value)}
                     key={item.value}
                     class={[
                       'kt-blog__settings-filter-button',
@@ -267,7 +246,7 @@ export default defineComponent({
                 <span>主题色</span>
                 <BlogColorPicker
                   class="kt-blog__settings-color-picker"
-                  value={preferences.colorPrimary}
+                  v-model:value={themeColorValue.value}
                   valueFormat="hex"
                   showText
                   presets={[
@@ -277,7 +256,6 @@ export default defineComponent({
                     },
                   ]}
                   onChange={(_value: unknown, cssColor: string) => updatePrimaryColor(cssColor)}
-                  onUpdate:value={(color: string) => updatePrimaryColor(color)}
                 />
                 <div class="kt-blog__settings-color-presets">
                   {themeColors.map((color) => (
@@ -296,6 +274,7 @@ export default defineComponent({
         </Transition>
 
         <BlogButton
+          id={blogDomId('floatReadingProgress')}
           aria-hidden="true"
           class={['kt-blog__float-action kt-blog__float-action--progress kt-blog__button kt-blog__button--icon kt-blog__button--neutral', !readingProgress.value && 'kt-blog__float-action--hidden']}
           tooltip="阅读进度"

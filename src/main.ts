@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 
 import 'antdv-next/dist/reset.css';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 import App from './App';
 import router from './router';

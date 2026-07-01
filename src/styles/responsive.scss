@@ -54,13 +54,13 @@
     }
 
     &__banner {
-      min-height: 300px;
+      min-height: 636px;
     }
 
     &__content {
       display: block;
-      margin-top: -180px;
-      padding: 0 12px;
+      margin-top: -253px;
+      padding: 0 10px;
     }
 
     &--no-banner &__content {
@@ -68,9 +68,30 @@
     }
 
     &__sidebar {
-      width: 100%;
-      padding: 0;
-      margin-bottom: 16px;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: -300px;
+      z-index: 1001;
+      width: 280px;
+      padding: 72px 0 24px;
+      margin: 0;
+      overflow-y: auto;
+      background: rgb(47, 43, 51);
+      transition: left 0.28s cubic-bezier(0.4, 0, 0, 1);
+    }
+
+    &__sidebar-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: block;
+      min-width: 100vw;
+      min-height: 100vh;
+      opacity: 0;
+      pointer-events: none;
+      background: rgba(12, 10, 16, 0.55);
+      transition: opacity 0.24s ease;
     }
 
     &__sidebar-panel,
@@ -86,11 +107,23 @@
     &__comments,
     &__comment-form,
     &__footer {
+      margin-bottom: 25px;
       padding: 24px 20px;
     }
 
     &__form-grid {
       grid-template-columns: 1fr;
+    }
+  }
+
+  html.leftbar-opened {
+    .kt-blog__sidebar {
+      left: 0;
+    }
+
+    .kt-blog__sidebar-mask {
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 }

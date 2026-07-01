@@ -8,6 +8,9 @@ import {
 import {
   articles as fallbackArticles,
   categories as fallbackCategories,
+  getArticleCategories,
+  hasSharedCategory,
+  isArticleInCategory,
   tags as fallbackTags,
   type BlogArticle,
   type BlogCategory,
@@ -55,10 +58,14 @@ export function useBlogArticles() {
   };
   const getTagSlugByLabel = (label: string) =>
     tags.value.find((tag) => tag.label === label)?.slug || toSlug(label);
+  /**
+   * @param slug Category slug from a local WordPress-equivalent term route.
+   * @returns Articles that belong to the category, including secondary WordPress categories.
+   */
   const getArticlesByCategory = (slug: string) => {
     const normalizedSlug = decodeSlug(slug);
 
-    return blogArticles.value.filter((article) => article.categorySlug === normalizedSlug);
+    return blogArticles.value.filter((article) => isArticleInCategory(article, normalizedSlug));
   };
   const getArticlesByTag = (slug: string) => {
     const tag = getTagBySlug(slug);
@@ -75,6 +82,7 @@ export function useBlogArticles() {
         article.title,
         article.excerpt,
         article.category,
+        ...getArticleCategories(article).map((category) => category.label),
         ...article.tags,
         ...article.content,
         stripHtml(article.contentHtml),
@@ -90,8 +98,7 @@ export function useBlogArticles() {
       .filter(
         (article) =>
           article.id !== source.id &&
-          (article.categorySlug === source.categorySlug ||
-            article.tags.some((tag) => source.tags.includes(tag))),
+          (hasSharedCategory(article, source) || article.tags.some((tag) => source.tags.includes(tag))),
       )
       .slice(0, 3);
 
@@ -168,8 +175,13 @@ async function loadArticle(slug: string) {
   }
 }
 
+/**
+ * @param article Public WordPress article DTO from KT API, including resolved terms when available.
+ * @returns Local Blog article model with a primary category plus full WordPress category membership.
+ */
 function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle {
-  const category = article.categoriesResolved?.[0] || {
+  const categories = normalizeArticleCategories(article.categoriesResolved);
+  const category = categories[0] || {
     name: '未分类',
     slug: 'uncategorized',
   };
@@ -189,6 +201,10 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
 
   return {
     author: article.authorName || 'KwiTsukasa',
+    categories: categories.map((item) => ({
+      label: decodeHtml(item.name || '未分类'),
+      slug: decodeSlug(item.slug || 'uncategorized'),
+    })),
     category: decodeHtml(category.name || '未分类'),
     categorySlug: decodeSlug(category.slug || 'uncategorized'),
     comments: 0,
@@ -207,24 +223,43 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
   };
 }
 
+/**
+ * @param articles Local article list whose WordPress category memberships should be counted.
+ * @returns Category list with counts based on all article category terms, not only the primary term.
+ */
 function buildCategories(articles: BlogArticle[]): BlogCategory[] {
   const fallbackMap = new Map(fallbackCategories.map((category) => [category.slug, category]));
   const groups = new Map<string, BlogCategory>();
 
   articles.forEach((article) => {
-    const existing = groups.get(article.categorySlug);
-    const fallback = fallbackMap.get(article.categorySlug);
+    getArticleCategories(article).forEach((articleCategory) => {
+      const existing = groups.get(articleCategory.slug);
+      const fallback = fallbackMap.get(articleCategory.slug);
 
-    groups.set(article.categorySlug, {
-      slug: article.categorySlug,
-      label: article.category,
-      description: fallback?.description || `${article.category} 分类下的文章。`,
-      color: fallback?.color || colorPool[groups.size % colorPool.length] || 'blue',
-      count: (existing?.count || 0) + 1,
+      groups.set(articleCategory.slug, {
+        slug: articleCategory.slug,
+        label: articleCategory.label,
+        description: fallback?.description || `${articleCategory.label} 分类下的文章。`,
+        color: fallback?.color || colorPool[groups.size % colorPool.length] || 'blue',
+        count: (existing?.count || 0) + 1,
+      });
     });
   });
 
   return Array.from(groups.values());
+}
+
+/**
+ * @param categoriesResolved WordPress category terms from the public article API.
+ * @returns Non-empty decoded category candidates in the same order WordPress returned them.
+ */
+function normalizeArticleCategories(categoriesResolved: WordpressPublicArticle['categoriesResolved']) {
+  return (categoriesResolved || [])
+    .map((category) => ({
+      name: decodeHtml(category.name || ''),
+      slug: decodeSlug(category.slug || ''),
+    }))
+    .filter((category) => category.name && category.slug);
 }
 
 function buildTags(articles: BlogArticle[]): BlogTag[] {

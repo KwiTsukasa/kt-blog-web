@@ -1,54 +1,73 @@
-import { CalendarOutlined } from '@antdv-next/icons';
 import { computed, defineComponent } from 'vue';
-import { RouterLink } from 'vue-router';
+import { useRoute } from 'vue-router';
 
+import ArticleList from '@/components/blog/ArticleList';
 import BlogLayout from '@/components/blog/BlogLayout';
 import { useBlogArticles } from '@/hooks/useBlogArticles';
 
 export default defineComponent({
   name: 'BlogArchivePage',
   setup() {
+    const route = useRoute();
     const { articles } = useBlogArticles();
-    const groupedArticles = computed(() => {
-      const groups = new Map<string, typeof articles.value>();
-      articles.value.forEach((article) => {
-        const key = article.date.slice(0, 7);
-        groups.set(key, [...(groups.get(key) ?? []), article]);
-      });
+    const monthQuery = computed(() => String(route.query.month ?? ''));
+    const archiveMonth = computed(() => normalizeArchiveMonth(monthQuery.value));
+    const visibleArticles = computed(() => {
+      if (!archiveMonth.value) {
+        return articles.value;
+      }
 
-      return Array.from(groups.entries());
+      return articles.value.filter((article) => getArticleArchiveMonth(article.date) === archiveMonth.value);
     });
+    const archiveTitle = computed(() =>
+      archiveMonth.value ? `月度归档： ${formatArchiveMonthTitle(archiveMonth.value)}` : '归档时间轴',
+    );
 
     return () => (
       <BlogLayout
         mainClass="kt-blog__main--archive"
-        pageTitle="归档时间轴"
-        pageDescription="按月份回顾 KT 项目沉淀的文章记录。"
-        pageMeta={`${articles.value.length} 篇文章`}
+        pageTitle={archiveTitle.value}
+        pageDescription=""
+        pageMeta={`${visibleArticles.value.length} 篇文章`}
       >
-        <article class="kt-blog__post kt-blog__post--full kt-blog__card">
-          <div class="kt-blog__post-content kt-blog__post-content--full">
-            <div class="kt-blog__timeline kt-blog__timeline--archive">
-            {groupedArticles.value.map(([month, monthArticles]) => (
-              <section key={month} class="kt-blog__timeline-group">
-                <h3 class="kt-blog__timeline-month">
-                  <CalendarOutlined />
-                  <span>{month}</span>
-                </h3>
-                {monthArticles.map((article) => (
-                  <div key={article.id} class="kt-blog__timeline-node">
-                    <div class="kt-blog__timeline-time">{article.date.slice(5)}</div>
-                    <div class="kt-blog__timeline-card kt-blog__card kt-blog__card--gradient-secondary">
-                      <RouterLink to={`/post/${article.slug}`}>{article.title}</RouterLink>
-                    </div>
-                  </div>
-                ))}
-              </section>
-            ))}
-            </div>
-          </div>
-        </article>
+        <ArticleList articles={visibleArticles.value} />
       </BlogLayout>
     );
   },
 });
+
+/**
+ * @param rawMonth WordPress `m=YYYYMM` 等价参数，来自本地 `/archives?month=...`。
+ * @returns 用于和文章 `YYYY-MM-DD` 字符串比较的 `YYYY-MM` 月份。
+ */
+function normalizeArchiveMonth(rawMonth: string) {
+  const compactMonth = rawMonth.trim();
+  if (!/^\d{6}$/.test(compactMonth)) {
+    return '';
+  }
+
+  return `${compactMonth.slice(0, 4)}-${compactMonth.slice(4, 6)}`;
+}
+
+/**
+ * @param articleDate Local article datetime whose leading year/month may be zero-padded or not.
+ * @returns Normalized `YYYY-MM` key used by WordPress-style month archives.
+ */
+function getArticleArchiveMonth(articleDate: string) {
+  const matched = /^(\d{4})-(\d{1,2})/.exec(articleDate);
+  if (!matched) return '';
+
+  const [, year, month] = matched;
+
+  return `${year}-${month?.padStart(2, '0')}`;
+}
+
+/**
+ * @param normalizedMonth 已归一化的 `YYYY-MM` 月份字符串。
+ * @returns 对齐 WordPress Argon 月份归档标题的中文展示文本。
+ */
+function formatArchiveMonthTitle(normalizedMonth: string) {
+  const [year, month] = normalizedMonth.split('-');
+
+  return `${year} 年 ${Number(month)} 月`;
+}

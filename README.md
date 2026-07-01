@@ -23,7 +23,25 @@ pnpm dev
 pnpm run type-check
 pnpm run build
 pnpm test:unit
+pnpm exec playwright test e2e/argon-parity/pages.spec.ts --project=chromium
+pnpm exec playwright test e2e/argon-parity/interactions.spec.ts --project=chromium
+pnpm exec playwright test e2e/argon-parity/baseline.spec.ts --project=chromium
 ```
+
+`baseline.spec.ts` 只在需要重新抓线上 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。线上 `https://blog.kwitsukasa.top/` 是只读视觉/交互基准，不是 Admin iframe 预览目标。
+
+## Argon 还原范围
+
+- `e2e/argon-parity` 保存与线上 `https://blog.kwitsukasa.top/` 对齐的页面、视口和交互矩阵。
+- 本地 hash 路由按语义映射 WordPress query 路由：文章、分类、标签、搜索和月份归档都用同一套矩阵验证。
+- 页面根节点通过 `kt-blog--home/search/category/tag/archive/post` 暴露 Argon 页面语义，方便样式、测试和 Admin iframe 预览复用。
+- 文章正文以线上 WordPress `#post_content` 渲染结果和 Argon `style.css` / `argontheme.js` 为准；代码块控制条、复制 toast、Fancybox 图片预览、正文链接 hover、分隔线和图片 lazyload 都必须有 Playwright 断言。
+- `hljs-codeblock` 静态快照需要恢复 Argon `highlightjs-line-numbers` 运行时生成的 `data-line-number` 与 `.hljs-ln-n::before`，否则行号列会坍塌成 0px。
+- 左栏 overview sticky/relative 切换用 no-headroom 回归用例固定，解除 fixed 后不得重放卡片入场动画或产生缩放闪烁。
+- 左栏文章目录/站点概览切换必须保留 Bootstrap tab fade 节奏，采用 active/show 分帧保持 Argon 手感；回归用例需要断言切换中 opacity 处于 0 到 1 之间，而不是只检查最终显隐。
+- Argon motion、滚动几何、延迟、RAF 调度、DOM id/selector、hash anchor 和跨组件 ref 必须从 `src/factories/blogAnimationFactory.ts` 与 `src/factories/blogDomFactory.ts` 取值；组件和 Hook 不再散写行为层 id、裸 `requestAnimationFrame`、裸 `setTimeout` 或重复 timing。
+- Modal 不强求一比一复刻线上 Argon 动画，打开/关闭 motion 与 `centered` 居中定位交给 antdv-next；外层按 `packages/@core/ui-kit/popup-ui/src/modal/modal.vue` 保留 Header/Content/Footer 三段能力、`p-0`、`max-height`、纵向 flex、Content `min-h-40` 滚动和 `px-5 py-4`/`p-3`/`p-2` 间距，但无 footer slot 时不渲染 footer，不搬 draggable/fullscreen/loading/footer 按钮等复杂能力，自有颜色只守 Blog 主题色和暗色可读性。
+- Admin 文章预览通过 `VITE_KT_BLOG_WEB_BASE_URL` 打开公开 Blog Web 路由，本地默认 `http://127.0.0.1:5173/#/post/<slug>?adminPreview=1&articleId=<id>`。
 
 ## 来源与许可证
 

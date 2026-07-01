@@ -1,5 +1,6 @@
-import { FileTextOutlined } from '@antdv-next/icons';
-import { defineComponent } from 'vue';
+import { defineComponent, type PropType } from 'vue';
+
+type PageInfoVariant = 'archive' | 'search';
 
 export default defineComponent({
   name: 'PageInfoCard',
@@ -16,24 +17,46 @@ export default defineComponent({
       type: String,
       default: '',
     },
+    variant: {
+      type: String as PropType<PageInfoVariant>,
+      default: 'archive',
+    },
   },
+  /**
+   * @param props Argon page-information copy and variant used to mirror archive/search geometry.
+   * @param slots Optional slot content such as the live search filter row that sits before result metadata.
+   * @returns Render function for the WordPress Argon page-information card surface.
+   */
   setup(props, { slots }) {
-    return () => (
+    return () => {
+      const isSearch = props.variant === 'search';
+
+      return (
       <div class="kt-blog__page-info-wrap">
-        <div class="kt-blog__page-info kt-blog__card kt-blog__card--gradient-secondary kt-blog__card--large-shadow">
+        <div
+          class={[
+            'kt-blog__page-info',
+            `kt-blog__page-info--${props.variant}`,
+            'kt-blog__card',
+            'kt-blog__card--gradient-secondary',
+            'kt-blog__card--large-shadow',
+          ]}
+        >
           <div class="kt-blog__page-info-body kt-blog__card-body">
             <h3 class="kt-blog__page-info-title">{props.title}</h3>
-            {props.description ? <p class="kt-blog__page-info-description">{props.description}</p> : null}
-            {props.meta ? (
-              <p class="kt-blog__page-info-meta">
-                <FileTextOutlined />
-                <span>{props.meta}</span>
-              </p>
+            {props.description ? (
+              isSearch ? (
+                <p class="kt-blog__page-info-lead">{props.description}</p>
+              ) : (
+                <p class="kt-blog__page-info-description">{props.description}</p>
+              )
             ) : null}
             {slots.default?.()}
+            {props.meta ? <p class="kt-blog__page-info-meta">{props.meta}</p> : null}
           </div>
         </div>
       </div>
-    );
+      );
+    };
   },
 });

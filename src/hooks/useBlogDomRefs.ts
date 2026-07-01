@@ -1,16 +1,26 @@
-import { shallowRef, type ComponentPublicInstance } from 'vue';
+import { type ComponentPublicInstance } from 'vue';
+
+import { createBlogElementRef, createBlogFocusableRef } from '@/factories/blogDomFactory';
 
 type FocusableTarget = HTMLElement | ComponentPublicInstance | null;
 
-const postArticleRef = shallowRef<HTMLElement | null>(null);
-const postCommentRef = shallowRef<HTMLElement | null>(null);
-const postCommentInputRef = shallowRef<FocusableTarget>(null);
+const postArticleRef = createBlogElementRef<HTMLElement>();
+const postCommentRef = createBlogElementRef<HTMLElement>();
+const postCommentInputRef = createBlogFocusableRef<FocusableTarget>();
+const postContentRef = createBlogElementRef<HTMLElement>();
 
 /**
  * @param target 文章正文容器 DOM，供阅读进度计算使用。
  */
 export function setBlogPostArticleRef(target: HTMLElement | null) {
   postArticleRef.value = target;
+}
+
+/**
+ * @param target 文章正文内容 DOM，供文章目录库从真实 heading 节点生成目录。
+ */
+export function setBlogPostContentRef(target: HTMLElement | null) {
+  postContentRef.value = target;
 }
 
 /**
@@ -35,6 +45,7 @@ export function useBlogDomRefs() {
     postArticleRef,
     postCommentInputRef,
     postCommentRef,
+    postContentRef,
   };
 }
 
@@ -45,4 +56,5 @@ export function clearBlogPostRefs() {
   postArticleRef.value = null;
   postCommentRef.value = null;
   postCommentInputRef.value = null;
+  postContentRef.value = null;
 }

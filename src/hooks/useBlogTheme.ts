@@ -1,6 +1,9 @@
 import { theme } from 'antdv-next';
 import { computed, reactive, watch } from 'vue';
 
+import { createBlogMotionCssVariables } from '@/factories/blogAnimationFactory';
+import { BLOG_META_NAMES, blogDomId, blogDomSelector, blogMetaSelector } from '@/factories/blogDomFactory';
+
 export type BlogThemeMode = 'dark' | 'light';
 export type BlogFontMode = 'sans' | 'serif';
 export type BlogShadowMode = 'small' | 'big';
@@ -97,26 +100,19 @@ interface BlogRuntimeThemeConfig {
 }
 
 const STORAGE_KEY = 'KT_BLOG_THEME_PREFERENCES';
-const THEME_STYLE_ID = 'kt-blog-theme-style';
 const BLOG_THEME_BLOCK_CLASS = 'kt-blog';
 const ARGON_SANS_FONT_FAMILY =
   'Comfortaa, "Open Sans", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimSun, sans-serif';
 const ARGON_SERIF_FONT_FAMILY = 'Georgia, "Times New Roman", "Noto Serif SC", serif';
-const ARGON_DEFAULT_COLOR_PRIMARY = '#6f5f89';
+const ARGON_DEFAULT_COLOR_PRIMARY = '#c3a1ed';
 const ARGON_PRIMARY_SOFT = '#4a4058';
 const ARGON_CARD_SHADOW = '0 2px 4px rgba(0, 0, 0, 0.075)';
-const ARGON_DEFAULT_BACKGROUND = '/argon/theme/img-2-1200x1000.jpg';
-const ARGON_DEFAULT_AUTHOR_AVATAR = '/argon/theme/profile.jpg';
-const defaultHeaderMenu: BlogThemeMenuItem[] = [
-  { href: '/', label: '首页' },
-  { href: '/archives', label: '归档' },
-  { href: '/category/nas', label: 'NAS' },
-  { href: '/category/vue', label: 'Vue' },
-  { href: '/category/node', label: 'Node' },
-];
+const ARGON_DEFAULT_BACKGROUND = 'https://s3.kwitsukasa.top/images/bg-冬滚滚.png';
+const ARGON_DEFAULT_AUTHOR_AVATAR = 'https://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg';
+const defaultHeaderMenu: BlogThemeMenuItem[] = [];
 const defaultSidebarMenu: BlogThemeMenuItem[] = [
   { href: '/', icon: 'fa-home', label: '首页' },
-  { href: '/category/node', icon: 'fa-user', label: '管理' },
+  { external: true, href: 'http://blog.kwitsukasa.top/wp-admin/', icon: 'fa-user', label: '管理' },
 ];
 
 const defaultPreferences: BlogThemePreferences = {
@@ -188,7 +184,6 @@ const themeRootClass = computed(() => [
   `${BLOG_THEME_BLOCK_CLASS}--${preferences.mode}`,
   preferences.font === 'serif' && `${BLOG_THEME_BLOCK_CLASS}--font-serif`,
   preferences.shadow === 'big' && `${BLOG_THEME_BLOCK_CLASS}--shadow-big`,
-  preferences.filter !== 'off' && `${BLOG_THEME_BLOCK_CLASS}--filter-${preferences.filter}`,
   isThemeColorTooDark(preferences.colorPrimary) && `${BLOG_THEME_BLOCK_CLASS}--theme-too-dark`,
 ].filter(Boolean).join(' '));
 
@@ -435,9 +430,8 @@ function ensureThemeWatcher() {
 function applyCssVariables(currentPreferences: BlogThemePreferences) {
   const primaryRgb = hexToRgb(currentPreferences.colorPrimary);
   const palette = createThemePalette(currentPreferences.colorPrimary, currentPreferences.mode);
-  const primaryDark = shadeHexColor(currentPreferences.colorPrimary, -18);
-  const primaryDark2 = shadeHexColor(currentPreferences.colorPrimary, -30);
   const fontFamily = getThemeFontFamily(currentPreferences.font);
+  const argonColorVariables = createArgonColorVariables(primaryRgb, currentPreferences.mode);
   const backgroundImage =
     normalizeCssImage(
       currentPreferences.mode === 'dark'
@@ -450,10 +444,48 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
       : runtimeConfig.backgroundOpacity;
 
   const primaryHsl = rgbToHsl(primaryRgb.r, primaryRgb.g, primaryRgb.b);
-  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', currentPreferences.colorPrimary);
-  document
-    .querySelector<HTMLMetaElement>('meta[name="theme-color-rgb"]')
-    ?.setAttribute('content', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
+  const rootThemeVariables = `
+  --themecolor: ${currentPreferences.colorPrimary};
+  --themecolor-R: ${primaryRgb.r};
+  --themecolor-G: ${primaryRgb.g};
+  --themecolor-B: ${primaryRgb.b};
+  --themecolor-H: ${primaryHsl.h};
+  --themecolor-S: ${primaryHsl.s};
+  --themecolor-L: ${primaryHsl.l};
+  --themecolor-dark0: ${formatArgonThemeHsl(primaryHsl, -2.5)};
+  --themecolor-dark: ${formatArgonThemeHsl(primaryHsl, -5)};
+  --themecolor-dark2: ${formatArgonThemeHsl(primaryHsl, -10)};
+  --themecolor-dark3: ${formatArgonThemeHsl(primaryHsl, -15)};
+  --themecolor-light: ${formatArgonThemeHsl(primaryHsl, 10)};
+  --themecolor-gradient: linear-gradient(150deg, var(--themecolor-light) 15%, var(--themecolor) 70%, var(--themecolor-dark0) 94%);
+  --themecolor-rgbstr: ${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b};
+  --argon-page: var(--color-background);
+  --argon-card: var(--color-foreground);
+  --argon-card-deep: var(--color-foreground);
+  --argon-card-soft: var(--color-widgets);
+  --argon-card-overlay-weak: ${palette.cardOverlayWeak};
+  --argon-card-overlay-strong: ${palette.cardOverlayStrong};
+  --argon-control: var(--color-border-on-foreground-deeper);
+  --argon-control-soft: var(--color-widgets);
+  --argon-pill: var(--color-widgets-disabled);
+  --argon-text: ${palette.text};
+  --argon-muted: ${palette.muted};
+  --argon-title: ${palette.title};
+  --argon-border: var(--color-border);
+  --argon-meta: ${palette.meta};
+  --argon-widget-text: ${palette.widgetText};
+  --argon-subtle: ${palette.subtle};
+  --argon-faint: ${palette.faint};
+  --argon-placeholder: ${palette.placeholder};
+  --argon-scrollbar-track: var(--kt-blog-scrollbar-track);
+  --argon-scrollbar-thumb: var(--kt-blog-scrollbar-thumb);
+  --argon-scrollbar-thumb-hover: var(--kt-blog-scrollbar-thumb-hover);
+  --argon-scrollbar-thin-thumb: ${palette.scrollbarThinThumb};
+  --argon-scrollbar-size: var(--kt-blog-scrollbar-size);
+`;
+
+  ensureThemeMetaElement(BLOG_META_NAMES.themeColor).setAttribute('content', currentPreferences.colorPrimary);
+  ensureThemeMetaElement(BLOG_META_NAMES.themeColorRgb).setAttribute('content', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
 
   updateThemeStyle(`
 :root {
@@ -461,6 +493,12 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
   --kt-blog-scrollbar-thumb: ${palette.scrollbarThumb};
   --kt-blog-scrollbar-thumb-hover: ${palette.scrollbarThumbHover};
   --kt-blog-scrollbar-size: 10px;
+${rootThemeVariables}
+${serializeCssVariables(argonColorVariables.root)}
+}
+
+body.wp-theme-argon {
+${serializeCssVariables(argonColorVariables.current)}
 }
 
 .${BLOG_THEME_BLOCK_CLASS} {
@@ -477,44 +515,8 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
   --argon-font-family: ${fontFamily};
   --argon-shadow: ${ARGON_CARD_SHADOW};
   --argon-primary-soft: ${ARGON_PRIMARY_SOFT};
-  --themecolor: ${currentPreferences.colorPrimary};
-  --themecolor-R: ${primaryRgb.r};
-  --themecolor-G: ${primaryRgb.g};
-  --themecolor-B: ${primaryRgb.b};
-  --themecolor-H: ${primaryHsl.h};
-  --themecolor-S: ${primaryHsl.s};
-  --themecolor-L: ${primaryHsl.l};
-  --themecolor-dark0: hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(primaryHsl.l - 2.5, 0)}%);
-  --themecolor-dark: ${primaryDark};
-  --themecolor-dark2: ${primaryDark2};
-  --themecolor-dark3: hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.max(primaryHsl.l - 15, 0)}%);
-  --themecolor-light: hsl(${primaryHsl.h}, ${primaryHsl.s}%, ${Math.min(primaryHsl.l + 10, 100)}%);
-  --themecolor-gradient: linear-gradient(150deg, var(--themecolor-light) 15%, var(--themecolor) 70%, var(--themecolor-dark0) 94%);
-  --themecolor-rgbstr: ${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b};
-  --color-darkmode-toolbar: ${palette.toolbarRgb};
-  --argon-page: ${palette.page};
-  --argon-card: ${palette.card};
-  --argon-card-deep: ${palette.cardDeep};
-  --argon-card-soft: ${palette.cardSoft};
-  --argon-card-overlay-weak: ${palette.cardOverlayWeak};
-  --argon-card-overlay-strong: ${palette.cardOverlayStrong};
-  --argon-control: ${palette.control};
-  --argon-control-soft: ${palette.controlSoft};
-  --argon-pill: ${palette.pill};
-  --argon-text: ${palette.text};
-  --argon-muted: ${palette.muted};
-  --argon-title: ${palette.title};
-  --argon-border: ${palette.border};
-  --argon-meta: ${palette.meta};
-  --argon-widget-text: ${palette.widgetText};
-  --argon-subtle: ${palette.subtle};
-  --argon-faint: ${palette.faint};
-  --argon-placeholder: ${palette.placeholder};
-  --argon-scrollbar-track: var(--kt-blog-scrollbar-track);
-  --argon-scrollbar-thumb: var(--kt-blog-scrollbar-thumb);
-  --argon-scrollbar-thumb-hover: var(--kt-blog-scrollbar-thumb-hover);
-  --argon-scrollbar-thin-thumb: ${palette.scrollbarThinThumb};
-  --argon-scrollbar-size: var(--kt-blog-scrollbar-size);
+${createBlogMotionCssVariables()}
+${rootThemeVariables}
 }
 `);
 }
@@ -531,10 +533,10 @@ function getThemeFontFamily(font: BlogFontMode) {
  * @param cssText 主题动态变量，文档滚动条使用 :root 变量，业务样式仍收敛在 .kt-blog。
  */
 function updateThemeStyle(cssText: string) {
-  let styleElement = document.querySelector<HTMLStyleElement>(`#${THEME_STYLE_ID}`);
+  let styleElement = document.querySelector<HTMLStyleElement>(blogDomSelector('themeStyle'));
   if (!styleElement) {
     styleElement = document.createElement('style');
-    styleElement.id = THEME_STYLE_ID;
+    styleElement.id = blogDomId('themeStyle');
     document.head.appendChild(styleElement);
   }
 
@@ -586,15 +588,15 @@ function createThemePalette(colorPrimary: string, mode: BlogThemeMode) {
 
   return {
     border: 'rgba(255, 255, 255, 0.06)',
-    card: `hsl(${h}, ${baseSaturation + 2}%, 18%)`,
-    cardDeep: `hsl(${h}, ${baseSaturation + 2}%, 18%)`,
+    card: '#2f2b33',
+    cardDeep: '#2f2b33',
     cardOverlayStrong: `hsla(${h}, ${baseSaturation + 6}%, 16%, 0.72)`,
     cardOverlayWeak: `rgba(${r}, ${g}, ${b}, 0.1)`,
-    cardSoft: `hsl(${h}, ${baseSaturation + 2}%, 20%)`,
+    cardSoft: '#2f2b33',
     control: `hsl(${h}, ${baseSaturation + 12}%, 28%)`,
     controlSoft: `hsl(${h}, ${baseSaturation + 10}%, 24%)`,
     faint: 'rgba(238, 238, 238, 0.34)',
-    meta: 'rgba(238, 238, 238, 0.68)',
+    meta: '#eeeeee',
     muted: `hsl(${h}, ${mutedSaturation}%, 72%)`,
     page: `hsl(${h}, ${baseSaturation}%, 14%)`,
     pill: `hsl(${h}, ${baseSaturation + 12}%, 26%)`,
@@ -605,7 +607,7 @@ function createThemePalette(colorPrimary: string, mode: BlogThemeMode) {
     scrollbarTrack: 'transparent',
     subtle: 'rgba(238, 238, 238, 0.6)',
     text: '#eeeeee',
-    title: `hsl(${h}, ${textSaturation}%, 86%)`,
+    title: '#deccf5',
     toolbarRgb: `${r}, ${g}, ${b}`,
     widgetText: 'rgba(238, 238, 238, 0.66)',
   };
@@ -633,18 +635,18 @@ function hexToRgb(hexColor: string) {
 }
 
 /**
- * @param hexColor 目标颜色十六进制字符串。
- * @param percent 明暗调整百分比，负数变暗，正数变亮。
- * @returns 调整后的十六进制颜色。
+ * @param name Meta 标签名称，Argon 用它同步浏览器主题色。
+ * @returns 现有或新建的 meta 元素，保证后续主题应用不会因为缺标签而静默失效。
  */
-function shadeHexColor(hexColor: string, percent: number) {
-  const { b, g, r } = hexToRgb(hexColor);
-  const adjust = (channel: number) => {
-    const nextChannel = Math.round(channel + (percent / 100) * 255);
-    return Math.max(0, Math.min(255, nextChannel)).toString(16).padStart(2, '0');
-  };
+function ensureThemeMetaElement(name: string) {
+  let metaElement = document.querySelector<HTMLMetaElement>(blogMetaSelector(name));
+  if (!metaElement) {
+    metaElement = document.createElement('meta');
+    metaElement.name = name;
+    document.head.appendChild(metaElement);
+  }
 
-  return `#${adjust(r)}${adjust(g)}${adjust(b)}`;
+  return metaElement;
 }
 
 /**
@@ -679,6 +681,157 @@ function rgbToHsl(r: number, g: number, b: number) {
     l: Math.round(lightness * 100),
     s: Math.round(saturation * 100),
   };
+}
+
+/**
+ * @param primaryRgb 当前主题色 RGB，Argon 用它派生 immersion-color 明暗色阶。
+ * @param mode 当前明暗模式，决定 body 上暴露亮色 tint 变量还是暗色 shade 变量。
+ * @returns root 默认变量和 body 当前变量，供 CSS 继承链模拟 WordPress Argon。
+ */
+function createArgonColorVariables(
+  primaryRgb: ReturnType<typeof hexToRgb>,
+  mode: BlogThemeMode,
+) {
+  const root = {
+    '--color-background': '#f4f5f7',
+    '--color-border': '#dce0e5',
+    '--color-border-on-foreground': '#f3f3f3',
+    '--color-border-on-foreground-deeper': '#eee',
+    '--color-darkmode-banner': '',
+    '--color-darkmode-toolbar': '',
+    '--color-foreground': '#fff',
+    '--color-shade-70': formatArgonShadeChannels(primaryRgb, 0.7),
+    '--color-shade-75': formatArgonShadeChannels(primaryRgb, 0.75),
+    '--color-shade-80': formatArgonShadeChannels(primaryRgb, 0.8),
+    '--color-shade-82': formatArgonShadeChannels(primaryRgb, 0.82),
+    '--color-shade-86': formatArgonShadeChannels(primaryRgb, 0.86),
+    '--color-shade-90': formatArgonShadeChannels(primaryRgb, 0.9),
+    '--color-shade-94': formatArgonShadeChannels(primaryRgb, 0.94),
+    '--color-shade-96': formatArgonShadeChannels(primaryRgb, 0.96),
+    '--color-text-deeper': '#212529',
+    '--color-tint-82': formatArgonTintChannels(primaryRgb, 0.82),
+    '--color-widgets': '#fff',
+    '--color-widgets-disabled': '#e9ecef',
+  };
+
+  const light = {
+    '--color-background': formatArgonTintRgb(primaryRgb, 0.86),
+    '--color-border': formatArgonTintRgb(primaryRgb, 0.78),
+    '--color-border-on-foreground': formatArgonTintRgb(primaryRgb, 0.86),
+    '--color-border-on-foreground-deeper': formatArgonTintRgb(primaryRgb, 0.8),
+    '--color-darkmode-banner': '',
+    '--color-darkmode-toolbar': '',
+    '--color-foreground': formatArgonTintRgb(primaryRgb, 0.92),
+    '--color-text-deeper': formatArgonShadeRgb(primaryRgb, 0.82),
+    '--color-widgets': formatArgonTintRgb(primaryRgb, 0.95),
+    '--color-widgets-disabled': formatArgonTintRgb(primaryRgb, 0.86),
+  };
+  const dark = {
+    '--color-background': formatArgonShadeRgb(primaryRgb, 0.94),
+    '--color-border': formatArgonShadeRgb(primaryRgb, 0.8),
+    '--color-border-on-foreground': formatArgonShadeRgb(primaryRgb, 0.82),
+    '--color-border-on-foreground-deeper': formatArgonShadeRgb(primaryRgb, 0.75),
+    '--color-darkmode-banner': formatArgonShadeRgb(primaryRgb, 0.96),
+    '--color-darkmode-toolbar': formatArgonShadeChannels(primaryRgb, 0.9),
+    '--color-foreground': formatArgonShadeRgb(primaryRgb, 0.9),
+    '--color-text-deeper': formatArgonTintRgb(primaryRgb, 0.82),
+    '--color-widgets': formatArgonShadeRgb(primaryRgb, 0.86),
+    '--color-widgets-disabled': formatArgonShadeRgb(primaryRgb, 0.82),
+  };
+
+  return {
+    current: mode === 'dark' ? dark : light,
+    root,
+  };
+}
+
+/**
+ * @param variables CSS custom property map generated for the current Argon theme.
+ * @returns Multiline CSS declarations ready to inject into the singleton theme style.
+ */
+function serializeCssVariables(variables: Record<string, string>) {
+  return Object.entries(variables)
+    .map(([name, value]) => `  ${name}: ${value};`)
+    .join('\n');
+}
+
+/**
+ * @param hsl 当前主题色 HSL，来源于 `--themecolor`。
+ * @param lightnessDelta Argon 原生亮度偏移；正数生成 light，负数生成 dark 阶梯。
+ * @returns 复刻 WordPress Argon `--themecolor-light/dark*` 的 HSL calc 表达式。
+ */
+function formatArgonThemeHsl(
+  hsl: ReturnType<typeof rgbToHsl>,
+  lightnessDelta: number,
+) {
+  const direction = lightnessDelta >= 0 ? '+' : '-';
+  const boundary = lightnessDelta >= 0 ? '100%' : '0%';
+  const clampFunction = lightnessDelta >= 0 ? 'min' : 'max';
+  const delta = Math.abs(lightnessDelta);
+
+  return `hsl(${hsl.h}, calc(${hsl.s} * 1%), ${clampFunction}(calc(${hsl.l} * 1% ${direction} ${delta}%), ${boundary}))`;
+}
+
+/**
+ * @param primaryRgb 当前主题色 RGB。
+ * @param ratio Argon shade 系数，越接近 1 越贴近深色基准 30。
+ * @returns 可作为 `rgb()` 通道列表使用的 shade calc 表达式。
+ */
+function formatArgonShadeChannels(primaryRgb: ReturnType<typeof hexToRgb>, ratio: number) {
+  return [
+    formatArgonShadeChannel(primaryRgb.r, ratio),
+    formatArgonShadeChannel(primaryRgb.g, ratio),
+    formatArgonShadeChannel(primaryRgb.b, ratio),
+  ].join(',\n    ');
+}
+
+/**
+ * @param primaryRgb 当前主题色 RGB。
+ * @param ratio Argon tint 系数，越接近 1 越贴近白色基准 255。
+ * @returns 可作为 `rgb()` 通道列表使用的 tint calc 表达式。
+ */
+function formatArgonTintChannels(primaryRgb: ReturnType<typeof hexToRgb>, ratio: number) {
+  return [
+    formatArgonTintChannel(primaryRgb.r, ratio),
+    formatArgonTintChannel(primaryRgb.g, ratio),
+    formatArgonTintChannel(primaryRgb.b, ratio),
+  ].join(',\n    ');
+}
+
+/**
+ * @param primaryRgb 当前主题色 RGB。
+ * @param ratio Argon shade 系数。
+ * @returns 完整 `rgb(...)` shade 表达式。
+ */
+function formatArgonShadeRgb(primaryRgb: ReturnType<typeof hexToRgb>, ratio: number) {
+  return `rgb(${formatArgonShadeChannels(primaryRgb, ratio)})`;
+}
+
+/**
+ * @param primaryRgb 当前主题色 RGB。
+ * @param ratio Argon tint 系数。
+ * @returns 完整 `rgb(...)` tint 表达式。
+ */
+function formatArgonTintRgb(primaryRgb: ReturnType<typeof hexToRgb>, ratio: number) {
+  return `rgb(${formatArgonTintChannels(primaryRgb, ratio)})`;
+}
+
+/**
+ * @param channel 当前主题色单通道值。
+ * @param ratio Argon shade 系数。
+ * @returns 单个深色通道 calc 表达式，基准值 30 来自 Argon immersion-color 算法。
+ */
+function formatArgonShadeChannel(channel: number, ratio: number) {
+  return `calc(30 * ${ratio} + ${channel} * (1 - ${ratio}))`;
+}
+
+/**
+ * @param channel 当前主题色单通道值。
+ * @param ratio Argon tint 系数。
+ * @returns 单个浅色通道 calc 表达式，基准值 255 来自 Argon immersion-color 算法。
+ */
+function formatArgonTintChannel(channel: number, ratio: number) {
+  return `calc(${channel} + (255 - ${channel}) * ${ratio})`;
 }
 
 /**

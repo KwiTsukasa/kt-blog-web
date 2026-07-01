@@ -2,6 +2,7 @@ import { SearchOutlined } from '@antdv-next/icons';
 import { defineComponent, nextTick, type ComponentPublicInstance, type PropType, type Ref, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 
+import { assignBlogElementRef, blogDomId, createBlogFocusableRef } from '@/factories/blogDomFactory';
 import { useBlogEventBus } from '@/hooks/useBlogEventBus';
 import { useBlogTheme } from '@/hooks/useBlogTheme';
 
@@ -14,6 +15,14 @@ export default defineComponent({
       type: Object as PropType<Ref<HTMLElement | null>>,
       required: true,
     },
+    mobileSidebarOpen: {
+      type: Boolean,
+      default: false,
+    },
+    onToggleMobileSidebar: {
+      type: Function as PropType<() => void>,
+      required: true,
+    },
   },
   setup(props) {
     const router = useRouter();
@@ -21,7 +30,7 @@ export default defineComponent({
     const { siteConfig } = useBlogTheme();
     const keyword = ref('');
     const navSearchOpen = ref(false);
-    const navSearchInputRef = ref<any>(null);
+    const navSearchInputRef = createBlogFocusableRef<any>();
 
     /**
      * @param target antdv-next Input 组件实例或原生 input 节点。
@@ -35,9 +44,12 @@ export default defineComponent({
      * @param target 顶栏 nav DOM 节点，由 layout 传入 ref 统一给滚动副作用使用。
      */
     const setToolbarRef = (target: Element | ComponentPublicInstance | null) => {
-      props.toolbarRef.value = target instanceof HTMLElement ? target : null;
+      assignBlogElementRef(props.toolbarRef, target);
     };
 
+    /**
+     * Submits the desktop header search into the local Blog search route.
+     */
     const submitSearch = () => {
       const query = keyword.value.trim();
       if (!query) {
@@ -55,11 +67,18 @@ export default defineComponent({
       <div class="kt-blog__header">
         <header class="kt-blog__header-global">
           <nav
+            id={blogDomId('headerNavbar')}
             ref={setToolbarRef}
-            class="kt-blog__header-navbar kt-blog__header-navbar--ontop"
+            class="kt-blog__header-navbar kt-blog__header-navbar--ontop navbar navbar-main navbar-ontop"
           >
-            <div class="kt-blog__header-container">
-              <BlogButton class="kt-blog__header-toggle kt-blog__button" aria-expanded="false" aria-label="Toggle sidebar">
+            <div class="kt-blog__header-container container">
+              <BlogButton
+                id={blogDomId('openSidebar')}
+                class="kt-blog__header-toggle kt-blog__button"
+                aria-expanded={String(props.mobileSidebarOpen)}
+                aria-label="Toggle sidebar"
+                onClick={props.onToggleMobileSidebar}
+              >
                 <span class="kt-blog__header-toggle-icon" />
               </BlogButton>
 

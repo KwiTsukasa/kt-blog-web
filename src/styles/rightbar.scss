@@ -2,27 +2,28 @@
 
 @include blog.block {
   &__rightbar-widget {
+    display: flex;
+    flex-direction: column;
     width: 250px;
-    margin: 0 0 18px;
-    padding: 20px;
-    background: var(--argon-card-soft);
+    margin: 0 20px 15px 10px;
+    padding: 20px 25px;
+    background: var(--color-foreground);
+    transition: 0.15s;
   }
 
   &__rightbar-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 14px;
-    color: var(--argon-title);
-    font-size: 18px;
+    display: block;
+    margin: 0 0 8px;
+    color: var(--argon-text);
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 48px;
     letter-spacing: 0;
   }
 
   &__rightbar-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 0;
+    display: block;
+    margin: 0 0 16px;
     padding: 0;
     list-style: none;
   }
@@ -30,12 +31,32 @@
   &__rightbar-list-item,
   &__rightbar-comment,
   &__rightbar-category,
+  &__rightbar-empty-comment {
+    color: var(--argon-text);
+    font-size: 16px;
+    line-height: 24px;
+  }
+
   &__rightbar-list a {
-    color: var(--argon-widget-text);
-    line-height: 1.55;
+    color: var(--argon-title);
+    font-size: 16px;
+    line-height: 24px;
+    transition: color 0.25s;
+  }
+
+  &__rightbar-list-item,
+  &__rightbar-comment,
+  &__rightbar-category {
+    margin-bottom: 5px;
+  }
+
+  &__rightbar-list-item:last-child,
+  &__rightbar-comment:last-child,
+  &__rightbar-category:last-child {
+    margin-bottom: 0;
   }
 
   &__rightbar-list a:hover {
-    color: var(--argon-title);
+    color: var(--themecolor);
   }
 }

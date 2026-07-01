@@ -1,5 +1,13 @@
 import { onBeforeUnmount, onMounted, type Ref } from 'vue';
 
+import {
+  BLOG_ANIMATION_TIMING_MS,
+  BLOG_SCROLL_GEOMETRY,
+  createBlogFrameScheduler,
+  easeOutExpo,
+  requestBlogFrame,
+} from '@/factories/blogAnimationFactory';
+
 type Cleanup = () => void;
 
 interface ArgonEffectRefs {
@@ -14,21 +22,16 @@ interface ArgonEffectRefs {
  * @param refs 由布局组件注册的关键 DOM 节点，替代具名 id 查询。
  */
 export function useArgonEffects(refs: ArgonEffectRefs) {
-  let frameId = 0;
+  const frameScheduler = createBlogFrameScheduler(() => {
+    syncToolbar(refs);
+    syncLeftbar(refs);
+  });
 
   /**
    * requestAnimationFrame 合并滚动与 resize 更新，避免滚动模式过渡抖动。
    */
   const scheduleUpdate = () => {
-    if (frameId) {
-      return;
-    }
-
-    frameId = window.requestAnimationFrame(() => {
-      frameId = 0;
-      syncToolbar(refs);
-      syncLeftbar(refs);
-    });
+    frameScheduler.schedule();
   };
 
   onMounted(() => {
@@ -38,10 +41,9 @@ export function useArgonEffects(refs: ArgonEffectRefs) {
   });
 
   onBeforeUnmount(() => {
-    if (frameId) {
-      window.cancelAnimationFrame(frameId);
-    }
+    frameScheduler.cancel();
 
+    document.body.classList.remove('leftbar-can-headroom');
     document.removeEventListener('scroll', scheduleUpdate);
     window.removeEventListener('resize', scheduleUpdate);
   });
@@ -49,18 +51,12 @@ export function useArgonEffects(refs: ArgonEffectRefs) {
 
 /**
  * @param top 目标滚动位置，默认滚动到页面顶部。
- * @param duration 动画时长，Argon 回顶默认约 800ms。
+ * @param duration 动画时长，默认取 Argon 回顶约 800ms 的统一 motion token。
  */
-export function smoothScrollTo(top = 0, duration = 800) {
+export function smoothScrollTo(top = 0, duration = BLOG_ANIMATION_TIMING_MS.scrollToTop) {
   const start = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
   const distance = top - start;
   const startTime = performance.now();
-
-  /**
-   * @param progress 0 到 1 的动画进度。
-   * @returns easeOutExpo 缓动后的进度。
-   */
-  const easeOutExpo = (progress: number) => (progress >= 1 ? 1 : 1 - 2 ** (-10 * progress));
 
   /**
    * @param now 当前 requestAnimationFrame 时间戳。
@@ -69,11 +65,11 @@ export function smoothScrollTo(top = 0, duration = 800) {
     const progress = Math.min((now - startTime) / duration, 1);
     window.scrollTo(0, start + distance * easeOutExpo(progress));
     if (progress < 1) {
-      window.requestAnimationFrame(step);
+      requestBlogFrame(step);
     }
   };
 
-  window.requestAnimationFrame(step);
+  requestBlogFrame(step);
 }
 
 /**
@@ -81,17 +77,10 @@ export function smoothScrollTo(top = 0, duration = 800) {
  * @returns 清理函数，用于组件卸载时释放监听。
  */
 export function onArgonScroll(callback: () => void): Cleanup {
-  let frameId = 0;
+  const frameScheduler = createBlogFrameScheduler(callback);
 
   const scheduleUpdate = () => {
-    if (frameId) {
-      return;
-    }
-
-    frameId = window.requestAnimationFrame(() => {
-      frameId = 0;
-      callback();
-    });
+    frameScheduler.schedule();
   };
 
   scheduleUpdate();
@@ -99,9 +88,7 @@ export function onArgonScroll(callback: () => void): Cleanup {
   window.addEventListener('resize', scheduleUpdate, { passive: true });
 
   return () => {
-    if (frameId) {
-      window.cancelAnimationFrame(frameId);
-    }
+    frameScheduler.cancel();
 
     document.removeEventListener('scroll', scheduleUpdate);
     window.removeEventListener('resize', scheduleUpdate);
@@ -122,7 +109,7 @@ function syncToolbar(refs: ArgonEffectRefs) {
   const scrollTop = document.documentElement.scrollTop || document.body.scrollTop || window.scrollY;
 
   if (isNoBanner) {
-    toolbar.classList.toggle('kt-blog__header-navbar--no-blur', scrollTop < 30);
+    toolbar.classList.toggle('kt-blog__header-navbar--no-blur', scrollTop < BLOG_SCROLL_GEOMETRY.toolbarStartTransitionPx);
     toolbar.classList.remove('kt-blog__header-navbar--ontop');
     toolbar.style.removeProperty('background-color');
     toolbar.style.removeProperty('box-shadow');
@@ -136,31 +123,39 @@ function syncToolbar(refs: ArgonEffectRefs) {
     return;
   }
 
-  const startTransitionHeight = 30;
-  const endTransitionHeight = content.getBoundingClientRect().top + scrollTop - 75;
-  const maxOpacity = themeRoot?.classList.contains('kt-blog--toolbar-blur') ? 0.65 : 0.85;
+  const startTransitionHeight = BLOG_SCROLL_GEOMETRY.toolbarStartTransitionPx;
+  const endTransitionHeight = content.getBoundingClientRect().top + scrollTop - BLOG_SCROLL_GEOMETRY.toolbarEndInsetPx;
+  const maxOpacity = themeRoot?.classList.contains('kt-blog--toolbar-blur')
+    ? BLOG_SCROLL_GEOMETRY.toolbarMaxOpacityBlur
+    : BLOG_SCROLL_GEOMETRY.toolbarMaxOpacitySolid;
 
   if (scrollTop < startTransitionHeight) {
     toolbar.style.setProperty('background-color', 'rgba(var(--toolbar-color), 0)', 'important');
     toolbar.style.setProperty('box-shadow', 'none');
     toolbar.style.setProperty('backdrop-filter', 'blur(0px)');
     toolbar.classList.add('kt-blog__header-navbar--ontop');
+    toolbar.classList.add('navbar-ontop');
     return;
   }
 
   if (scrollTop > endTransitionHeight) {
     toolbar.style.setProperty('background-color', `rgba(var(--toolbar-color), ${maxOpacity})`, 'important');
     toolbar.style.removeProperty('box-shadow');
-    toolbar.style.setProperty('backdrop-filter', 'blur(16px)');
+    toolbar.style.setProperty('backdrop-filter', `blur(${BLOG_SCROLL_GEOMETRY.toolbarBlurPx}px)`);
     toolbar.classList.remove('kt-blog__header-navbar--ontop');
+    toolbar.classList.remove('navbar-ontop');
     return;
   }
 
   const progress = (scrollTop - startTransitionHeight) / (endTransitionHeight - startTransitionHeight);
   toolbar.style.setProperty('background-color', `rgba(var(--toolbar-color), ${progress * maxOpacity})`, 'important');
   toolbar.style.removeProperty('box-shadow');
-  toolbar.style.setProperty('backdrop-filter', progress > 0.3 ? 'blur(16px)' : 'blur(0px)');
+  toolbar.style.setProperty(
+    'backdrop-filter',
+    progress > BLOG_SCROLL_GEOMETRY.toolbarBlurThresholdRatio ? `blur(${BLOG_SCROLL_GEOMETRY.toolbarBlurPx}px)` : 'blur(0px)',
+  );
   toolbar.classList.remove('kt-blog__header-navbar--ontop');
+  toolbar.classList.remove('navbar-ontop');
 }
 
 /**
@@ -176,10 +171,10 @@ function syncLeftbar(refs: ArgonEffectRefs) {
   const scrollTop = document.documentElement.scrollTop || document.body.scrollTop || window.scrollY;
   const part1Rect = leftbarPart1.getBoundingClientRect();
   const part1OffsetTop = part1Rect.top + scrollTop;
-  const shouldStick = part1OffsetTop + leftbarPart1.offsetHeight + 10 - scrollTop <= 90;
-  const canHeadroom = part1OffsetTop + leftbarPart1.offsetHeight + 10 - scrollTop <= 20;
-  const themeRoot = leftbarPart1.closest('.kt-blog');
+  const leftbarBottom = part1OffsetTop + leftbarPart1.offsetHeight + BLOG_SCROLL_GEOMETRY.leftbarStickyGapPx - scrollTop;
+  const shouldStick = leftbarBottom <= BLOG_SCROLL_GEOMETRY.leftbarStickyTopPx;
+  const canHeadroom = leftbarBottom <= BLOG_SCROLL_GEOMETRY.leftbarHeadroomTopPx;
 
   leftbarPart2.classList.toggle('kt-blog__sidebar-panel--sticky', shouldStick);
-  themeRoot?.classList.toggle('kt-blog--leftbar-can-headroom', canHeadroom);
+  document.body.classList.toggle('leftbar-can-headroom', canHeadroom);
 }
