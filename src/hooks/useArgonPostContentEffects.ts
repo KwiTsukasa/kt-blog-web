@@ -1,4 +1,5 @@
 import { BLOG_ANIMATION_TIMING_MS, runAfterBlogDelay } from '@/factories/blogAnimationFactory';
+import { upgradeArgonCodeblocks } from '@/factories/argonCodeblockFactory';
 
 interface ArgonPostContentRuntimeState {
   closeFancybox?: () => void;
@@ -11,6 +12,7 @@ interface ArgonPostContentRuntimeState {
 export function bindArgonPostContentEffects(root: HTMLElement) {
   const runtimeState: ArgonPostContentRuntimeState = {};
 
+  upgradeArgonCodeblocks(root);
   normalizeArgonCodeblockLineNumbers(root);
 
   /**

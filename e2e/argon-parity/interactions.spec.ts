@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expect, test, type Page, type Route, type TestInfo } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
 import {
@@ -9,12 +9,35 @@ import {
 import {
   captureAllRouteStates,
   gotoLocalRoute,
+  waitForArgonPage,
   writeArgonArtifact,
 } from './argonParityHelpers';
 
 interface PageFixture {
   page: Page;
 }
+
+const BACKEND_BASE_CODEBLOCK_ARTICLE = {
+  authorName: 'KwiTsukasa',
+  categoriesResolved: [
+    {
+      name: 'public',
+      slug: 'public',
+    },
+  ],
+  contentHtml: `<h2 class="wp-block-heading" id="header-id-1">后端代码块运行时</h2>
+<pre class="wp-block-code hljs-codeblock"><code class="hljs typescript">const a = 1;
+const b = a + 1;</code></pre>`,
+  date: '2026-07-01T16:40:00.000Z',
+  excerptText: '后端只生成基础 Argon 代码块，Blog Web 运行时补齐行号和控制条。',
+  id: 909001,
+  modified: '2026-07-01T16:40:00.000Z',
+  slug: 'backend-codeblock-runtime',
+  tagsResolved: [],
+  title: {
+    rendered: '后端代码块运行时',
+  },
+};
 
 /**
  * Registers representative Argon interaction checks against the local Vue implementation.
@@ -33,6 +56,7 @@ function registerLocalInteractionSuite() {
   test('local post page exposes share, comments, and reading progress', createPostInteractionTest());
   test('local post codeblocks match Argon hljs layout', createPostCodeblockSurfaceTest());
   test('local post codeblock controls match Argon runtime toggles', createPostCodeblockControlBehaviorTest());
+  test('local post upgrades backend-generated base Argon codeblocks at runtime', createBackendBaseCodeblockRuntimeTest());
   test('local post codeblock copy exposes Argon toast feedback', createPostCodeblockCopyFeedbackTest());
   test('local post links match live WordPress Argon inline semantics', createPostInlineLinkSurfaceTest());
   test('local post fancybox wrappers open live Argon lightbox shell', createPostFancyboxRuntimeTest());
@@ -765,6 +789,40 @@ function createPostCodeblockControlBehaviorTest() {
 }
 
 /**
+ * @returns Playwright test body that verifies backend-generated base codeblocks are upgraded on page bind.
+ */
+function createBackendBaseCodeblockRuntimeTest() {
+  /**
+   * @param fixtures Playwright page fixture used to intercept the public article API and render a base codeblock.
+   */
+  return async function runBackendBaseCodeblockRuntimeTest({ page }: PageFixture) {
+    await page.route('**/api/blog/article/public/list**', fulfillBackendBaseCodeblockArticleList);
+    await page.route('**/api/blog/article/public/detail**', fulfillBackendBaseCodeblockArticleDetail);
+    await page.goto('/#/post/backend-codeblock-runtime', { waitUntil: 'domcontentloaded' });
+    await waitForArgonPage(page);
+
+    const pre = page.locator('#post_content pre.hljs-codeblock, #post_content pre.wp-block-code.hljs-codeblock').first();
+    const lineCodes = pre.locator('.hljs-ln-code');
+
+    await expect(page.getByText('后端代码块运行时').first()).toBeVisible();
+    await expect(pre).toBeVisible();
+    await expect(pre.locator('table.hljs-ln')).toHaveCount(1);
+    await expect(pre.locator('table.hljs-ln > tbody > tr')).toHaveCount(2);
+    await expect(pre.locator(':scope > .hljs-control')).toHaveCount(1);
+    await expect(pre.locator('.hljs-control-btn')).toHaveCount(4);
+    await expect(lineCodes.nth(0)).toHaveText('const a = 1;');
+    await expect(lineCodes.nth(0)).toHaveAttribute('data-line-number', '1');
+    await expect(lineCodes.nth(1)).toHaveText('const b = a + 1;');
+    await expect(lineCodes.nth(1)).toHaveAttribute('data-line-number', '2');
+
+    await pre.locator('.hljs-control-toggle-break-line').click();
+    await expect(pre).toHaveClass(/hljs-break-line/);
+    await pre.locator('.hljs-control-toggle-linenumber').click();
+    await expect(pre).toHaveClass(/hljs-hide-linenumber/);
+  };
+}
+
+/**
  * @returns Playwright test body that verifies code copy produces Argon's toast-style user feedback.
  */
 function createPostCodeblockCopyFeedbackTest() {
@@ -788,6 +846,37 @@ function createPostCodeblockCopyFeedbackTest() {
     await expect(page.locator('.iziToast.shadow')).toContainText('代码已复制到剪贴板');
     await expect(page.locator('.iziToast.shadow')).toHaveCSS('background-color', 'rgb(45, 206, 137)');
   };
+}
+
+/**
+ * @param route Intercepted Blog article list request from the local Vue app.
+ */
+async function fulfillBackendBaseCodeblockArticleList(route: Route) {
+  await route.fulfill({
+    contentType: 'application/json',
+    json: {
+      code: 0,
+      data: {
+        list: [BACKEND_BASE_CODEBLOCK_ARTICLE],
+        total: 1,
+      },
+      msg: 'ok',
+    },
+  });
+}
+
+/**
+ * @param route Intercepted Blog article detail request from the local Vue app.
+ */
+async function fulfillBackendBaseCodeblockArticleDetail(route: Route) {
+  await route.fulfill({
+    contentType: 'application/json',
+    json: {
+      code: 0,
+      data: BACKEND_BASE_CODEBLOCK_ARTICLE,
+      msg: 'ok',
+    },
+  });
 }
 
 /**
