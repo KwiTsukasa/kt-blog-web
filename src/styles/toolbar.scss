@@ -46,9 +46,34 @@
     font-weight: 700;
   }
 
+  &__header-nav--hover {
+    display: flex;
+    flex: 1;
+    align-items: center;
+  }
+
+  &__header-nav {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__header-nav-link {
+    color: rgba(238, 238, 238, 0.78);
+    font-size: 14px;
+
+    &:hover,
+    &[aria-current='page'] {
+      color: var(--argon-title);
+    }
+  }
+
   &__header-search {
     width: 40px;
-    margin: 0 0 0 auto;
+    margin: 0;
     cursor: pointer;
     transition:
       width 0.42s cubic-bezier(0.4, 0, 0, 1),
@@ -197,6 +222,7 @@
   &__header-navbar--ontop,
   &:not(.kt-blog--no-banner) &__header-navbar {
     .kt-blog__header-title,
+    .kt-blog__header-nav-link,
     .kt-blog__header-search:not(.kt-blog__header-search--open) .kt-blog__input-addon,
     .kt-blog__header-search.kt-blog__header-search--open .kt-blog__input-addon {
       color: rgba(255, 255, 255, 0.92);

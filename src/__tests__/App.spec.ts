@@ -126,7 +126,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('KwiTsukasa的小站');
   });
 
-  it('renders Argon header without hidden navigation containers', async () => {
+  it('renders Argon header without the old collapse container', async () => {
     await router.push('/');
     await router.isReady();
 
@@ -137,8 +137,7 @@ describe('App', () => {
     });
 
     expect(wrapper.find('.kt-blog__header-collapse').exists()).toBe(false);
-    expect(wrapper.find('.kt-blog__header-navbar .kt-blog__header-nav').exists()).toBe(false);
-    expect(wrapper.find('.kt-blog__header-navbar .navbar-nav').exists()).toBe(false);
+    expect(wrapper.find('.kt-blog__header-nav').exists()).toBe(true);
   });
 
   it('loads local blog theme config by default', async () => {

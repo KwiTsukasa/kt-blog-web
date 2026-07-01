@@ -88,38 +88,63 @@ export default defineComponent({
                 </RouterLink>
               </div>
 
-              <div
-                class={['kt-blog__header-search', navSearchOpen.value && 'kt-blog__header-search--open']}
-                onClick={() => {
-                  navSearchOpen.value = true;
-                  nextTick(() => focusInput(navSearchInputRef.value));
-                }}
-              >
-                <div class="kt-blog__input-group">
-                  <div class="kt-blog__input-addon-wrap">
-                    <span class="kt-blog__input-addon">
-                      <SearchOutlined />
-                    </span>
+              <ul class="kt-blog__header-nav kt-blog__header-nav--hover">
+                {siteConfig.value.headerMenu.map((item) => (
+                  <li key={item.label} class="kt-blog__header-nav-item">
+                    {item.external ? (
+                      <a
+                        class="kt-blog__header-nav-link"
+                        href={item.href}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <RouterLink class="kt-blog__header-nav-link" to={item.href}>
+                        {item.label}
+                      </RouterLink>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              <ul class="kt-blog__header-nav kt-blog__header-nav--end">
+                <li class="kt-blog__header-search-item">
+                  <div
+                    class={['kt-blog__header-search', navSearchOpen.value && 'kt-blog__header-search--open']}
+                    onClick={() => {
+                      navSearchOpen.value = true;
+                      nextTick(() => focusInput(navSearchInputRef.value));
+                    }}
+                  >
+                    <div class="kt-blog__input-group">
+                      <div class="kt-blog__input-addon-wrap">
+                        <span class="kt-blog__input-addon">
+                          <SearchOutlined />
+                        </span>
+                      </div>
+                      <BlogInput
+                        ref={navSearchInputRef}
+                        class="kt-blog__header-search-input kt-blog__input"
+                        placeholder="搜索什么..."
+                        autocomplete="off"
+                        v-model:value={keyword.value}
+                        onClick={(event: MouseEvent) => event.stopPropagation()}
+                        onBlur={() => {
+                          navSearchOpen.value = false;
+                        }}
+                        onKeydown={(event: KeyboardEvent) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            submitSearch();
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
-                  <BlogInput
-                    ref={navSearchInputRef}
-                    class="kt-blog__header-search-input kt-blog__input"
-                    placeholder="搜索什么..."
-                    autocomplete="off"
-                    v-model:value={keyword.value}
-                    onClick={(event: MouseEvent) => event.stopPropagation()}
-                    onBlur={() => {
-                      navSearchOpen.value = false;
-                    }}
-                    onKeydown={(event: KeyboardEvent) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        submitSearch();
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+                </li>
+              </ul>
 
               <div class="kt-blog__header-menu-mask" />
               <BlogButton
