@@ -35,6 +35,7 @@ pnpm exec playwright test e2e/argon-parity/baseline.spec.ts --project=chromium
 - `e2e/argon-parity` 保存与线上 `https://blog.kwitsukasa.top/` 对齐的页面、视口和交互矩阵。
 - 本地 hash 路由按语义映射 WordPress query 路由：文章、分类、标签、搜索和月份归档都用同一套矩阵验证。
 - 页面根节点通过 `kt-blog--home/search/category/tag/archive/post` 暴露 Argon 页面语义，方便样式、测试和 Admin iframe 预览复用。
+- 公开 Blog API 返回非空文章列表时优先使用 API；API 不可用或返回空列表时保留内置 WordPress 抓取文章种子，避免数据未迁移期间线上静态站变成空站。
 - 文章正文以线上 WordPress `#post_content` 渲染结果和 Argon `style.css` / `argontheme.js` 为准；代码块控制条、复制 toast、Fancybox 图片预览、正文链接 hover、分隔线和图片 lazyload 都必须有 Playwright 断言。
 - `hljs-codeblock` 静态快照需要恢复 Argon `highlightjs-line-numbers` 运行时生成的 `data-line-number` 与 `.hljs-ln-n::before`，否则行号列会坍塌成 0px。
 - 左栏 overview sticky/relative 切换用 no-headroom 回归用例固定，解除 fixed 后不得重放卡片入场动画或产生缩放闪烁。

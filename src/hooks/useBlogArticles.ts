@@ -121,6 +121,13 @@ export function useBlogArticles() {
   };
 }
 
+/**
+ * Loads the public WordPress article list and keeps the static capture when the API has no usable rows.
+ *
+ * The production Blog API can be reachable before WordPress article data is migrated. An empty successful
+ * response is therefore treated as an unavailable content source so the Argon mirror keeps rendering the
+ * captured WordPress article set instead of turning every route into an empty state.
+ */
 async function loadArticles() {
   if (loadedFromApi.value) return;
   if (loadPromise) return loadPromise;
@@ -129,6 +136,11 @@ async function loadArticles() {
   loadPromise = fetchBlogArticleList()
     .then((result) => {
       const nextArticles = result.list.map(normalizeWordpressArticle);
+      if (!nextArticles.length) {
+        blogArticles.value = fallbackArticles;
+        loadedFromApi.value = false;
+        return;
+      }
       blogArticles.value = nextArticles;
       loadedFromApi.value = true;
     })

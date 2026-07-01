@@ -123,7 +123,7 @@ describe('useBlogArticles', () => {
     expect(blogArticles.articles.value).toEqual(fallbackArticles);
   });
 
-  it('keeps an empty list when blog public list is reachable but has no articles', async () => {
+  it('falls back to static articles when blog public list is reachable but has no articles', async () => {
     mockFetch([
       {
         body: {
@@ -141,8 +141,8 @@ describe('useBlogArticles', () => {
 
     await blogArticles.loadArticles();
 
-    expect(blogArticles.loadedFromApi.value).toBe(true);
-    expect(blogArticles.articles.value).toEqual([]);
+    expect(blogArticles.loadedFromApi.value).toBe(false);
+    expect(blogArticles.articles.value).toEqual(fallbackArticles);
   });
 
   it('fetches public article detail when cached list data does not include html content', async () => {
