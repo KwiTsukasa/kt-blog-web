@@ -126,7 +126,7 @@ describe('App', () => {
     expect(wrapper.text()).toContain('KwiTsukasa的小站');
   });
 
-  it('renders Argon header without the old collapse container', async () => {
+  it('renders Argon header with the WordPress Argon collapse container', async () => {
     await router.push('/');
     await router.isReady();
 
@@ -136,7 +136,7 @@ describe('App', () => {
       },
     });
 
-    expect(wrapper.find('.kt-blog__header-collapse').exists()).toBe(false);
+    expect(wrapper.find('.kt-blog__header-collapse').exists()).toBe(true);
     expect(wrapper.find('.kt-blog__header-nav').exists()).toBe(true);
   });
 
