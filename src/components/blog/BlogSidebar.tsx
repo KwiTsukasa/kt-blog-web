@@ -219,7 +219,7 @@ export default defineComponent({
     };
 
     watch(
-      [shouldShowPostCatalogTabs, () => currentArticle.value?.id],
+      [shouldShowPostCatalogTabs, () => currentArticle.value?.id, () => currentArticle.value?.contentHtml, postContentRef],
       ([hasCatalog]) => {
         resetSidebarTabForRoute(hasCatalog);
         rebuildArgonCatalog(hasCatalog);
