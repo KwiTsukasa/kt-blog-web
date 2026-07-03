@@ -78,6 +78,13 @@ describe('useBlogArticles', () => {
       cover: 'https://img.demo/cover.jpg',
       date: '2026-06-05 10:20',
       excerpt: '摘要',
+      headings: [
+        {
+          id: 'header-id-1',
+          level: 2,
+          text: '标题',
+        },
+      ],
       readTime: '1 分钟',
       slug: decodedSlug,
       tags: ['Milkdown'],
@@ -218,8 +225,52 @@ describe('useBlogArticles', () => {
     expect(detailUrl.pathname).toBe('/api/blog/article/public/detail');
     expect(detailUrl.searchParams.get('slug')).toBe(decodedSlug);
     expect(article?.contentHtml).toBe('<h1>详情标题</h1><p>详情正文</p>');
+    expect(article?.headings).toEqual([
+      {
+        id: 'header-id-1',
+        level: 1,
+        text: '详情标题',
+      },
+    ]);
     expect(blogArticles.getArticleBySlug(decodedSlug)?.content).toEqual([
       '详情标题 详情正文',
+    ]);
+  });
+
+  it('derives article catalog headings from public API html when heading metadata is absent', async () => {
+    mockFetch([
+      {
+        body: {
+          code: 200,
+          data: {
+            list: [
+              {
+                ...publicArticle,
+                contentHtml: '<h2 id="intro">介绍</h2><p>正文</p><h3>细节</h3>',
+              },
+            ],
+            total: 1,
+          },
+        },
+        status: 200,
+      },
+    ]);
+    const { useBlogArticles } = await import('@/hooks/useBlogArticles');
+    const blogArticles = useBlogArticles();
+
+    await blogArticles.loadArticles();
+
+    expect(blogArticles.articles.value[0]?.headings).toEqual([
+      {
+        id: 'intro',
+        level: 2,
+        text: '介绍',
+      },
+      {
+        id: 'header-id-2',
+        level: 3,
+        text: '细节',
+      },
     ]);
   });
 });

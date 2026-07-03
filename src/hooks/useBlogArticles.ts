@@ -13,10 +13,12 @@ import {
   isArticleInCategory,
   tags as fallbackTags,
   type BlogArticle,
+  type BlogArticleHeading,
   type BlogCategory,
   type BlogTag,
 } from '@/data/blog';
 import { PREVIOUS_BLOG_BACKGROUND_IMAGE, resolveBlogStaticAsset } from '@/data/blogStaticAssets';
+import { blogGeneratedHeadingId } from '@/factories/blogDomFactory';
 
 const defaultCover = PREVIOUS_BLOG_BACKGROUND_IMAGE;
 const colorPool = ['blue', 'purple', 'green', 'orange', 'geekblue', 'cyan', 'volcano', 'magenta'];
@@ -220,6 +222,7 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
     cover: resolveBlogStaticAsset(article.cover, defaultCover),
     date: formatDate(article.date || article.modified),
     excerpt,
+    headings: normalizeArticleHeadings(article.headings, contentHtml),
     id: article.id,
     readTime: `${Math.max(1, Math.ceil(words / 500))} 分钟`,
     slug: decodeSlug(article.slug),
@@ -228,6 +231,56 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
     views: 0,
     words,
   };
+}
+
+/**
+ * @param headings Optional heading outline supplied directly by the public API.
+ * @param contentHtml Rendered WordPress HTML used as the source of truth when the API omits headings.
+ * @returns Heading outline used only to decide whether Argon's article/sidebar catalog tab should be visible.
+ */
+function normalizeArticleHeadings(
+  headings: WordpressPublicArticle['headings'],
+  contentHtml: string,
+): BlogArticleHeading[] {
+  if (headings?.length) {
+    return headings.map((heading, index) => ({
+      id: heading.id || blogGeneratedHeadingId(index + 1),
+      level: normalizeHeadingLevel(heading.level),
+      text: stripHtml(heading.text),
+    })).filter((heading) => heading.text);
+  }
+
+  return extractArticleHeadingsFromHtml(contentHtml);
+}
+
+/**
+ * @param contentHtml Rendered WordPress article HTML returned by the public article API.
+ * @returns Ordered h1-h6 headings parsed from the article body so post pages can expose the catalog tab.
+ */
+function extractArticleHeadingsFromHtml(contentHtml: string): BlogArticleHeading[] {
+  const parser = typeof DOMParser === 'undefined' ? null : new DOMParser();
+  if (!parser) return [];
+
+  const document = parser.parseFromString(contentHtml, 'text/html');
+
+  return Array.from(document.querySelectorAll<HTMLHeadingElement>('h1, h2, h3, h4, h5, h6'))
+    .map((heading, index) => ({
+      id: heading.id || blogGeneratedHeadingId(index + 1),
+      level: normalizeHeadingLevel(Number(heading.tagName.slice(1))),
+      text: stripHtml(heading.textContent),
+    }))
+    .filter((heading) => heading.text);
+}
+
+/**
+ * @param value Heading level from API metadata or a parsed HTML tag name.
+ * @returns Safe heading level constrained to the h1-h6 range accepted by the catalog model.
+ */
+function normalizeHeadingLevel(value: unknown): BlogArticleHeading['level'] {
+  const level = Number(value);
+  if (level >= 1 && level <= 6) return level as BlogArticleHeading['level'];
+
+  return 2;
 }
 
 /**

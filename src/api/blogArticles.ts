@@ -11,6 +11,12 @@ export type WordpressResolvedTerm = {
   slug?: string;
 };
 
+export type WordpressArticleHeading = {
+  id?: string;
+  level?: number;
+  text?: string;
+};
+
 export type WordpressPublicArticle = {
   authorName?: string;
   categoriesResolved?: WordpressResolvedTerm[];
@@ -21,6 +27,7 @@ export type WordpressPublicArticle = {
   date?: string;
   excerpt?: string | { rendered?: string };
   excerptText?: string;
+  headings?: WordpressArticleHeading[];
   id: number;
   link?: string;
   modified?: string;
