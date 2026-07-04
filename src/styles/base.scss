@@ -282,6 +282,8 @@ html.filter-darkness .kt-blog__primary::after {
     width: 220px;
     height: 320px;
     pointer-events: auto;
+    transform-origin: 50% 82%;
+    will-change: transform;
   }
 
 }

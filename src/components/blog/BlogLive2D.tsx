@@ -1,7 +1,11 @@
 import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { fetchBlogLive2DManifest } from '@/api/live2dManifest';
-import { BLOG_VIEWPORT_GEOMETRY } from '@/factories/blogAnimationFactory';
+import {
+  BLOG_VIEWPORT_GEOMETRY,
+  createBlogLive2DIdleAnimator,
+  type BlogLive2DIdleAnimatorHandle,
+} from '@/factories/blogAnimationFactory';
 import { blogDomId } from '@/factories/blogDomFactory';
 
 import { mountOfficialPioRuntime } from './live2d/officialRuntimeBridge';
@@ -19,6 +23,7 @@ export default defineComponent({
     const canvasRef = ref<HTMLCanvasElement | null>(null);
     const isDesktop = window.innerWidth >= BLOG_VIEWPORT_GEOMETRY.live2dDesktopMinWidthPx;
     let disposed = false;
+    let idleAnimatorHandle: BlogLive2DIdleAnimatorHandle | null = null;
     let runtimeHandle: KtPioLive2DRuntimeHandle | null = null;
 
     onMounted(async () => {
@@ -34,6 +39,7 @@ export default defineComponent({
           return;
         }
         runtimeHandle = mountedHandle;
+        idleAnimatorHandle = createBlogLive2DIdleAnimator(canvasRef.value);
       } catch (error: unknown) {
         console.warn('[KT Blog] Pio Live2D unavailable.', error);
       }
@@ -41,6 +47,8 @@ export default defineComponent({
 
     onBeforeUnmount(() => {
       disposed = true;
+      idleAnimatorHandle?.destroy();
+      idleAnimatorHandle = null;
       runtimeHandle?.destroy();
       runtimeHandle = null;
     });

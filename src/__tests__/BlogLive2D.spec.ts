@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fetchBlogLive2DManifest } from '@/api/live2dManifest';
 import BlogLive2D from '@/components/blog/BlogLive2D';
 import { mountOfficialPioRuntime } from '@/components/blog/live2d/officialRuntimeBridge';
+import { createBlogLive2DIdleAnimator } from '@/factories/blogAnimationFactory';
 
 const pioManifest = {
   character: 'pio',
@@ -165,6 +166,13 @@ describe('BlogLive2D', () => {
       'fetch',
       vi.fn(async () => new Response(JSON.stringify(pioManifest), { status: 200 })),
     );
+    const frames: FrameRequestCallback[] = [];
+    const cancelFrame = vi.fn();
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(cancelFrame);
     const destroy = vi.fn();
     vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
       const element = Node.prototype.appendChild.call(document.body, node);
@@ -186,9 +194,45 @@ describe('BlogLive2D', () => {
       canvas: canvas.element,
       model3: '/api/blog/live2d/pio/v1/pio.model3.json',
     });
+    frames.shift()?.(1000);
+
+    expect((canvas.element as HTMLCanvasElement).style.transform).toContain('translate3d');
 
     wrapper.unmount();
 
     expect(destroy).toHaveBeenCalledTimes(1);
+    expect(cancelFrame).toHaveBeenCalled();
+  });
+});
+
+describe('createBlogLive2DIdleAnimator', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('keeps the Pio canvas visibly moving between animation frames', () => {
+    const frames: FrameRequestCallback[] = [];
+    const cancelFrame = vi.fn();
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(cancelFrame);
+    const canvas = document.createElement('canvas');
+    canvas.style.transform = 'translateX(1px)';
+
+    const handle = createBlogLive2DIdleAnimator(canvas);
+    frames.shift()?.(1000);
+    const firstTransform = canvas.style.transform;
+    frames.shift()?.(2200);
+    const secondTransform = canvas.style.transform;
+
+    expect(firstTransform).not.toBe('translateX(1px)');
+    expect(secondTransform).not.toBe(firstTransform);
+
+    handle.destroy();
+
+    expect(canvas.style.transform).toBe('translateX(1px)');
+    expect(cancelFrame).toHaveBeenCalled();
   });
 });
