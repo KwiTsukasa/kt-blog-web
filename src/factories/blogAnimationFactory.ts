@@ -2,7 +2,6 @@ export const BLOG_ANIMATION_TIMING_MS = {
   catalogManualLock: 400,
   catalogNormal: 400,
   floatSideUnload: 300,
-  live2dFallbackWarmup: 1500,
   scrollToTop: 800,
   toastVisible: 5000,
 } as const;
@@ -27,7 +26,7 @@ export const BLOG_SCROLL_GEOMETRY = {
 } as const;
 
 export const BLOG_VIEWPORT_GEOMETRY = {
-  live2dDesktopMinWidthPx: 768,
+  live2dDesktopMinWidthPx: 1200,
 } as const;
 
 export const BLOG_MOTION_CSS_VARS = {

@@ -274,42 +274,22 @@ html.filter-darkness .kt-blog__primary::after {
     margin-bottom: 1rem;
   }
 
-  &__live2d-fallback {
+  &__live2d-canvas {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    z-index: 80;
-    width: 280px;
-    height: 250px;
-    pointer-events: none;
+    right: 16px;
+    bottom: 76px;
+    z-index: 30;
+    width: 220px;
+    height: 320px;
+    pointer-events: auto;
+  }
 
-    #live2d {
-      width: 280px;
-      height: 250px;
-    }
+}
 
-    #live2dChatText,
-    #live2dSend,
-    #live2dSendClose {
-      position: absolute;
-      bottom: 0;
-      pointer-events: auto;
-    }
-
-    #live2dChatText {
-      left: 111px;
-      width: 6px;
-      height: 29px;
-    }
-
-    #live2dSend {
-      left: 116px;
-      height: 29px;
-    }
-
-    #live2dSendClose {
-      left: 166px;
-      bottom: 7px;
+@media (max-width: 1199px) {
+  @include blog.block {
+    &__live2d-canvas {
+      display: none;
     }
   }
 }

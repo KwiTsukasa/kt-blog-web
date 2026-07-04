@@ -29,11 +29,6 @@ export const BLOG_DOM_IDS = {
   leftbarSearchContainer: 'leftbar_search_container',
   leftbarSearchInput: 'leftbar_search_input',
   live2dCanvas: 'live2d',
-  live2dChatText: 'live2dChatText',
-  live2dFallback: 'kt-blog-live2d-fallback',
-  live2dSend: 'live2dSend',
-  live2dSendClose: 'live2dSendClose',
-  live2dStyle: 'waifu_css-css',
   main: 'main',
   openSidebar: 'open_sidebar',
   postArticleTitle: 'post_article_title',
@@ -61,13 +56,6 @@ export const BLOG_DOM_IDS = {
 export const BLOG_META_NAMES = {
   themeColor: 'theme-color',
   themeColorRgb: 'theme-color-rgb',
-} as const;
-
-export const BLOG_LIVE2D_SCRIPT_IDS = {
-  live2dV1Core: 'live2dv1core-js',
-  live2dV2Core: 'live2dv2core-js',
-  live2dV2Sdk: 'live2dv2sdk-js',
-  live2dWeb: 'live2dweb-js',
 } as const;
 
 export type BlogDomIdKey = keyof typeof BLOG_DOM_IDS;
