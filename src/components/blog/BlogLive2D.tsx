@@ -39,7 +39,9 @@ export default defineComponent({
           return;
         }
         runtimeHandle = mountedHandle;
-        idleAnimatorHandle = createBlogLive2DIdleAnimator(canvasRef.value);
+        idleAnimatorHandle = createBlogLive2DIdleAnimator(canvasRef.value, {
+          enableIdleMotion: !manifest.motionGroups?.Idle,
+        });
       } catch (error: unknown) {
         console.warn('[KT Blog] Pio Live2D unavailable.', error);
       }

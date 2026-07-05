@@ -10,8 +10,8 @@ const pioManifest = {
   character: 'pio',
   desktopOnly: true,
   fallback: null,
-  model3: '/api/blog/live2d/pio/v1/pio.model3.json',
-  runtimeScript: '/api/blog/live2d/pio/v1/pio-runtime.js',
+  model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
+  runtimeScript: '/api/blog/live2d/pio/v1/assets/runtime/pio-runtime.js',
   version: 'v1',
 } as const;
 
@@ -30,7 +30,7 @@ describe('fetchBlogLive2DManifest', () => {
 
     expect(manifest.character).toBe('pio');
     expect(manifest.fallback).toBeNull();
-    expect(manifest.model3).toBe('/api/blog/live2d/pio/v1/pio.model3.json');
+    expect(manifest.model3).toBe('/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json');
   });
 
   it('rejects non-Pio or fallback manifests before runtime loading', async () => {
@@ -97,7 +97,7 @@ describe('mountOfficialPioRuntime', () => {
     expect(runtime.mount).toHaveBeenCalledTimes(2);
     expect(runtime.mount).toHaveBeenCalledWith({
       canvas,
-      model3: '/api/blog/live2d/pio/v1/pio.model3.json',
+      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
     });
   });
 
@@ -132,11 +132,11 @@ describe('mountOfficialPioRuntime', () => {
     expect(runtime.mount).toHaveBeenCalledTimes(2);
     expect(runtime.mount).toHaveBeenNthCalledWith(1, {
       canvas: firstCanvas,
-      model3: '/api/blog/live2d/pio/v1/pio.model3.json',
+      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
     });
     expect(runtime.mount).toHaveBeenNthCalledWith(2, {
       canvas: secondCanvas,
-      model3: '/api/blog/live2d/pio/v1/pio.model3.json',
+      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
     });
   });
 });
@@ -192,7 +192,7 @@ describe('BlogLive2D', () => {
     expect(canvas.exists()).toBe(true);
     expect(window.KtPioLive2D?.mount).toHaveBeenCalledWith({
       canvas: canvas.element,
-      model3: '/api/blog/live2d/pio/v1/pio.model3.json',
+      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
     });
     frames.shift()?.(1000);
 
@@ -202,6 +202,75 @@ describe('BlogLive2D', () => {
 
     expect(destroy).toHaveBeenCalledTimes(1);
     expect(cancelFrame).toHaveBeenCalled();
+  });
+
+  it('does not start the canvas idle fallback when source idle motions exist', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              ...pioManifest,
+              motionGroups: {
+                Idle: 6,
+              },
+            }),
+            { status: 200 },
+          ),
+      ),
+    );
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = Node.prototype.appendChild.call(document.body, node);
+      if (element instanceof HTMLScriptElement) {
+        window.KtPioLive2D = {
+          mount: vi.fn(async () => ({ destroy: vi.fn() })),
+        };
+        element.onload?.(new Event('load'));
+      }
+      return element;
+    });
+
+    const wrapper = mount(BlogLive2D);
+    await flushPromises();
+
+    const canvas = wrapper.find('canvas#live2d');
+    expect(canvas.exists()).toBe(true);
+    const canvasElement = canvas.element as HTMLCanvasElement;
+    vi.spyOn(canvasElement, 'getBoundingClientRect').mockReturnValue({
+      bottom: 420,
+      height: 320,
+      left: 100,
+      right: 320,
+      toJSON: () => ({}),
+      top: 100,
+      width: 220,
+      x: 100,
+      y: 100,
+    } as DOMRect);
+
+    expect(canvasElement.style.transform).toBe('');
+    expect(frames).toHaveLength(0);
+
+    window.dispatchEvent(new MouseEvent('pointermove', { clientX: 160, clientY: 160 }));
+
+    expect(canvasElement.style.transform).toBe('');
+
+    canvasElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 210, clientY: 260 }));
+
+    expect(canvasElement.style.transform).toContain('translate3d');
+
+    canvasElement.dispatchEvent(new MouseEvent('pointerleave'));
+
+    expect(canvasElement.style.transform).toBe('');
+
+    wrapper.unmount();
   });
 });
 

@@ -1,12 +1,38 @@
 export interface BlogLive2DManifest {
+  assets?: {
+    shaderBase?: string;
+    sourceTextureBase?: string;
+    textureBase?: string;
+  };
   character: 'pio';
+  directoryStandard?: {
+    catalog: string;
+    opsRoot: string;
+    publicRoot: string;
+    version: string;
+  };
   desktopOnly: boolean;
   fallback: null;
   integrity?: {
     manifestSha256?: string;
+    mocSha256?: string;
+    model3Sha256?: string;
+    motionValidationSha256?: string;
+    runtimeSha256?: string;
+    sourceMotionExportSha256?: string;
+    sourceTextureManifestSha256?: string;
   };
   model3: string;
+  motionGroups?: Record<string, number>;
+  runtimeRig?: {
+    type: 'moc3-model-motion';
+    validation: string;
+  };
   runtimeScript: string;
+  sourceTextures?: {
+    count: number;
+    manifest: string;
+  };
   version: string;
 }
 
