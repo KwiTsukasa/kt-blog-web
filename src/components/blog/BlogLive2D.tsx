@@ -1,49 +1,35 @@
-import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+import { defineComponent, onBeforeUnmount, onMounted } from 'vue';
 
-import { fetchBlogLive2DManifest } from '@/api/live2dManifest';
+import { BLOG_VIEWPORT_GEOMETRY } from '@/factories/blogAnimationFactory';
+
 import {
-  BLOG_VIEWPORT_GEOMETRY,
-  createBlogLive2DIdleAnimator,
-  type BlogLive2DIdleAnimatorHandle,
-} from '@/factories/blogAnimationFactory';
-import { blogDomId } from '@/factories/blogDomFactory';
-
-import { mountOfficialPioRuntime } from './live2d/officialRuntimeBridge';
-import type { KtPioLive2DRuntimeHandle } from './live2d/types';
-
-const LIVE2D_MANIFEST_URL = import.meta.env.VITE_BLOG_LIVE2D_MANIFEST_URL || '/api/blog/live2d/pio/v2/manifest.json';
+  mountWordPressLive2DRuntime,
+  type WordPressLive2DRuntimeHandle,
+} from './live2d/wordpressRuntimeBridge';
 
 export default defineComponent({
   name: 'BlogLive2D',
   /**
-   * Owns the Pio canvas lifecycle and defers all drawing to the official runtime bridge.
+   * Owns the Pio canvas lifecycle and defers drawing to the WordPress-exported runtime.
    * @returns Render function that only creates the canvas on desktop viewports.
    */
   setup() {
-    const canvasRef = ref<HTMLCanvasElement | null>(null);
     const isDesktop = window.innerWidth >= BLOG_VIEWPORT_GEOMETRY.live2dDesktopMinWidthPx;
     let disposed = false;
-    let idleAnimatorHandle: BlogLive2DIdleAnimatorHandle | null = null;
-    let runtimeHandle: KtPioLive2DRuntimeHandle | null = null;
+    let runtimeHandle: WordPressLive2DRuntimeHandle | null = null;
 
     onMounted(async () => {
-      if (!isDesktop || !canvasRef.value) {
+      if (!isDesktop) {
         return;
       }
 
       try {
-        const manifest = await fetchBlogLive2DManifest(LIVE2D_MANIFEST_URL);
-        const mountedHandle = await mountOfficialPioRuntime(canvasRef.value, manifest);
+        const mountedHandle = await mountWordPressLive2DRuntime();
         if (disposed) {
           mountedHandle.destroy();
           return;
         }
         runtimeHandle = mountedHandle;
-        if (!manifest.wordpressParity) {
-          idleAnimatorHandle = createBlogLive2DIdleAnimator(canvasRef.value, {
-            enableIdleMotion: !manifest.motionGroups?.Idle,
-          });
-        }
       } catch (error: unknown) {
         console.warn('[KT Blog] Pio Live2D unavailable.', error);
       }
@@ -51,15 +37,10 @@ export default defineComponent({
 
     onBeforeUnmount(() => {
       disposed = true;
-      idleAnimatorHandle?.destroy();
-      idleAnimatorHandle = null;
       runtimeHandle?.destroy();
       runtimeHandle = null;
     });
 
-    return () =>
-      isDesktop ? (
-        <canvas id={blogDomId('live2dCanvas')} ref={canvasRef} class="kt-blog__live2d-canvas" />
-      ) : null;
+    return () => null;
   },
 });

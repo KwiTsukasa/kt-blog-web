@@ -1,153 +1,51 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchBlogLive2DManifest } from '@/api/live2dManifest';
 import BlogLive2D from '@/components/blog/BlogLive2D';
-import { mountOfficialPioRuntime } from '@/components/blog/live2d/officialRuntimeBridge';
-import { createBlogLive2DIdleAnimator } from '@/factories/blogAnimationFactory';
+import {
+  DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY,
+  DEFAULT_WORDPRESS_LIVE2D_SCRIPT,
+  DEFAULT_WORDPRESS_LIVE2D_SETTINGS,
+  mountWordPressLive2DRuntime,
+} from '@/components/blog/live2d/wordpressRuntimeBridge';
 
-const pioManifest = {
-  character: 'pio',
-  desktopOnly: true,
-  fallback: null,
-  model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
-  motionGroups: {
-    FlickHead: 6,
-    Idle: 6,
-    Sleepy: 1,
-    TapBody: 9,
-  },
-  runtimeScript: '/api/blog/live2d/pio/v1/assets/runtime/pio-runtime.js',
-  version: 'v1',
-  wordpressParity: {
-    hitAreasCustom: {
-      body_x: [-0.3, -0.25],
-      body_y: [0.3, -0.9],
-      head_x: [-0.35, 0.6],
-      head_y: [0.19, -0.2],
-    },
-    layout: {
-      center_x: 0,
-      center_y: -0.05,
-      width: 2,
-    },
-    motionGroups: {
-      FlickHead: {
-        legacyName: 'flick_head',
-        sourceFiles: ['motions/Touch Dere1.mtn'],
-      },
-      Idle: {
-        legacyName: 'idle',
-        sourceFiles: ['motions/Breath1.mtn'],
-      },
-      Sleepy: {
-        legacyName: 'sleepy',
-        sourceFiles: ['motions/Sleeping.mtn'],
-      },
-      TapBody: {
-        legacyName: 'tap_body',
-        sourceFiles: ['motions/Touch1.mtn'],
-      },
-    },
-    parameterRig: {
-      breath: [{ cycle: 3.2345, id: 'ParamBreath', offset: 0.5, peak: 0.5, weight: 1 }],
-      look: [{ factorX: 30, factorXY: 0, factorY: 0, id: 'ParamAngleX' }],
-    },
-    version: '2026-07-05-wordpress-v1',
-  },
-} as const;
-
-describe('fetchBlogLive2DManifest', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('accepts only the Pio manifest without fallback model chains', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(JSON.stringify(pioManifest), { status: 200 })),
-    );
-
-    const manifest = await fetchBlogLive2DManifest('/manifest.json');
-
-    expect(manifest.character).toBe('pio');
-    expect(manifest.fallback).toBeNull();
-    expect(manifest.model3).toBe('/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json');
-  });
-
-  it('rejects non-Pio or fallback manifests before runtime loading', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({
-              ...pioManifest,
-              character: 'haru',
-              fallback: 'https://cdn.example.com/model.json',
-            }),
-            { status: 200 },
-          ),
-      ),
-    );
-
-    await expect(fetchBlogLive2DManifest('/manifest.json')).rejects.toThrow(
-      'Only Pio Live2D manifest is allowed.',
-    );
-  });
-
-  it('rejects malformed manifest payloads before runtime loading', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(JSON.stringify(null), { status: 200 })),
-    );
-
-    await expect(fetchBlogLive2DManifest('/manifest.json')).rejects.toThrow(
-      'Only Pio Live2D manifest is allowed.',
-    );
-  });
-});
-
-describe('mountOfficialPioRuntime', () => {
+describe('mountWordPressLive2DRuntime', () => {
   afterEach(() => {
     document.body.innerHTML = '';
-    delete window.KtPioLive2D;
+    delete window.InitLive2D;
+    delete window.LAppDefine;
+    delete window.LAppLive2DManager;
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 
-  it('loads official runtime script once and mounts with the manifest model URL', async () => {
-    const destroy = vi.fn();
-    const runtime = {
-      mount: vi.fn(async () => ({ destroy })),
-    };
+  it('loads the WordPress Cubism2 MOC runtime once and keeps the SPA singleton mounted', async () => {
+    const initLive2D = vi.fn();
     const originalAppendChild = document.body.appendChild.bind(document.body);
     vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
       const element = originalAppendChild(node);
       if (element instanceof HTMLScriptElement) {
-        window.KtPioLive2D = runtime;
+        window.InitLive2D = initLive2D;
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = vi.fn();
         element.onload?.(new Event('load'));
       }
       return element;
     });
 
-    const canvas = document.createElement('canvas');
-    await mountOfficialPioRuntime(canvas, pioManifest);
-    await mountOfficialPioRuntime(canvas, pioManifest);
+    await mountWordPressLive2DRuntime();
+    await mountWordPressLive2DRuntime();
 
-    expect(document.querySelectorAll('script#kt-blog-pio-live2d-runtime')).toHaveLength(1);
-    expect(runtime.mount).toHaveBeenCalledTimes(2);
-    expect(runtime.mount).toHaveBeenCalledWith({
-      canvas,
-      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
-      wordpressParity: pioManifest.wordpressParity,
-    });
+    const runtimeScript = document.querySelector('script#kt-blog-pio-wordpress-live2d-runtime');
+    expect(runtimeScript?.getAttribute('src')).toBe(DEFAULT_WORDPRESS_LIVE2D_SCRIPT);
+    expect(document.querySelectorAll('script#kt-blog-pio-wordpress-live2d-runtime')).toHaveLength(1);
+    expect(document.querySelectorAll('canvas#live2d.kt-blog__live2d-canvas')).toHaveLength(1);
+    expect(initLive2D).toHaveBeenCalledTimes(1);
+    expect(window.LAppDefine).toMatchObject(DEFAULT_WORDPRESS_LIVE2D_SETTINGS);
+    expect(window.LAppDefine?.MODELS).toEqual([[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY]]);
   });
 
-  it('coalesces concurrent runtime script loads before mounting', async () => {
-    const runtime = {
-      mount: vi.fn(async () => ({ destroy: vi.fn() })),
-    };
+  it('coalesces concurrent WordPress runtime script loads before calling InitLive2D', async () => {
+    const initLive2D = vi.fn();
     const runtimeScripts: HTMLScriptElement[] = [];
     const originalAppendChild = document.body.appendChild.bind(document.body);
     vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
@@ -158,184 +56,151 @@ describe('mountOfficialPioRuntime', () => {
       return element;
     });
 
-    const firstCanvas = document.createElement('canvas');
-    const secondCanvas = document.createElement('canvas');
-    const firstMount = mountOfficialPioRuntime(firstCanvas, pioManifest);
-    const secondMount = mountOfficialPioRuntime(secondCanvas, pioManifest);
+    const firstMount = mountWordPressLive2DRuntime();
+    const secondMount = mountWordPressLive2DRuntime();
     await Promise.resolve();
 
-    expect(document.querySelectorAll('script#kt-blog-pio-live2d-runtime')).toHaveLength(1);
+    expect(document.querySelectorAll('script#kt-blog-pio-wordpress-live2d-runtime')).toHaveLength(1);
+    expect(document.querySelectorAll('canvas#live2d.kt-blog__live2d-canvas')).toHaveLength(1);
 
-    window.KtPioLive2D = runtime;
+    window.InitLive2D = initLive2D;
+    window.LAppLive2DManager = function LAppLive2DManager() {};
+    window.LAppLive2DManager.prototype.tapEvent = vi.fn();
     expect(runtimeScripts).toHaveLength(1);
     runtimeScripts[0]?.onload?.(new Event('load'));
 
     await Promise.all([firstMount, secondMount]);
 
-    expect(runtime.mount).toHaveBeenCalledTimes(2);
-    expect(runtime.mount).toHaveBeenNthCalledWith(1, {
-      canvas: firstCanvas,
-      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
-      wordpressParity: pioManifest.wordpressParity,
+    expect(initLive2D).toHaveBeenCalledTimes(1);
+    expect(window.LAppDefine?.MODELS).toEqual([[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY]]);
+  });
+
+  it('maps WordPress Pio custom hit areas to source motion groups', async () => {
+    const initLive2D = vi.fn();
+    const originalTapEvent = vi.fn(() => false);
+    const startRandomMotion = vi.fn();
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = originalAppendChild(node);
+      if (element instanceof HTMLScriptElement) {
+        window.InitLive2D = initLive2D;
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = originalTapEvent;
+        element.onload?.(new Event('load'));
+      }
+      return element;
     });
-    expect(runtime.mount).toHaveBeenNthCalledWith(2, {
-      canvas: secondCanvas,
-      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
-      wordpressParity: pioManifest.wordpressParity,
-    });
+
+    await mountWordPressLive2DRuntime();
+
+    const tapEvent = window.LAppLive2DManager?.prototype.tapEvent;
+    const manager = {
+      models: [
+        {
+          modelSetting: {
+            json: {
+              hit_areas_custom: {
+                body_x: [-0.3, -0.25] as [number, number],
+                body_y: [0.3, -0.9] as [number, number],
+                head_x: [-0.35, 0.6] as [number, number],
+                head_y: [0.19, -0.2] as [number, number],
+              },
+            },
+          },
+          startRandomMotion,
+        },
+      ],
+    };
+
+    expect(tapEvent?.call(manager, 0, 0)).toBe(true);
+    expect(startRandomMotion).toHaveBeenLastCalledWith('flick_head', 2);
+    expect(tapEvent?.call(manager, -0.275, -0.3)).toBe(true);
+    expect(startRandomMotion).toHaveBeenLastCalledWith('tap_body', 2);
+    expect(tapEvent?.call(manager, 0.9, 0.9)).toBe(false);
+    expect(originalTapEvent).toHaveBeenCalledWith(0.9, 0.9);
   });
 });
 
 describe('BlogLive2D', () => {
   afterEach(() => {
     document.body.innerHTML = '';
+    delete window.InitLive2D;
+    delete window.LAppDefine;
+    delete window.LAppLive2DManager;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('does not fetch the manifest below the desktop viewport', async () => {
+  it('does not load the WordPress runtime below the desktop viewport', async () => {
     vi.stubGlobal('innerWidth', 1199);
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+    const appendChild = vi.spyOn(document.body, 'appendChild');
 
     mount(BlogLive2D);
     await flushPromises();
 
+    expect(appendChild).not.toHaveBeenCalled();
+    expect(document.querySelector('canvas#live2d')).toBeNull();
+  });
+
+  it('mounts the WordPress Cubism2 MOC runtime on desktop without manifest fetch or canvas fallback motion', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame');
+    const initLive2D = vi.fn();
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = originalAppendChild(node);
+      if (element instanceof HTMLScriptElement) {
+        window.InitLive2D = initLive2D;
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = vi.fn();
+        element.onload?.(new Event('load'));
+      }
+      return element;
+    });
+
+    const wrapper = mount(BlogLive2D);
+    await flushPromises();
+
+    const canvas = document.querySelector('canvas#live2d.kt-blog__live2d-canvas') as HTMLCanvasElement | null;
+    expect(wrapper.find('canvas#live2d').exists()).toBe(false);
+    expect(canvas).not.toBeNull();
+    expect(canvas?.width).toBe(DEFAULT_WORDPRESS_LIVE2D_SETTINGS.canvasSize.width);
+    expect(canvas?.height).toBe(DEFAULT_WORDPRESS_LIVE2D_SETTINGS.canvasSize.height);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(document.querySelector('#live2d')).toBeNull();
+    expect(initLive2D).toHaveBeenCalledTimes(1);
+    expect(canvas?.style.transform).toBe('');
+    expect(requestFrame).not.toHaveBeenCalled();
+
+    wrapper.unmount();
   });
 
-  it('mounts Pio runtime on desktop and destroys it when unmounted', async () => {
+  it('reuses the page-level WordPress runtime after route component remounts', async () => {
     vi.stubGlobal('innerWidth', 1280);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(JSON.stringify(pioManifest), { status: 200 })),
-    );
-    const requestFrame = vi.spyOn(window, 'requestAnimationFrame');
-    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame');
-    const destroy = vi.fn();
+    const initLive2D = vi.fn();
+    const originalAppendChild = document.body.appendChild.bind(document.body);
     vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
-      const element = Node.prototype.appendChild.call(document.body, node);
+      const element = originalAppendChild(node);
       if (element instanceof HTMLScriptElement) {
-        window.KtPioLive2D = {
-          mount: vi.fn(async () => ({ destroy })),
-        };
+        window.InitLive2D = initLive2D;
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = vi.fn();
         element.onload?.(new Event('load'));
       }
       return element;
     });
 
-    const wrapper = mount(BlogLive2D);
+    const firstWrapper = mount(BlogLive2D);
+    await flushPromises();
+    firstWrapper.unmount();
+    const secondWrapper = mount(BlogLive2D);
     await flushPromises();
 
-    const canvas = wrapper.find('canvas#live2d');
-    expect(canvas.exists()).toBe(true);
-    expect(window.KtPioLive2D?.mount).toHaveBeenCalledWith({
-      canvas: canvas.element,
-      model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
-      wordpressParity: pioManifest.wordpressParity,
-    });
+    expect(document.querySelectorAll('canvas#live2d.kt-blog__live2d-canvas')).toHaveLength(1);
+    expect(document.querySelectorAll('script#kt-blog-pio-wordpress-live2d-runtime')).toHaveLength(1);
+    expect(initLive2D).toHaveBeenCalledTimes(1);
 
-    expect((canvas.element as HTMLCanvasElement).style.transform).toBe('');
-
-    wrapper.unmount();
-
-    expect(destroy).toHaveBeenCalledTimes(1);
-    expect(requestFrame).not.toHaveBeenCalled();
-    expect(cancelFrame).not.toHaveBeenCalled();
-  });
-
-  it('does not start canvas transform fallback when WordPress parity owns motion', async () => {
-    vi.stubGlobal('innerWidth', 1280);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({
-              ...pioManifest,
-            }),
-            { status: 200 },
-          ),
-      ),
-    );
-    const requestFrame = vi.spyOn(window, 'requestAnimationFrame');
-    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
-      const element = Node.prototype.appendChild.call(document.body, node);
-      if (element instanceof HTMLScriptElement) {
-        window.KtPioLive2D = {
-          mount: vi.fn(async () => ({ destroy: vi.fn() })),
-        };
-        element.onload?.(new Event('load'));
-      }
-      return element;
-    });
-
-    const wrapper = mount(BlogLive2D);
-    await flushPromises();
-
-    const canvas = wrapper.find('canvas#live2d');
-    expect(canvas.exists()).toBe(true);
-    const canvasElement = canvas.element as HTMLCanvasElement;
-    vi.spyOn(canvasElement, 'getBoundingClientRect').mockReturnValue({
-      bottom: 420,
-      height: 320,
-      left: 100,
-      right: 320,
-      toJSON: () => ({}),
-      top: 100,
-      width: 220,
-      x: 100,
-      y: 100,
-    } as DOMRect);
-
-    expect(canvasElement.style.transform).toBe('');
-    expect(requestFrame).not.toHaveBeenCalled();
-
-    window.dispatchEvent(new MouseEvent('pointermove', { clientX: 160, clientY: 160 }));
-
-    expect(canvasElement.style.transform).toBe('');
-
-    canvasElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 210, clientY: 260 }));
-
-    expect(canvasElement.style.transform).toBe('');
-
-    canvasElement.dispatchEvent(new MouseEvent('pointerleave'));
-
-    expect(canvasElement.style.transform).toBe('');
-
-    wrapper.unmount();
-  });
-});
-
-describe('createBlogLive2DIdleAnimator', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('keeps the Pio canvas visibly moving between animation frames', () => {
-    const frames: FrameRequestCallback[] = [];
-    const cancelFrame = vi.fn();
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      frames.push(callback);
-      return frames.length;
-    });
-    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(cancelFrame);
-    const canvas = document.createElement('canvas');
-    canvas.style.transform = 'translateX(1px)';
-
-    const handle = createBlogLive2DIdleAnimator(canvas);
-    frames.shift()?.(1000);
-    const firstTransform = canvas.style.transform;
-    frames.shift()?.(2200);
-    const secondTransform = canvas.style.transform;
-
-    expect(firstTransform).not.toBe('translateX(1px)');
-    expect(secondTransform).not.toBe(firstTransform);
-
-    handle.destroy();
-
-    expect(canvas.style.transform).toBe('translateX(1px)');
-    expect(cancelFrame).toHaveBeenCalled();
+    secondWrapper.unmount();
   });
 });

@@ -29,16 +29,6 @@ export const BLOG_VIEWPORT_GEOMETRY = {
   live2dDesktopMinWidthPx: 1200,
 } as const;
 
-export const BLOG_LIVE2D_IDLE_MOTION = {
-  bobPx: 5,
-  breathScale: 0.018,
-  pointerMaxRotateDeg: 1.8,
-  pointerMaxX: 8,
-  pointerMaxY: 5,
-  pointerSmoothing: 0.1,
-  swayDeg: 1.15,
-} as const;
-
 export const BLOG_MOTION_CSS_VARS = {
   backgroundEase: 'background 0.3s ease',
   backgroundImageOpacity: 'opacity 0.5s ease',
@@ -55,18 +45,6 @@ export const BLOG_MOTION_CSS_VARS = {
 export interface BlogFrameScheduler {
   cancel: () => void;
   schedule: () => void;
-}
-
-export interface BlogLive2DIdleAnimatorHandle {
-  /**
-   * Stops the frame loop, removes pointer listeners, and restores the canvas transform owned before animation.
-   */
-  destroy: () => void;
-}
-
-export interface BlogLive2DIdleAnimatorOptions {
-  enableIdleMotion?: boolean;
-  enablePointerParallax?: boolean;
 }
 
 /**
@@ -116,153 +94,6 @@ export function createBlogFrameScheduler(callback: () => void): BlogFrameSchedul
         frameId = 0;
         callback();
       });
-    },
-  };
-}
-
-/**
- * Adds lightweight fallback motion and pointer parallax around the self-hosted Pio canvas.
- * @param canvas Pio canvas owned by `BlogLive2D`; its inline transform is restored on destroy.
- * @param options Flags that disable idle fallback once source model motions are available.
- * @returns Lifecycle handle that must be destroyed with the runtime mount handle.
- */
-export function createBlogLive2DIdleAnimator(
-  canvas: HTMLCanvasElement,
-  options: BlogLive2DIdleAnimatorOptions = {},
-): BlogLive2DIdleAnimatorHandle {
-  const initialTransform = canvas.style.transform;
-  const enableIdleMotion = options.enableIdleMotion ?? true;
-  const enablePointerParallax = options.enablePointerParallax ?? true;
-  let frameId = 0;
-  let disposed = false;
-  let startedAt = 0;
-  let pointerTargetX = 0;
-  let pointerTargetY = 0;
-  let pointerX = 0;
-  let pointerY = 0;
-  let pointerActive = false;
-
-  /**
-   * Restores the canvas transform to the value owned before this fallback animator.
-   */
-  const restoreTransform = () => {
-    canvas.style.transform = initialTransform;
-  };
-
-  /**
-   * Tracks the visitor pointer as a small parallax target around the fixed Pio canvas.
-   * @param event Pointer movement on the active parallax surface.
-   */
-  const onPointerMove = (event: PointerEvent) => {
-    const rect = canvas.getBoundingClientRect();
-    const right = rect.left + rect.width;
-    const bottom = rect.top + rect.height;
-    const pointerInsideCanvas =
-      event.clientX >= rect.left && event.clientX <= right && event.clientY >= rect.top && event.clientY <= bottom;
-    if (!enableIdleMotion && !pointerInsideCanvas) {
-      return;
-    }
-
-    pointerActive = true;
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const normalizedX = Math.max(-1, Math.min(1, (event.clientX - centerX) / Math.max(rect.width, 1)));
-    const normalizedY = Math.max(-1, Math.min(1, (event.clientY - centerY) / Math.max(rect.height, 1)));
-    pointerTargetX = normalizedX * BLOG_LIVE2D_IDLE_MOTION.pointerMaxX;
-    pointerTargetY = normalizedY * BLOG_LIVE2D_IDLE_MOTION.pointerMaxY;
-    if (!enableIdleMotion) {
-      pointerX = pointerTargetX;
-      pointerY = pointerTargetY;
-      writeTransform(0);
-    }
-  };
-
-  /**
-   * Lets the idle loop ease Pio back to neutral when the pointer leaves the document.
-   */
-  const onPointerLeave = () => {
-    pointerActive = false;
-    pointerTargetX = 0;
-    pointerTargetY = 0;
-    if (!enableIdleMotion) {
-      pointerX = 0;
-      pointerY = 0;
-      restoreTransform();
-    }
-  };
-
-  /**
-   * Writes the composed fallback transform for either idle frames or pointer-only updates.
-   * @param elapsedSeconds Elapsed time used by idle bob, breath, and sway terms.
-   */
-  const writeTransform = (elapsedSeconds: number) => {
-    if (!enableIdleMotion && !pointerActive) {
-      restoreTransform();
-      return;
-    }
-
-    const bob = enableIdleMotion ? Math.sin(elapsedSeconds * 1.65) * BLOG_LIVE2D_IDLE_MOTION.bobPx : 0;
-    const scale = enableIdleMotion ? 1 + Math.sin(elapsedSeconds * 2.1) * BLOG_LIVE2D_IDLE_MOTION.breathScale : 1;
-    const sway = enableIdleMotion ? Math.sin(elapsedSeconds * 0.95) * BLOG_LIVE2D_IDLE_MOTION.swayDeg : 0;
-    const rotate =
-      sway + (pointerX / BLOG_LIVE2D_IDLE_MOTION.pointerMaxX) * BLOG_LIVE2D_IDLE_MOTION.pointerMaxRotateDeg;
-
-    canvas.style.transform = [
-      initialTransform,
-      `translate3d(${(pointerX * 0.45).toFixed(2)}px, ${(bob + pointerY * 0.35).toFixed(2)}px, 0)`,
-      `rotate(${rotate.toFixed(3)}deg)`,
-      `scale(${scale.toFixed(4)})`,
-    ]
-      .filter(Boolean)
-      .join(' ');
-  };
-
-  /**
-   * Applies one visual idle frame and schedules the next frame until teardown.
-   * @param timestamp Browser animation timestamp supplied by requestAnimationFrame.
-   */
-  const tick = (timestamp: number) => {
-    if (disposed) {
-      return;
-    }
-    if (!startedAt) {
-      startedAt = timestamp;
-    }
-
-    const elapsedSeconds = (timestamp - startedAt) / 1000;
-    pointerX += (pointerTargetX - pointerX) * BLOG_LIVE2D_IDLE_MOTION.pointerSmoothing;
-    pointerY += (pointerTargetY - pointerY) * BLOG_LIVE2D_IDLE_MOTION.pointerSmoothing;
-    writeTransform(elapsedSeconds);
-    frameId = requestBlogFrame(tick);
-  };
-
-  if (enablePointerParallax) {
-    if (enableIdleMotion) {
-      window.addEventListener('pointermove', onPointerMove, { passive: true });
-      window.addEventListener('pointerleave', onPointerLeave);
-    } else {
-      canvas.addEventListener('pointermove', onPointerMove, { passive: true });
-      canvas.addEventListener('pointerleave', onPointerLeave);
-    }
-  }
-  if (enableIdleMotion) {
-    frameId = requestBlogFrame(tick);
-  }
-
-  return {
-    destroy: () => {
-      disposed = true;
-      cancelBlogFrame(frameId);
-      if (enablePointerParallax) {
-        if (enableIdleMotion) {
-          window.removeEventListener('pointermove', onPointerMove);
-          window.removeEventListener('pointerleave', onPointerLeave);
-        } else {
-          canvas.removeEventListener('pointermove', onPointerMove);
-          canvas.removeEventListener('pointerleave', onPointerLeave);
-        }
-      }
-      restoreTransform();
     },
   };
 }
