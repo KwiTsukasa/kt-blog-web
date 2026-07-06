@@ -128,6 +128,8 @@ export const DEFAULT_WORDPRESS_LIVE2D_SCRIPT = '/live2d/wordpress-moc/live2d.min
 
 export const DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY = '/api/blog/live2d/pio/moc/index.json';
 
+export const DEFAULT_WORDPRESS_LIVE2D_TIA_MODEL_ENTRY = '/api/blog/live2d/tia/moc/index.json';
+
 export const DEFAULT_WORDPRESS_LIVE2D_SETTINGS: WordPressLive2DSettings = {
   AUDIO_ID: 'kt-blog-pio-audio',
   BAN_BUTTON_CLASS: 'inactive',
@@ -138,11 +140,11 @@ export const DEFAULT_WORDPRESS_LIVE2D_SETTINGS: WordPressLive2DSettings = {
   HIT_AREA_BODY: 'body',
   HIT_AREA_HEAD: 'head',
   IS_BAN_BUTTON: true,
-  IS_BIND_BUTTON: false,
+  IS_BIND_BUTTON: true,
   IS_PLAY_AUDIO: false,
   IS_SCROLL_SCALE: false,
   IS_START_TEXURE_CHANGE: true,
-  MODELS: [[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY]],
+  MODELS: [[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY], [DEFAULT_WORDPRESS_LIVE2D_TIA_MODEL_ENTRY]],
   MOTION_GROUP_FLICK_HEAD: 'flick_head',
   MOTION_GROUP_IDLE: 'idle',
   MOTION_GROUP_PINCH_IN: 'pinch_in',
@@ -223,9 +225,10 @@ function ensureWordPressRuntimeWidgetShell(settings: WordPressLive2DSettings): W
   tips.className = 'waifu-tips';
   const tool = createWordPressToolMenu();
   const chat = createWordPressChatPanel();
+  const modelButton = createWordPressHiddenButton(settings.BUTTON_ID);
   const textureButton = createWordPressHiddenButton(settings.TEXURE_BUTTON_ID);
 
-  widget.replaceChildren(tips, canvas, tool, chat.container, textureButton);
+  widget.replaceChildren(tips, canvas, tool, chat.container, modelButton, textureButton);
   if (!existingWidget) {
     document.body.appendChild(widget);
   }
@@ -235,6 +238,7 @@ function ensureWordPressRuntimeWidgetShell(settings: WordPressLive2DSettings): W
     chat: chat.container,
     closeButton: chat.closeButton,
     input: chat.input,
+    modelButton,
     sendButton: chat.sendButton,
     textureButton,
     tips,
@@ -264,9 +268,11 @@ async function initializeWordPressRuntime(
   mountedRuntimeCanvas = shell.canvas;
   mountedPagePointerBridge?.destroy();
   mountedPagePointerBridge = mountWordPressPagePointerBridge(shell.canvas);
-  const textureCount = await resolveWordPressModelTextureCount(settings);
+  const textureCounts = settings.MODELS.map(() => undefined as number | undefined);
+  const resolveTextureCount = createWordPressModelTextureCountResolver(settings, textureCounts);
+  await resolveTextureCount(0);
   mountedWidgetController?.destroy();
-  mountedWidgetController = mountWordPressWidgetController(shell, { textureCount });
+  mountedWidgetController = mountWordPressWidgetController(shell, { resolveTextureCount, textureCounts });
   return createWordPressRuntimeHandle();
 }
 
@@ -330,16 +336,47 @@ function resolveWordPressViewY(canvas: HTMLCanvasElement, deviceY: number): numb
 }
 
 /**
- * Reads the active WordPress MOC model JSON so the toolbar can avoid destructive single-texture reloads.
- * @param settings Runtime settings whose first model entry points at the active Pio `index.json`.
+ * Creates a per-model texture count resolver so the toolbar can avoid destructive single-texture reloads.
+ * @param settings Runtime settings whose `MODELS` entries point at each character's `index.json`.
+ * @param textureCounts Mutable count cache shared with the toolbar controller.
+ * @returns Function that resolves and caches the texture count for a specific model index.
+ */
+function createWordPressModelTextureCountResolver(
+  settings: WordPressLive2DSettings,
+  textureCounts: Array<number | undefined>,
+): (modelIndex: number) => Promise<number | undefined> {
+  const pendingCounts: Array<Promise<number | undefined> | undefined> = [];
+  return async function resolveWordPressTextureCountForModel(modelIndex: number): Promise<number | undefined> {
+    if (typeof textureCounts[modelIndex] === 'number') {
+      return textureCounts[modelIndex];
+    }
+    if (pendingCounts[modelIndex]) {
+      return pendingCounts[modelIndex];
+    }
+
+    const modelEntry = settings.MODELS[modelIndex]?.[0];
+    if (!modelEntry || typeof window.fetch !== 'function') {
+      return undefined;
+    }
+
+    pendingCounts[modelIndex] = resolveWordPressModelTextureCount(modelEntry)
+      .then((count) => {
+        textureCounts[modelIndex] = count;
+        return count;
+      })
+      .finally(() => {
+        pendingCounts[modelIndex] = undefined;
+      });
+    return pendingCounts[modelIndex];
+  };
+}
+
+/**
+ * Reads one WordPress MOC model JSON and counts its usable texture entries.
+ * @param modelEntry API URL for a character's legacy MOC `index.json`.
  * @returns Number of usable texture entries, or `undefined` when the model JSON cannot be inspected.
  */
-async function resolveWordPressModelTextureCount(settings: WordPressLive2DSettings): Promise<number | undefined> {
-  const modelEntry = settings.MODELS[0]?.[0];
-  if (!modelEntry || typeof window.fetch !== 'function') {
-    return undefined;
-  }
-
+async function resolveWordPressModelTextureCount(modelEntry: string): Promise<number | undefined> {
   try {
     const response = await window.fetch(modelEntry, { credentials: 'same-origin' });
     if (!response.ok) {

@@ -9,8 +9,26 @@ import {
   DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY,
   DEFAULT_WORDPRESS_LIVE2D_SCRIPT,
   DEFAULT_WORDPRESS_LIVE2D_SETTINGS,
+  DEFAULT_WORDPRESS_LIVE2D_TIA_MODEL_ENTRY,
   mountWordPressLive2DRuntime,
 } from '@/components/blog/live2d/wordpressRuntimeBridge';
+
+interface DeferredValue<T> {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+}
+
+/**
+ * Creates a promise whose resolver stays in the test so toolbar loading guards can be checked before metadata arrives.
+ * @returns Promise and resolver pair controlled by the active unit test.
+ */
+function createDeferredValue<T>(): DeferredValue<T> {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
+}
 
 describe('mountWordPressLive2DRuntime', () => {
   afterEach(() => {
@@ -48,7 +66,10 @@ describe('mountWordPressLive2DRuntime', () => {
     expect(document.querySelectorAll('canvas#live2d.live2d.kt-blog__live2d-canvas')).toHaveLength(1);
     expect(initLive2D).toHaveBeenCalledTimes(1);
     expect(window.LAppDefine).toMatchObject(DEFAULT_WORDPRESS_LIVE2D_SETTINGS);
-    expect(window.LAppDefine?.MODELS).toEqual([[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY]]);
+    expect(window.LAppDefine?.MODELS).toEqual([
+      [DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY],
+      [DEFAULT_WORDPRESS_LIVE2D_TIA_MODEL_ENTRY],
+    ]);
   });
 
   it('coalesces concurrent WordPress runtime script loads before calling InitLive2D', async () => {
@@ -80,7 +101,10 @@ describe('mountWordPressLive2DRuntime', () => {
     await Promise.all([firstMount, secondMount]);
 
     expect(initLive2D).toHaveBeenCalledTimes(1);
-    expect(window.LAppDefine?.MODELS).toEqual([[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY]]);
+    expect(window.LAppDefine?.MODELS).toEqual([
+      [DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY],
+      [DEFAULT_WORDPRESS_LIVE2D_TIA_MODEL_ENTRY],
+    ]);
   });
 
   it('maps WordPress Pio custom hit areas to source motion groups', async () => {
@@ -235,10 +259,18 @@ describe('BlogLive2D', () => {
     expect(document.querySelector('.gptInput #live2dChatText')).not.toBeNull();
     expect(document.querySelector('.gptInput #live2dSend')).not.toBeNull();
     expect(document.querySelector('.gptInput #live2dSendClose')).not.toBeNull();
+    expect(document.getElementById('kt-blog-pio-change')).not.toBeNull();
     expect(document.getElementById('live2d-texture-button')).not.toBeNull();
     expect(window.LAppDefine?.canvasSize).toEqual({ width: 280, height: 250 });
+    expect(window.LAppDefine?.IS_BIND_BUTTON).toBe(true);
     expect(window.LAppDefine?.IS_START_TEXURE_CHANGE).toBe(true);
+    expect(window.LAppDefine?.BUTTON_ID).toBe('kt-blog-pio-change');
     expect(window.LAppDefine?.TEXURE_BUTTON_ID).toBe('live2d-texture-button');
+    expect(window.LAppDefine?.MODELS).toEqual([
+      [DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY],
+      [DEFAULT_WORDPRESS_LIVE2D_TIA_MODEL_ENTRY],
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY, { credentials: 'same-origin' });
     expect(initLive2D).toHaveBeenCalledTimes(1);
     expect(canvas?.style.transform).toBe('');
@@ -278,6 +310,130 @@ describe('BlogLive2D', () => {
 
     expect(hiddenClick).not.toHaveBeenCalled();
     expect(document.querySelector('.waifu-tips')?.textContent).toContain('只有一套');
+  });
+
+  it('switches to the Tia model through the hidden WordPress model button and lazy-loads its texture count', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ textures: ['textures/default-costume.png', 'textures/witch-costume.png'] }),
+        ok: true,
+      })
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ textures: ['textures/default-costume.png'] }),
+        ok: true,
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = originalAppendChild(node);
+      if (element instanceof HTMLScriptElement) {
+        window.InitLive2D = vi.fn();
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = vi.fn();
+        element.onload?.(new Event('load'));
+      }
+      return element;
+    });
+
+    mount(BlogLive2D);
+    await flushPromises();
+    const hiddenModelButton = document.getElementById('kt-blog-pio-change') as HTMLButtonElement;
+    const hiddenTextureButton = document.getElementById('live2d-texture-button') as HTMLButtonElement;
+    const hiddenModelClick = vi.fn();
+    const hiddenTextureClick = vi.fn();
+    hiddenModelButton.addEventListener('click', hiddenModelClick);
+    hiddenTextureButton.addEventListener('click', hiddenTextureClick);
+
+    document.querySelector<HTMLElement>('.waifu-tool .fui-user')?.click();
+    await flushPromises();
+    document.querySelector<HTMLElement>('.waifu-tool .fui-eye')?.click();
+
+    expect(hiddenModelClick).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(DEFAULT_WORDPRESS_LIVE2D_TIA_MODEL_ENTRY, { credentials: 'same-origin' });
+    expect(hiddenTextureClick).not.toHaveBeenCalled();
+    expect(document.querySelector('.waifu-tips')?.textContent).toContain('只有一套');
+  });
+
+  it('keeps texture switching disabled while the next model metadata is still loading', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    const tiaModelResponse = createDeferredValue<{
+      json: () => Promise<{ textures: string[] }>;
+      ok: boolean;
+    }>();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve({ textures: ['textures/default-costume.png', 'textures/witch-costume.png'] }),
+        ok: true,
+      })
+      .mockReturnValueOnce(tiaModelResponse.promise);
+    vi.stubGlobal('fetch', fetchMock);
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = originalAppendChild(node);
+      if (element instanceof HTMLScriptElement) {
+        window.InitLive2D = vi.fn();
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = vi.fn();
+        element.onload?.(new Event('load'));
+      }
+      return element;
+    });
+
+    mount(BlogLive2D);
+    await flushPromises();
+    const hiddenTextureButton = document.getElementById('live2d-texture-button') as HTMLButtonElement;
+    const hiddenTextureClick = vi.fn();
+    hiddenTextureButton.addEventListener('click', hiddenTextureClick);
+
+    document.querySelector<HTMLElement>('.waifu-tool .fui-user')?.click();
+    document.querySelector<HTMLElement>('.waifu-tool .fui-eye')?.click();
+
+    expect(hiddenTextureClick).not.toHaveBeenCalled();
+    expect(document.querySelector('.waifu-tips')?.textContent).toContain('服装信息读取中');
+
+    tiaModelResponse.resolve({
+      json: () => Promise.resolve({ textures: ['textures/default-costume.png'] }),
+      ok: true,
+    });
+    await flushPromises();
+  });
+
+  it('does not trigger texture switching while the legacy model button is loading a model', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: () => Promise.resolve({ textures: ['textures/default-costume.png', 'textures/witch-costume.png'] }),
+        ok: true,
+      }),
+    );
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = originalAppendChild(node);
+      if (element instanceof HTMLScriptElement) {
+        window.InitLive2D = vi.fn();
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = vi.fn();
+        element.onload?.(new Event('load'));
+      }
+      return element;
+    });
+
+    mount(BlogLive2D);
+    await flushPromises();
+    const hiddenModelButton = document.getElementById('kt-blog-pio-change') as HTMLButtonElement;
+    const hiddenTextureButton = document.getElementById('live2d-texture-button') as HTMLButtonElement;
+    const hiddenTextureClick = vi.fn();
+    hiddenModelButton.disabled = true;
+    hiddenTextureButton.addEventListener('click', hiddenTextureClick);
+
+    document.querySelector<HTMLElement>('.waifu-tool .fui-eye')?.click();
+
+    expect(hiddenTextureClick).not.toHaveBeenCalled();
+    expect(document.querySelector('.waifu-tips')?.textContent).toContain('模型正在切换中');
   });
 
   it('starts manual costume switching from the first variant and loops back to the default texture', () => {
