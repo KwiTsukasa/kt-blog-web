@@ -1,4 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import BlogLive2D from '@/components/blog/BlogLive2D';
@@ -275,6 +278,16 @@ describe('BlogLive2D', () => {
 
     expect(hiddenClick).not.toHaveBeenCalled();
     expect(document.querySelector('.waifu-tips')?.textContent).toContain('只有一套');
+  });
+
+  it('starts manual costume switching from the first variant and loops back to the default texture', () => {
+    const runtimeSource = readFileSync(resolve(process.cwd(), 'public/live2d/wordpress-moc/live2d.min.js'), 'utf-8');
+
+    expect(runtimeSource).toContain('this.countOfTexure = 0');
+    expect(runtimeSource).not.toContain('this.countOfTexure = -1');
+    expect(runtimeSource).toMatch(
+      /if \(no >= thisRef\.modelSetting\.getTextureNum\(\)\) \{\s*motionModel\.countOfTexure = 0;\s*no = 0\s*\}/,
+    );
   });
 
   it('reuses the page-level WordPress runtime after route component remounts', async () => {
