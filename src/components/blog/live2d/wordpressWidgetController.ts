@@ -23,13 +23,22 @@ export interface WordPressWidgetControllerHandle {
   destroy(): void;
 }
 
+export interface WordPressWidgetControllerOptions {
+  /**
+   * Number of texture entries declared by the active WordPress model JSON; single-texture models must not reload.
+   */
+  textureCount?: number;
+}
+
 /**
  * Installs WordPress live-2d plugin toolbar behavior on the DOM shell that hosts the legacy runtime.
  * @param elements Stable DOM nodes created by the runtime bridge for the Pio widget.
+ * @param options Runtime metadata used to protect legacy actions whose behavior depends on model assets.
  * @returns Cleanup handle for route/test teardown when the shell is rebuilt.
  */
 export function mountWordPressWidgetController(
   elements: WordPressWidgetControllerElements,
+  options: WordPressWidgetControllerOptions = {},
 ): WordPressWidgetControllerHandle {
   let hideTipsTimer = 0;
   let closeTimer = 0;
@@ -108,6 +117,10 @@ export function mountWordPressWidgetController(
         saveCanvas();
         break;
       case 'texture':
+        if (typeof options.textureCount === 'number' && options.textureCount < 2) {
+          showMessage(WORDPRESS_WAIFU_MESSAGES.singleTexture);
+          break;
+        }
         elements.textureButton.click();
         showMessage(WORDPRESS_WAIFU_MESSAGES.texture);
         break;

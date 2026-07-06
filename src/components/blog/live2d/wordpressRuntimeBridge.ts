@@ -19,6 +19,7 @@ let runtimeScriptPromise: Promise<void> | null = null;
 let runtimeMountPromise: Promise<WordPressLive2DRuntimeHandle> | null = null;
 let mountedRuntimeCanvas: HTMLCanvasElement | null = null;
 let mountedWidgetController: WordPressWidgetControllerHandle | null = null;
+let mountedPagePointerBridge: WordPressPagePointerBridgeHandle | null = null;
 
 export interface WordPressLive2DSettings {
   AUDIO_ID: string;
@@ -72,10 +73,24 @@ export interface WordPressLive2DRuntimeHandle {
 
 declare global {
   interface Window {
+    dragMgr?: WordPressRuntimeTargetPoint;
     InitLive2D?: () => void;
     LAppDefine?: WordPressLive2DSettings;
     LAppLive2DManager?: WordPressLive2DManagerConstructor;
+    transformViewX?: (deviceX: number) => number;
+    transformViewY?: (deviceY: number) => number;
   }
+}
+
+interface WordPressRuntimeTargetPoint {
+  setPoint: (x: number, y: number) => void;
+}
+
+interface WordPressPagePointerBridgeHandle {
+  /**
+   * Removes document-level pointer tracking installed for the legacy WordPress runtime.
+   */
+  destroy(): void;
 }
 
 interface WordPressLive2DManagerConstructor {
@@ -168,6 +183,8 @@ export async function mountWordPressLive2DRuntime(
     mountedRuntimeCanvas = null;
     mountedWidgetController?.destroy();
     mountedWidgetController = null;
+    mountedPagePointerBridge?.destroy();
+    mountedPagePointerBridge = null;
   }
 
   if (mountedRuntimeCanvas?.isConnected) {
@@ -245,9 +262,97 @@ async function initializeWordPressRuntime(
 
   window.InitLive2D();
   mountedRuntimeCanvas = shell.canvas;
+  mountedPagePointerBridge?.destroy();
+  mountedPagePointerBridge = mountWordPressPagePointerBridge(shell.canvas);
+  const textureCount = await resolveWordPressModelTextureCount(settings);
   mountedWidgetController?.destroy();
-  mountedWidgetController = mountWordPressWidgetController(shell);
+  mountedWidgetController = mountWordPressWidgetController(shell, { textureCount });
   return createWordPressRuntimeHandle();
+}
+
+/**
+ * Mirrors the WordPress plugin's page-wide mouse tracking without emitting synthetic tap events.
+ * @param canvas Legacy runtime canvas used as the coordinate origin for model-view transforms.
+ * @returns Cleanup handle for replacing a disconnected widget shell.
+ */
+function mountWordPressPagePointerBridge(canvas: HTMLCanvasElement): WordPressPagePointerBridgeHandle {
+  const handleMouseMove = (event: MouseEvent) => {
+    if (!canvas.isConnected || typeof window.dragMgr?.setPoint !== 'function') {
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const deviceX = event.clientX - rect.left;
+    const deviceY = event.clientY - rect.top;
+    window.dragMgr.setPoint(resolveWordPressViewX(canvas, deviceX), resolveWordPressViewY(canvas, deviceY));
+  };
+
+  const handleMouseOut = (event: MouseEvent) => {
+    if (!event.relatedTarget && typeof window.dragMgr?.setPoint === 'function') {
+      window.dragMgr.setPoint(0, 0);
+    }
+  };
+
+  window.addEventListener('mousemove', handleMouseMove, { passive: true });
+  window.addEventListener('mouseout', handleMouseOut, { passive: true });
+  return {
+    destroy() {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseout', handleMouseOut);
+    },
+  };
+}
+
+/**
+ * Converts a page-level pointer x offset with the legacy runtime transform when available.
+ * @param canvas Runtime canvas used for fallback normalization before the script exposes helpers.
+ * @param deviceX Pointer x offset relative to the canvas left edge.
+ * @returns Model-view x coordinate consumed by `L2DTargetPoint`.
+ */
+function resolveWordPressViewX(canvas: HTMLCanvasElement, deviceX: number): number {
+  if (typeof window.transformViewX === 'function') {
+    return window.transformViewX(deviceX);
+  }
+  return (deviceX - canvas.width / 2) * (2 / canvas.width);
+}
+
+/**
+ * Converts a page-level pointer y offset with the legacy runtime transform when available.
+ * @param canvas Runtime canvas used for fallback normalization before the script exposes helpers.
+ * @param deviceY Pointer y offset relative to the canvas top edge.
+ * @returns Model-view y coordinate consumed by `L2DTargetPoint`.
+ */
+function resolveWordPressViewY(canvas: HTMLCanvasElement, deviceY: number): number {
+  if (typeof window.transformViewY === 'function') {
+    return window.transformViewY(deviceY);
+  }
+  return (deviceY - canvas.height / 2) * (-2 / canvas.width);
+}
+
+/**
+ * Reads the active WordPress MOC model JSON so the toolbar can avoid destructive single-texture reloads.
+ * @param settings Runtime settings whose first model entry points at the active Pio `index.json`.
+ * @returns Number of usable texture entries, or `undefined` when the model JSON cannot be inspected.
+ */
+async function resolveWordPressModelTextureCount(settings: WordPressLive2DSettings): Promise<number | undefined> {
+  const modelEntry = settings.MODELS[0]?.[0];
+  if (!modelEntry || typeof window.fetch !== 'function') {
+    return undefined;
+  }
+
+  try {
+    const response = await window.fetch(modelEntry, { credentials: 'same-origin' });
+    if (!response.ok) {
+      return undefined;
+    }
+    const modelJson = (await response.json()) as { textures?: unknown };
+    if (!Array.isArray(modelJson.textures)) {
+      return undefined;
+    }
+    return modelJson.textures.filter((texture) => typeof texture === 'string' && texture.trim().length > 0).length;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

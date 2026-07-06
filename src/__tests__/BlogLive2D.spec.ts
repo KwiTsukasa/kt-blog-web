@@ -15,6 +15,9 @@ describe('mountWordPressLive2DRuntime', () => {
     delete window.InitLive2D;
     delete window.LAppDefine;
     delete window.LAppLive2DManager;
+    delete window.dragMgr;
+    delete window.transformViewX;
+    delete window.transformViewY;
     vi.restoreAllMocks();
   });
 
@@ -121,6 +124,46 @@ describe('mountWordPressLive2DRuntime', () => {
     expect(tapEvent?.call(manager, 0.9, 0.9)).toBe(false);
     expect(originalTapEvent).toHaveBeenCalledWith(0.9, 0.9);
   });
+
+  it('tracks page-level pointer movement instead of limiting look-at to the widget canvas', async () => {
+    const setPoint = vi.fn();
+    const originalTapEvent = vi.fn();
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = originalAppendChild(node);
+      if (element instanceof HTMLScriptElement) {
+        window.InitLive2D = vi.fn(() => {
+          window.dragMgr = { setPoint };
+          window.transformViewX = vi.fn((deviceX: number) => deviceX / 100);
+          window.transformViewY = vi.fn((deviceY: number) => deviceY / 100);
+        });
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = originalTapEvent;
+        element.onload?.(new Event('load'));
+      }
+      return element;
+    });
+
+    await mountWordPressLive2DRuntime();
+    const canvas = document.querySelector<HTMLCanvasElement>('canvas#live2d');
+    expect(canvas).not.toBeNull();
+    vi.spyOn(canvas!, 'getBoundingClientRect').mockReturnValue({
+      bottom: 768,
+      height: 250,
+      left: 0,
+      right: 280,
+      top: 518,
+      width: 280,
+      x: 0,
+      y: 518,
+      toJSON: () => ({}),
+    });
+
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 960, clientY: 260 }));
+
+    expect(setPoint).toHaveBeenCalledWith(9.6, -2.58);
+    expect(originalTapEvent).not.toHaveBeenCalled();
+  });
 });
 
 describe('BlogLive2D', () => {
@@ -146,7 +189,10 @@ describe('BlogLive2D', () => {
 
   it('mounts the WordPress Cubism2 MOC runtime in a WordPress-style widget shell', async () => {
     vi.stubGlobal('innerWidth', 1280);
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ textures: ['textures/default-costume.png', 'textures/witch-costume.png'] }),
+      ok: true,
+    });
     vi.stubGlobal('fetch', fetchMock);
     const requestFrame = vi.spyOn(window, 'requestAnimationFrame');
     const initLive2D = vi.fn();
@@ -190,12 +236,45 @@ describe('BlogLive2D', () => {
     expect(window.LAppDefine?.canvasSize).toEqual({ width: 280, height: 250 });
     expect(window.LAppDefine?.IS_START_TEXURE_CHANGE).toBe(true);
     expect(window.LAppDefine?.TEXURE_BUTTON_ID).toBe('live2d-texture-button');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY, { credentials: 'same-origin' });
     expect(initLive2D).toHaveBeenCalledTimes(1);
     expect(canvas?.style.transform).toBe('');
     expect(requestFrame).not.toHaveBeenCalled();
 
     wrapper.unmount();
+  });
+
+  it('does not trigger the destructive legacy texture reload when only one texture is available', async () => {
+    vi.stubGlobal('innerWidth', 1280);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: () => Promise.resolve({ textures: ['textures/default-costume.png'] }),
+        ok: true,
+      }),
+    );
+    const originalAppendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+      const element = originalAppendChild(node);
+      if (element instanceof HTMLScriptElement) {
+        window.InitLive2D = vi.fn();
+        window.LAppLive2DManager = function LAppLive2DManager() {};
+        window.LAppLive2DManager.prototype.tapEvent = vi.fn();
+        element.onload?.(new Event('load'));
+      }
+      return element;
+    });
+
+    mount(BlogLive2D);
+    await flushPromises();
+    const hiddenTextureButton = document.getElementById('live2d-texture-button') as HTMLButtonElement;
+    const hiddenClick = vi.fn();
+    hiddenTextureButton.addEventListener('click', hiddenClick);
+
+    document.querySelector<HTMLElement>('.waifu-tool .fui-eye')?.click();
+
+    expect(hiddenClick).not.toHaveBeenCalled();
+    expect(document.querySelector('.waifu-tips')?.textContent).toContain('只有一套');
   });
 
   it('reuses the page-level WordPress runtime after route component remounts', async () => {

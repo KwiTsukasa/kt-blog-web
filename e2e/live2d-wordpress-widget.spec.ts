@@ -73,6 +73,26 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
   await expect(page.locator('.waifu-tool')).toHaveCSS('opacity', '0');
   await widget.hover();
   await expect(page.locator('.waifu-tool')).toHaveCSS('opacity', '1');
+  await page.evaluate(() => {
+    const state = window as unknown as {
+      __ktDragPoints: Array<[number, number]>;
+      dragMgr?: { setPoint: (x: number, y: number) => void };
+    };
+    state.__ktDragPoints = [];
+    const originalSetPoint = state.dragMgr?.setPoint?.bind(state.dragMgr);
+    if (state.dragMgr && originalSetPoint) {
+      state.dragMgr.setPoint = (x: number, y: number) => {
+        state.__ktDragPoints.push([x, y]);
+        originalSetPoint(x, y);
+      };
+    }
+  });
+  await page.mouse.move(1180, 120);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as { __ktDragPoints?: Array<[number, number]> }).__ktDragPoints?.length ?? 0),
+    )
+    .toBeGreaterThan(0);
 
   await page.evaluate(() => {
     const state = window as unknown as { __ktTextureClicks: number };
