@@ -11,7 +11,7 @@ import { blogDomId } from '@/factories/blogDomFactory';
 import { mountOfficialPioRuntime } from './live2d/officialRuntimeBridge';
 import type { KtPioLive2DRuntimeHandle } from './live2d/types';
 
-const LIVE2D_MANIFEST_URL = import.meta.env.VITE_BLOG_LIVE2D_MANIFEST_URL || '/api/blog/live2d/pio/v1/manifest.json';
+const LIVE2D_MANIFEST_URL = import.meta.env.VITE_BLOG_LIVE2D_MANIFEST_URL || '/api/blog/live2d/pio/v2/manifest.json';
 
 export default defineComponent({
   name: 'BlogLive2D',
@@ -39,9 +39,11 @@ export default defineComponent({
           return;
         }
         runtimeHandle = mountedHandle;
-        idleAnimatorHandle = createBlogLive2DIdleAnimator(canvasRef.value, {
-          enableIdleMotion: !manifest.motionGroups?.Idle,
-        });
+        if (!manifest.wordpressParity) {
+          idleAnimatorHandle = createBlogLive2DIdleAnimator(canvasRef.value, {
+            enableIdleMotion: !manifest.motionGroups?.Idle,
+          });
+        }
       } catch (error: unknown) {
         console.warn('[KT Blog] Pio Live2D unavailable.', error);
       }

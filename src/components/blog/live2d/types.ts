@@ -1,3 +1,35 @@
+export interface BlogLive2DWordpressParity {
+  hitAreasCustom: Record<'body_x' | 'body_y' | 'head_x' | 'head_y', readonly [number, number]>;
+  layout: {
+    center_x: number;
+    center_y: number;
+    width: number;
+  };
+  motionGroups: Record<
+    'FlickHead' | 'Idle' | 'Sleepy' | 'TapBody',
+    {
+      legacyName: string;
+      sourceFiles: readonly string[];
+    }
+  >;
+  parameterRig: {
+    breath: readonly {
+      cycle: number;
+      id: string;
+      offset: number;
+      peak: number;
+      weight: number;
+    }[];
+    look: readonly {
+      factorX: number;
+      factorXY: number;
+      factorY: number;
+      id: string;
+    }[];
+  };
+  version: string;
+}
+
 export interface BlogLive2DManifest {
   assets?: {
     shaderBase?: string;
@@ -34,6 +66,7 @@ export interface BlogLive2DManifest {
     manifest: string;
   };
   version: string;
+  wordpressParity?: BlogLive2DWordpressParity;
 }
 
 export interface KtPioLive2DRuntimeHandle {
@@ -49,5 +82,9 @@ export interface KtPioLive2DRuntime {
    * @param options Canvas and model URL emitted by the validated manifest.
    * @returns Runtime handle used by Vue teardown to release rendering resources.
    */
-  mount(options: { canvas: HTMLCanvasElement; model3: string }): Promise<KtPioLive2DRuntimeHandle>;
+  mount(options: {
+    canvas: HTMLCanvasElement;
+    model3: string;
+    wordpressParity?: BlogLive2DWordpressParity;
+  }): Promise<KtPioLive2DRuntimeHandle>;
 }

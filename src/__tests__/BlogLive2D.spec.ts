@@ -11,8 +11,50 @@ const pioManifest = {
   desktopOnly: true,
   fallback: null,
   model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
+  motionGroups: {
+    FlickHead: 6,
+    Idle: 6,
+    Sleepy: 1,
+    TapBody: 9,
+  },
   runtimeScript: '/api/blog/live2d/pio/v1/assets/runtime/pio-runtime.js',
   version: 'v1',
+  wordpressParity: {
+    hitAreasCustom: {
+      body_x: [-0.3, -0.25],
+      body_y: [0.3, -0.9],
+      head_x: [-0.35, 0.6],
+      head_y: [0.19, -0.2],
+    },
+    layout: {
+      center_x: 0,
+      center_y: -0.05,
+      width: 2,
+    },
+    motionGroups: {
+      FlickHead: {
+        legacyName: 'flick_head',
+        sourceFiles: ['motions/Touch Dere1.mtn'],
+      },
+      Idle: {
+        legacyName: 'idle',
+        sourceFiles: ['motions/Breath1.mtn'],
+      },
+      Sleepy: {
+        legacyName: 'sleepy',
+        sourceFiles: ['motions/Sleeping.mtn'],
+      },
+      TapBody: {
+        legacyName: 'tap_body',
+        sourceFiles: ['motions/Touch1.mtn'],
+      },
+    },
+    parameterRig: {
+      breath: [{ cycle: 3.2345, id: 'ParamBreath', offset: 0.5, peak: 0.5, weight: 1 }],
+      look: [{ factorX: 30, factorXY: 0, factorY: 0, id: 'ParamAngleX' }],
+    },
+    version: '2026-07-05-wordpress-v1',
+  },
 } as const;
 
 describe('fetchBlogLive2DManifest', () => {
@@ -98,6 +140,7 @@ describe('mountOfficialPioRuntime', () => {
     expect(runtime.mount).toHaveBeenCalledWith({
       canvas,
       model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
+      wordpressParity: pioManifest.wordpressParity,
     });
   });
 
@@ -133,10 +176,12 @@ describe('mountOfficialPioRuntime', () => {
     expect(runtime.mount).toHaveBeenNthCalledWith(1, {
       canvas: firstCanvas,
       model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
+      wordpressParity: pioManifest.wordpressParity,
     });
     expect(runtime.mount).toHaveBeenNthCalledWith(2, {
       canvas: secondCanvas,
       model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
+      wordpressParity: pioManifest.wordpressParity,
     });
   });
 });
@@ -166,13 +211,8 @@ describe('BlogLive2D', () => {
       'fetch',
       vi.fn(async () => new Response(JSON.stringify(pioManifest), { status: 200 })),
     );
-    const frames: FrameRequestCallback[] = [];
-    const cancelFrame = vi.fn();
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      frames.push(callback);
-      return frames.length;
-    });
-    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(cancelFrame);
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame');
+    const cancelFrame = vi.spyOn(window, 'cancelAnimationFrame');
     const destroy = vi.fn();
     vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
       const element = Node.prototype.appendChild.call(document.body, node);
@@ -193,18 +233,19 @@ describe('BlogLive2D', () => {
     expect(window.KtPioLive2D?.mount).toHaveBeenCalledWith({
       canvas: canvas.element,
       model3: '/api/blog/live2d/pio/v1/assets/model/pio.moc-reconstructed.model3.json',
+      wordpressParity: pioManifest.wordpressParity,
     });
-    frames.shift()?.(1000);
 
-    expect((canvas.element as HTMLCanvasElement).style.transform).toContain('translate3d');
+    expect((canvas.element as HTMLCanvasElement).style.transform).toBe('');
 
     wrapper.unmount();
 
     expect(destroy).toHaveBeenCalledTimes(1);
-    expect(cancelFrame).toHaveBeenCalled();
+    expect(requestFrame).not.toHaveBeenCalled();
+    expect(cancelFrame).not.toHaveBeenCalled();
   });
 
-  it('does not start the canvas idle fallback when source idle motions exist', async () => {
+  it('does not start canvas transform fallback when WordPress parity owns motion', async () => {
     vi.stubGlobal('innerWidth', 1280);
     vi.stubGlobal(
       'fetch',
@@ -213,19 +254,12 @@ describe('BlogLive2D', () => {
           new Response(
             JSON.stringify({
               ...pioManifest,
-              motionGroups: {
-                Idle: 6,
-              },
             }),
             { status: 200 },
           ),
       ),
     );
-    const frames: FrameRequestCallback[] = [];
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      frames.push(callback);
-      return frames.length;
-    });
+    const requestFrame = vi.spyOn(window, 'requestAnimationFrame');
     vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
       const element = Node.prototype.appendChild.call(document.body, node);
       if (element instanceof HTMLScriptElement) {
@@ -256,7 +290,7 @@ describe('BlogLive2D', () => {
     } as DOMRect);
 
     expect(canvasElement.style.transform).toBe('');
-    expect(frames).toHaveLength(0);
+    expect(requestFrame).not.toHaveBeenCalled();
 
     window.dispatchEvent(new MouseEvent('pointermove', { clientX: 160, clientY: 160 }));
 
@@ -264,7 +298,7 @@ describe('BlogLive2D', () => {
 
     canvasElement.dispatchEvent(new MouseEvent('pointermove', { clientX: 210, clientY: 260 }));
 
-    expect(canvasElement.style.transform).toContain('translate3d');
+    expect(canvasElement.style.transform).toBe('');
 
     canvasElement.dispatchEvent(new MouseEvent('pointerleave'));
 

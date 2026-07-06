@@ -28,7 +28,11 @@ export async function mountOfficialPioRuntime(
     throw new Error('KtPioLive2D runtime was not registered.');
   }
 
-  return window.KtPioLive2D.mount({ canvas, model3: manifest.model3 });
+  return window.KtPioLive2D.mount({
+    canvas,
+    model3: manifest.model3,
+    wordpressParity: manifest.wordpressParity,
+  });
 }
 
 /**
