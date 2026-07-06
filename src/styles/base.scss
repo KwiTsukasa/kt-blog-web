@@ -274,13 +274,175 @@ html.filter-darkness .kt-blog__primary::after {
     margin-bottom: 1rem;
   }
 
-  &__live2d-canvas {
+  &__live2d-widget {
     position: fixed;
-    right: 16px;
-    bottom: 76px;
-    z-index: 30;
-    width: 220px;
-    height: 320px;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    width: 280px;
+    font-size: 0;
+    pointer-events: none;
+
+    &:hover .waifu-tool {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .waifu-tips {
+      position: absolute;
+      bottom: 246px;
+      left: 20px;
+      z-index: 21;
+      width: 250px;
+      min-height: 70px;
+      padding: 5px 10px;
+      border: 1px solid rgba(224, 186, 140, 0.62);
+      border-radius: 12px;
+      opacity: 0;
+      color: #32373c;
+      background: rgba(236, 217, 188, 0.5);
+      box-shadow: 0 3px 15px 2px rgba(191, 158, 118, 0.2);
+      font-size: 14px;
+      line-height: 1.6;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition:
+        opacity 0.5s ease,
+        transform 0.5s ease;
+    }
+
+    .waifu-tips.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .waifu-tool {
+      position: absolute;
+      right: 10px;
+      bottom: 54px;
+      z-index: 22;
+      display: flex;
+      flex-flow: column;
+      gap: 6px;
+      opacity: 0;
+      color: #5b6c7d;
+      font-size: 16px;
+      pointer-events: auto;
+      transform: translateX(8px);
+      transition:
+        opacity 0.3s linear,
+        transform 0.3s ease;
+    }
+
+    .waifu-tool span {
+      display: block;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      line-height: 20px;
+      text-align: center;
+      transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+
+      &:hover,
+      &:focus {
+        color: #34495e;
+        outline: 0;
+        transform: scale(1.12);
+      }
+
+      &::before {
+        font-family: 'Font Awesome 7 Free';
+        font-weight: 900;
+      }
+    }
+
+    .fui-home::before {
+      content: '\f015';
+    }
+
+    .fui-chat::before {
+      content: '\f075';
+    }
+
+    .fui-bot::before {
+      content: '\f544';
+    }
+
+    .fui-eye::before {
+      content: '\f06e';
+    }
+
+    .fui-user::before {
+      content: '\f007';
+    }
+
+    .fui-photo::before {
+      content: '\f030';
+    }
+
+    .fui-info-circle::before {
+      content: '\f05a';
+    }
+
+    .fui-cross::before {
+      content: '\f00d';
+    }
+
+    .gptInput {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      z-index: 23;
+      display: flex !important;
+      width: 300px;
+      gap: 6px;
+      padding: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(100%);
+      transition:
+        opacity 0.3s linear,
+        transform 0.3s ease;
+    }
+
+    .gptInput.show {
+      opacity: 0.8;
+      pointer-events: auto;
+      transform: translateY(-6px);
+    }
+
+    .gptInput input,
+    .gptInput button {
+      height: 30px;
+      border: 1px solid rgba(224, 186, 140, 0.62);
+      border-radius: 6px;
+      color: #32373c;
+      background: rgba(236, 217, 188, 0.88);
+      font-size: 13px;
+      line-height: 30px;
+      outline: 0;
+      box-shadow: 0 3px 15px 2px rgba(191, 158, 118, 0.18);
+    }
+
+    .gptInput input {
+      min-width: 0;
+      flex: 1;
+      padding: 0 8px;
+    }
+
+    .gptInput button {
+      flex: none;
+      padding: 0 10px;
+      cursor: pointer;
+    }
+  }
+
+  &__live2d-canvas {
+    position: relative;
+    width: 280px;
+    height: 250px;
     pointer-events: auto;
     transform-origin: 50% 82%;
     will-change: transform;
@@ -288,9 +450,9 @@ html.filter-darkness .kt-blog__primary::after {
 
 }
 
-@media (max-width: 1199px) {
+@media (max-width: 768px) {
   @include blog.block {
-    &__live2d-canvas {
+    &__live2d-widget {
       display: none;
     }
   }

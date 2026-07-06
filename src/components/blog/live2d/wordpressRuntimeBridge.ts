@@ -1,11 +1,24 @@
 import { blogDomId } from '@/factories/blogDomFactory';
 
+import {
+  WORDPRESS_WAIFU_SIZE,
+  WORDPRESS_WAIFU_TEXTURE_BUTTON_ID,
+  WORDPRESS_WAIFU_TOOLS,
+} from './wordpressWidgetConfig';
+import {
+  mountWordPressWidgetController,
+  type WordPressWidgetControllerElements,
+  type WordPressWidgetControllerHandle,
+} from './wordpressWidgetController';
+
 const WORDPRESS_RUNTIME_SCRIPT_ID = 'kt-blog-pio-wordpress-live2d-runtime';
 const WORDPRESS_RUNTIME_CANVAS_CLASS = 'kt-blog__live2d-canvas';
+const WORDPRESS_RUNTIME_WIDGET_CLASS = 'kt-blog__live2d-widget';
 const WORDPRESS_RUNTIME_HIT_AREA_BRIDGE_MARKER = '__ktBlogPioCustomHitAreaBridge';
 let runtimeScriptPromise: Promise<void> | null = null;
 let runtimeMountPromise: Promise<WordPressLive2DRuntimeHandle> | null = null;
 let mountedRuntimeCanvas: HTMLCanvasElement | null = null;
+let mountedWidgetController: WordPressWidgetControllerHandle | null = null;
 
 export interface WordPressLive2DSettings {
   AUDIO_ID: string;
@@ -94,6 +107,8 @@ interface WordPressLive2DCustomHitAreas {
   head_y?: [number, number];
 }
 
+type WordPressRuntimeWidgetShell = WordPressWidgetControllerElements;
+
 export const DEFAULT_WORDPRESS_LIVE2D_SCRIPT = '/live2d/wordpress-moc/live2d.min.js';
 
 export const DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY = '/api/blog/live2d/pio/moc/index.json';
@@ -111,7 +126,7 @@ export const DEFAULT_WORDPRESS_LIVE2D_SETTINGS: WordPressLive2DSettings = {
   IS_BIND_BUTTON: false,
   IS_PLAY_AUDIO: false,
   IS_SCROLL_SCALE: false,
-  IS_START_TEXURE_CHANGE: false,
+  IS_START_TEXURE_CHANGE: true,
   MODELS: [[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY]],
   MOTION_GROUP_FLICK_HEAD: 'flick_head',
   MOTION_GROUP_IDLE: 'idle',
@@ -125,7 +140,7 @@ export const DEFAULT_WORDPRESS_LIVE2D_SETTINGS: WordPressLive2DSettings = {
   PRIORITY_NONE: 0,
   PRIORITY_NORMAL: 2,
   SCALE: 1,
-  TEXURE_BUTTON_ID: '',
+  TEXURE_BUTTON_ID: WORDPRESS_WAIFU_TEXTURE_BUTTON_ID,
   TEXURE_CHANGE_MODE: 'sequence',
   VIEW_LOGICAL_LEFT: -1,
   VIEW_LOGICAL_MAX_BOTTOM: -2,
@@ -136,8 +151,8 @@ export const DEFAULT_WORDPRESS_LIVE2D_SETTINGS: WordPressLive2DSettings = {
   VIEW_MAX_SCALE: 2,
   VIEW_MIN_SCALE: 0.8,
   canvasSize: {
-    height: 320,
-    width: 220,
+    height: WORDPRESS_WAIFU_SIZE.height,
+    width: WORDPRESS_WAIFU_SIZE.width,
   },
 };
 
@@ -149,8 +164,13 @@ export const DEFAULT_WORDPRESS_LIVE2D_SETTINGS: WordPressLive2DSettings = {
 export async function mountWordPressLive2DRuntime(
   settings: WordPressLive2DSettings = DEFAULT_WORDPRESS_LIVE2D_SETTINGS,
 ): Promise<WordPressLive2DRuntimeHandle> {
-  const canvas = ensureWordPressRuntimeCanvas(settings);
-  if (mountedRuntimeCanvas?.isConnected && mountedRuntimeCanvas === canvas) {
+  if (mountedRuntimeCanvas && !mountedRuntimeCanvas.isConnected) {
+    mountedRuntimeCanvas = null;
+    mountedWidgetController?.destroy();
+    mountedWidgetController = null;
+  }
+
+  if (mountedRuntimeCanvas?.isConnected) {
     return createWordPressRuntimeHandle();
   }
 
@@ -158,47 +178,65 @@ export async function mountWordPressLive2DRuntime(
     return runtimeMountPromise;
   }
 
-  runtimeMountPromise = initializeWordPressRuntime(canvas, settings).finally(() => {
+  const shell = ensureWordPressRuntimeWidgetShell(settings);
+  runtimeMountPromise = initializeWordPressRuntime(shell, settings).finally(() => {
     runtimeMountPromise = null;
   });
   return runtimeMountPromise;
 }
 
 /**
- * Creates or reuses the page-level Pio canvas so hash route switches do not destroy the WebGL owner.
+ * Creates or reuses the page-level WordPress waifu DOM shell so hash route switches do not destroy WebGL state.
  * @param settings WordPress Cubism2 runtime settings that define canvas id and intrinsic WebGL size.
- * @returns Connected canvas element passed to the WordPress runtime.
+ * @returns Connected widget shell elements used by the runtime and local toolbar controller.
  */
-function ensureWordPressRuntimeCanvas(settings: WordPressLive2DSettings): HTMLCanvasElement {
+function ensureWordPressRuntimeWidgetShell(settings: WordPressLive2DSettings): WordPressRuntimeWidgetShell {
   const canvasId = settings.CANVAS_ID;
-  const existingCanvas = document.getElementById(canvasId);
-  if (existingCanvas instanceof HTMLCanvasElement && existingCanvas.isConnected) {
-    existingCanvas.classList.add(WORDPRESS_RUNTIME_CANVAS_CLASS);
-    existingCanvas.width = settings.canvasSize.width;
-    existingCanvas.height = settings.canvasSize.height;
-    return existingCanvas;
-  }
+  const existingWidget = document.querySelector<HTMLElement>(`.waifu.${WORDPRESS_RUNTIME_WIDGET_CLASS}`);
+  const widget = existingWidget ?? document.createElement('div');
+  widget.className = `waifu ${WORDPRESS_RUNTIME_WIDGET_CLASS}`;
+  widget.style.display = '';
 
   const canvas = document.createElement('canvas');
   canvas.id = canvasId;
-  canvas.className = WORDPRESS_RUNTIME_CANVAS_CLASS;
+  canvas.className = `live2d ${WORDPRESS_RUNTIME_CANVAS_CLASS}`;
   canvas.width = settings.canvasSize.width;
   canvas.height = settings.canvasSize.height;
-  document.body.appendChild(canvas);
-  return canvas;
+  const tips = document.createElement('div');
+  tips.className = 'waifu-tips';
+  const tool = createWordPressToolMenu();
+  const chat = createWordPressChatPanel();
+  const textureButton = createWordPressHiddenButton(settings.TEXURE_BUTTON_ID);
+
+  widget.replaceChildren(tips, canvas, tool, chat.container, textureButton);
+  if (!existingWidget) {
+    document.body.appendChild(widget);
+  }
+
+  return {
+    canvas,
+    chat: chat.container,
+    closeButton: chat.closeButton,
+    input: chat.input,
+    sendButton: chat.sendButton,
+    textureButton,
+    tips,
+    tool,
+    widget,
+  };
 }
 
 /**
  * Loads the WordPress runtime script and starts it against the singleton canvas.
- * @param canvas Persistent canvas whose id is passed through `window.LAppDefine.CANVAS_ID`.
+ * @param shell Persistent WordPress widget shell whose canvas id is passed through `window.LAppDefine.CANVAS_ID`.
  * @param settings WordPress runtime settings for model entry, sizing, and interaction motions.
  * @returns Runtime handle that preserves the page-level singleton on Vue route teardown.
  */
 async function initializeWordPressRuntime(
-  canvas: HTMLCanvasElement,
+  shell: WordPressRuntimeWidgetShell,
   settings: WordPressLive2DSettings,
 ): Promise<WordPressLive2DRuntimeHandle> {
-  window.LAppDefine = createWordPressRuntimeSettings(settings, canvas.id);
+  window.LAppDefine = createWordPressRuntimeSettings(settings, shell.canvas.id);
   await appendWordPressRuntimeScript(DEFAULT_WORDPRESS_LIVE2D_SCRIPT);
   installWordPressCustomHitAreaBridge(settings);
   if (!window.InitLive2D) {
@@ -206,8 +244,81 @@ async function initializeWordPressRuntime(
   }
 
   window.InitLive2D();
-  mountedRuntimeCanvas = canvas;
+  mountedRuntimeCanvas = shell.canvas;
+  mountedWidgetController?.destroy();
+  mountedWidgetController = mountWordPressWidgetController(shell);
   return createWordPressRuntimeHandle();
+}
+
+/**
+ * Creates the WordPress plugin toolbar with the original `fui-*` class contract.
+ * @returns Toolbar element whose spans carry action metadata for the local controller.
+ */
+function createWordPressToolMenu(): HTMLElement {
+  const tool = document.createElement('div');
+  tool.className = 'waifu-tool';
+  for (const item of WORDPRESS_WAIFU_TOOLS) {
+    const button = document.createElement('span');
+    button.className = item.className;
+    button.dataset.live2dAction = item.action;
+    button.title = item.title;
+    button.setAttribute('role', 'button');
+    button.setAttribute('tabindex', '0');
+    tool.appendChild(button);
+  }
+  return tool;
+}
+
+interface WordPressChatPanel {
+  closeButton: HTMLButtonElement;
+  container: HTMLElement;
+  input: HTMLInputElement;
+  sendButton: HTMLButtonElement;
+}
+
+/**
+ * Creates the WordPress live-2d GPT input panel while leaving future backend wiring explicit.
+ * @returns Input panel nodes needed by toolbar actions and local close/send behavior.
+ */
+function createWordPressChatPanel(): WordPressChatPanel {
+  const container = document.createElement('div');
+  container.className = 'gptInput';
+
+  const input = document.createElement('input');
+  input.id = blogDomId('live2dChatText');
+  input.placeholder = '和 Pio 说点什么...';
+  input.type = 'text';
+
+  const sendButton = document.createElement('button');
+  sendButton.id = blogDomId('live2dSend');
+  sendButton.type = 'button';
+  sendButton.textContent = '发送';
+
+  const closeButton = document.createElement('button');
+  closeButton.id = blogDomId('live2dSendClose');
+  closeButton.type = 'button';
+  closeButton.textContent = '关闭';
+
+  container.append(input, sendButton, closeButton);
+  return {
+    closeButton,
+    container,
+    input,
+    sendButton,
+  };
+}
+
+/**
+ * Creates the hidden texture button consumed by the legacy runtime's `changeTexure` binding.
+ * @param id Stable DOM id passed to `window.LAppDefine.TEXURE_BUTTON_ID`.
+ * @returns Hidden button clicked by the local toolbar texture action.
+ */
+function createWordPressHiddenButton(id: string): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.id = id;
+  button.hidden = true;
+  button.type = 'button';
+  return button;
 }
 
 /**

@@ -38,7 +38,8 @@ describe('mountWordPressLive2DRuntime', () => {
     const runtimeScript = document.querySelector('script#kt-blog-pio-wordpress-live2d-runtime');
     expect(runtimeScript?.getAttribute('src')).toBe(DEFAULT_WORDPRESS_LIVE2D_SCRIPT);
     expect(document.querySelectorAll('script#kt-blog-pio-wordpress-live2d-runtime')).toHaveLength(1);
-    expect(document.querySelectorAll('canvas#live2d.kt-blog__live2d-canvas')).toHaveLength(1);
+    expect(document.querySelectorAll('.waifu.kt-blog__live2d-widget')).toHaveLength(1);
+    expect(document.querySelectorAll('canvas#live2d.live2d.kt-blog__live2d-canvas')).toHaveLength(1);
     expect(initLive2D).toHaveBeenCalledTimes(1);
     expect(window.LAppDefine).toMatchObject(DEFAULT_WORDPRESS_LIVE2D_SETTINGS);
     expect(window.LAppDefine?.MODELS).toEqual([[DEFAULT_WORDPRESS_LIVE2D_MODEL_ENTRY]]);
@@ -61,7 +62,8 @@ describe('mountWordPressLive2DRuntime', () => {
     await Promise.resolve();
 
     expect(document.querySelectorAll('script#kt-blog-pio-wordpress-live2d-runtime')).toHaveLength(1);
-    expect(document.querySelectorAll('canvas#live2d.kt-blog__live2d-canvas')).toHaveLength(1);
+    expect(document.querySelectorAll('.waifu.kt-blog__live2d-widget')).toHaveLength(1);
+    expect(document.querySelectorAll('canvas#live2d.live2d.kt-blog__live2d-canvas')).toHaveLength(1);
 
     window.InitLive2D = initLive2D;
     window.LAppLive2DManager = function LAppLive2DManager() {};
@@ -131,8 +133,8 @@ describe('BlogLive2D', () => {
     vi.restoreAllMocks();
   });
 
-  it('does not load the WordPress runtime below the desktop viewport', async () => {
-    vi.stubGlobal('innerWidth', 1199);
+  it('does not load the WordPress runtime below the WordPress waifu min width', async () => {
+    vi.stubGlobal('innerWidth', 768);
     const appendChild = vi.spyOn(document.body, 'appendChild');
 
     mount(BlogLive2D);
@@ -142,7 +144,7 @@ describe('BlogLive2D', () => {
     expect(document.querySelector('canvas#live2d')).toBeNull();
   });
 
-  it('mounts the WordPress Cubism2 MOC runtime on desktop without manifest fetch or canvas fallback motion', async () => {
+  it('mounts the WordPress Cubism2 MOC runtime in a WordPress-style widget shell', async () => {
     vi.stubGlobal('innerWidth', 1280);
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
@@ -163,11 +165,31 @@ describe('BlogLive2D', () => {
     const wrapper = mount(BlogLive2D);
     await flushPromises();
 
-    const canvas = document.querySelector('canvas#live2d.kt-blog__live2d-canvas') as HTMLCanvasElement | null;
+    const widget = document.querySelector('.waifu.kt-blog__live2d-widget');
+    const canvas = document.querySelector('canvas#live2d.live2d.kt-blog__live2d-canvas') as HTMLCanvasElement | null;
+    const tools = Array.from(document.querySelectorAll('.waifu-tool > span')).map((node) => node.className);
     expect(wrapper.find('canvas#live2d').exists()).toBe(false);
+    expect(widget).not.toBeNull();
     expect(canvas).not.toBeNull();
     expect(canvas?.width).toBe(DEFAULT_WORDPRESS_LIVE2D_SETTINGS.canvasSize.width);
     expect(canvas?.height).toBe(DEFAULT_WORDPRESS_LIVE2D_SETTINGS.canvasSize.height);
+    expect(tools).toEqual([
+      'fui-home',
+      'fui-chat',
+      'fui-bot',
+      'fui-eye',
+      'fui-user',
+      'fui-photo',
+      'fui-info-circle',
+      'fui-cross',
+    ]);
+    expect(document.querySelector('.gptInput #live2dChatText')).not.toBeNull();
+    expect(document.querySelector('.gptInput #live2dSend')).not.toBeNull();
+    expect(document.querySelector('.gptInput #live2dSendClose')).not.toBeNull();
+    expect(document.getElementById('live2d-texture-button')).not.toBeNull();
+    expect(window.LAppDefine?.canvasSize).toEqual({ width: 280, height: 250 });
+    expect(window.LAppDefine?.IS_START_TEXURE_CHANGE).toBe(true);
+    expect(window.LAppDefine?.TEXURE_BUTTON_ID).toBe('live2d-texture-button');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(initLive2D).toHaveBeenCalledTimes(1);
     expect(canvas?.style.transform).toBe('');
@@ -197,7 +219,8 @@ describe('BlogLive2D', () => {
     const secondWrapper = mount(BlogLive2D);
     await flushPromises();
 
-    expect(document.querySelectorAll('canvas#live2d.kt-blog__live2d-canvas')).toHaveLength(1);
+    expect(document.querySelectorAll('.waifu.kt-blog__live2d-widget')).toHaveLength(1);
+    expect(document.querySelectorAll('canvas#live2d.live2d.kt-blog__live2d-canvas')).toHaveLength(1);
     expect(document.querySelectorAll('script#kt-blog-pio-wordpress-live2d-runtime')).toHaveLength(1);
     expect(initLive2D).toHaveBeenCalledTimes(1);
 

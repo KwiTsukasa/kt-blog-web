@@ -1,7 +1,6 @@
 import { defineComponent, onBeforeUnmount, onMounted } from 'vue';
 
-import { BLOG_VIEWPORT_GEOMETRY } from '@/factories/blogAnimationFactory';
-
+import { WORDPRESS_WAIFU_MIN_WIDTH } from './live2d/wordpressWidgetConfig';
 import {
   mountWordPressLive2DRuntime,
   type WordPressLive2DRuntimeHandle,
@@ -14,7 +13,7 @@ export default defineComponent({
    * @returns Render function that only creates the canvas on desktop viewports.
    */
   setup() {
-    const isDesktop = window.innerWidth >= BLOG_VIEWPORT_GEOMETRY.live2dDesktopMinWidthPx;
+    const isDesktop = window.innerWidth > WORDPRESS_WAIFU_MIN_WIDTH;
     let disposed = false;
     let runtimeHandle: WordPressLive2DRuntimeHandle | null = null;
 
