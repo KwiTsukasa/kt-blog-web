@@ -4,7 +4,10 @@ import {
   type Cubism2ModelAnimator,
 } from './cubism2ModelAnimator';
 import { configureCubism2ModelProjection } from './cubism2ModelProjection';
-import { toCubism2ViewPoint } from './cubism2PointerCoordinates';
+import {
+  toCubism2ModelPoint,
+  toCubism2PageTarget,
+} from './cubism2PointerCoordinates';
 import type { Live2DCoreModel, Live2DRendererAdapter, Live2DResolvedState } from './live2dRuntimeTypes';
 import { installCubism2WebGLTextureReleaseHook } from '../vendor/cubism2Core/compatibility/webglTextureRelease';
 
@@ -104,8 +107,8 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
    * Updates the smoothed look-at target from a page-level pointer.
    * @param event Mouse or touch coordinates in the browser client space.
    */
-  const updatePointerTarget = (event: Pick<MouseEvent, 'clientX' | 'clientY'>) => {
-    const point = toCubism2ViewPoint(canvas, event);
+  const updatePagePointerTarget = (event: Pick<MouseEvent, 'clientX' | 'clientY'>) => {
+    const point = toCubism2PageTarget(canvas, window, event);
     animator?.setPointerTarget(point.x, point.y);
   };
 
@@ -123,8 +126,7 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
       return;
     }
     event.preventDefault();
-    const point = toCubism2ViewPoint(canvas, event);
-    animator?.setPointerTarget(point.x, point.y);
+    const point = toCubism2ModelPoint(canvas, event);
     void animator?.startMotionForPoint(point.x, point.y).catch((error: unknown) => {
       console.warn('[KT Blog] Live2D interaction motion failed.', error);
     });
@@ -135,7 +137,7 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
    * @param event Page-level mouse-move event.
    */
   const handleMouseMove = (event: MouseEvent) => {
-    updatePointerTarget(event);
+    updatePagePointerTarget(event);
   };
 
   /**
@@ -150,7 +152,7 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     const touch = event.touches[0];
     if (touch) {
       touchDragging = true;
-      const point = toCubism2ViewPoint(canvas, touch);
+      const point = toCubism2ModelPoint(canvas, touch);
       animator?.setPointerTarget(point.x, point.y);
       void animator?.startMotionForPoint(point.x, point.y).catch((error: unknown) => {
         console.warn('[KT Blog] Live2D interaction motion failed.', error);
@@ -171,7 +173,8 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
       return;
     }
     event.preventDefault();
-    updatePointerTarget(touch);
+    const point = toCubism2ModelPoint(canvas, touch);
+    animator?.setPointerTarget(point.x, point.y);
   };
 
   /**
