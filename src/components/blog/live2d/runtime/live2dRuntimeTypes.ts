@@ -1,13 +1,18 @@
-export interface Live2DCoreMotion {
-  setFadeIn: (milliseconds: number) => void;
-  setFadeOut: (milliseconds: number) => void;
-}
+import type {
+  Cubism2AMotionInstance,
+  Cubism2MotionQueueManagerConstructor,
+  Cubism2MotionQueueManagerInstance,
+} from '../vendor/cubism2Core/motionBase';
+import type { Cubism2Live2DMotionConstructor } from '../vendor/cubism2Core/motionParser';
+import type { Cubism2ModelContextLike } from '../vendor/cubism2Core/modelBase';
+import type {
+  Cubism2ModelWebGLConstructor,
+  Cubism2ModelWebGLInstance,
+} from '../vendor/cubism2Core/modelWrappers';
 
-export interface Live2DCoreModelContext {
-  getParamFloat(paramIndex: number): number;
-  getParamMax(paramIndex: number): number;
-  getParamMin(paramIndex: number): number;
-}
+export type Live2DCoreMotion = Cubism2AMotionInstance;
+
+export type Live2DCoreModelContext = Cubism2ModelContextLike;
 
 export interface Live2DModelEntry {
   key: string;
@@ -66,58 +71,12 @@ export interface Live2DRuntimeStorage {
   writeTextureIndex(modelKey: string, textureIndex: number): void;
 }
 
-export interface Live2DCoreMotionConstructor {
-  /**
-   * Loads a Cubism2 motion from an ArrayBuffer.
-   * @param buffer Motion binary data fetched from a `.mtn` URL.
-   * @returns Motion object consumed by the Cubism2 motion queue.
-   */
-  loadMotion(buffer: ArrayBuffer): Live2DCoreMotion;
-}
+export type Live2DCoreMotionConstructor = Cubism2Live2DMotionConstructor;
 
-export interface Live2DCoreModel {
-  addToParamFloat(id: string, value: number, weight?: number): void;
-  draw(): void;
-  getCanvasHeight(): number;
-  getCanvasWidth(): number;
-  getModelContext(): Live2DCoreModelContext;
-  getParamIndex(id: string): number;
-  isPremultipliedAlpha?: () => boolean;
-  loadParam(): void;
-  saveParam(): void;
-  setMatrix?: (matrix: Float32Array) => void;
-  setParamFloat(id: string, value: number, weight?: number): void;
-  setTexture(index: number, texture: WebGLTexture): void;
-  update(): void;
-}
+export type Live2DCoreModel = Cubism2ModelWebGLInstance;
 
-export interface Live2DCoreModelConstructor {
-  /**
-   * Loads a Cubism2 MOC model from an ArrayBuffer.
-   * @param buffer MOC binary data fetched from a model settings file.
-   * @returns Live2D core model instance.
-   */
-  loadModel(buffer: ArrayBuffer): Live2DCoreModel;
-}
+export type Live2DCoreModelConstructor = Cubism2ModelWebGLConstructor;
 
-export interface Live2DMotionQueueManager {
-  isFinished(motionHandle?: number): boolean;
-  startMotion(motion: Live2DCoreMotion, priority?: number): number;
-  stopAllMotions(): void;
-  updateParam(model: Live2DCoreModel): boolean;
-}
+export type Live2DMotionQueueManager = Cubism2MotionQueueManagerInstance;
 
-export interface MotionQueueManagerConstructor {
-  new (): Live2DMotionQueueManager;
-}
-
-declare global {
-  interface Window {
-    Live2DModelWebGL?: Live2DCoreModelConstructor;
-    Live2DMotion?: Live2DCoreMotionConstructor;
-    Live2D?: {
-      setGL?: (gl: WebGLRenderingContext) => void;
-    };
-    MotionQueueManager?: MotionQueueManagerConstructor;
-  }
-}
+export type MotionQueueManagerConstructor = Cubism2MotionQueueManagerConstructor;

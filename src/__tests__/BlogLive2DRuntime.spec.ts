@@ -1,85 +1,60 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { describe, expect, it, vi, afterEach } from 'vitest'
-
-import { installCubism2Core } from '@/components/blog/live2d/vendor/cubism2Core'
-import {
-  assertCubism2CoreReady,
-  CUBISM2_REQUIRED_GLOBALS,
-  isCubism2CoreReady,
-  type Cubism2CoreTarget,
-} from '@/components/blog/live2d/vendor/cubism2Core/coreGlobals'
-import * as Cubism2Sdk2 from '@/components/blog/live2d/vendor/cubism2Core/compatibility/minjsDerivedCubism2Sdk2'
-import { installCubism2SdkGlobals } from '@/components/blog/live2d/vendor/cubism2Core/sdkGlobalInstaller'
-import { CUBISM2_SDK_GLOBALS } from '@/components/blog/live2d/vendor/cubism2Core/sdkGlobalNames'
+import { describe, expect, it, vi } from 'vitest'
 import { createLive2DRuntimeStorage } from '@/components/blog/live2d/runtime/live2dRuntimeStorage'
 import { normalizeLive2DModelSettings } from '@/components/blog/live2d/runtime/live2dModelSettings'
 import { createLive2DTSRuntime } from '@/components/blog/live2d/runtime/live2dTsRuntime'
-import { createCubism2AffineTransform } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/affineTransform'
-import { createCubism2AutoEyeBlink } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/autoEyeBlink'
-import { createCubism2BaseData } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/baseData'
-import { createCubism2BaseContext } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/baseContext'
-import { createCubism2BasicValueTypes } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/basicValueTypes'
-import { createCubism2BinaryReader } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/binaryReader'
-import { createCubism2BrowserRuntimeInfo } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/runtimeInfo'
-import { createCubism2CanvasDrawParam } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/canvasDrawParam'
-import { createCubism2CoreTypes } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/coreTypes'
-import { createCubism2DrawContextBase } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/drawContextBase'
-import { createCubism2DrawData } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/drawData'
-import { createCubism2DrawParamBase } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/drawParamBase'
-import { createCubism2Geometry } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/geometry'
-import { createCubism2GridBaseData } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/gridBaseData'
-import { createCubism2IdTypes } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/idTypes'
-import { createCubism2Interpolation } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/interpolation'
-import { createCubism2LegacyMotion } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/legacyMotion'
-import { createCubism2LDGL } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/ldgl'
-import { createCubism2LDTransform } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/ldTransform'
-import { createCubism2Live2DRuntime } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/live2dRuntime'
-import { createCubism2Math } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/math'
-import { createCubism2Matrix44 } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/matrix44'
-import { createCubism2ModelBase } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/modelBase'
-import { createCubism2ModelContext } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/modelContext'
-import { createCubism2ModelData } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/modelData'
-import { createCubism2ModelWrappers } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/modelWrappers'
-import { createCubism2MocObjectFactory } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/mocObjectFactory'
-import { createCubism2MotionBase } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/motionBase'
-import { createCubism2MotionParser } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/motionParser'
-import { createCubism2ParamBindings } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/paramBinding'
-import { createCubism2ParamDefinitions } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/paramDefinition'
-import { createCubism2PartsData } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/partsData'
-import { createCubism2PhysicsHair } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/physicsHair'
-import { createCubism2RuntimeConstants } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/runtimeConstants'
-import { createCubism2RuntimeUtilities } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/runtimeUtilities'
-import { createCubism2TransformBaseData } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/transformBaseData'
-import { createCubism2TransformValue } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/transformValue'
-import { createCubism2UtVector } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/utVector'
+import { createCubism2AffineTransform } from '@/components/blog/live2d/vendor/cubism2Core/affineTransform'
+import { createCubism2BaseData } from '@/components/blog/live2d/vendor/cubism2Core/baseData'
+import { createCubism2BaseContext } from '@/components/blog/live2d/vendor/cubism2Core/baseContext'
+import { createCubism2BasicValueTypes } from '@/components/blog/live2d/vendor/cubism2Core/basicValueTypes'
+import { createCubism2BinaryReader } from '@/components/blog/live2d/vendor/cubism2Core/binaryReader'
+import { createCubism2BrowserRuntimeInfo } from '@/components/blog/live2d/vendor/cubism2Core/runtimeInfo'
+import { createCubism2CanvasDrawParam } from '@/components/blog/live2d/vendor/cubism2Core/canvasDrawParam'
+import { createCubism2CoreTypes } from '@/components/blog/live2d/vendor/cubism2Core/coreTypes'
+import { createCubism2DrawContextBase } from '@/components/blog/live2d/vendor/cubism2Core/drawContextBase'
+import { createCubism2DrawData } from '@/components/blog/live2d/vendor/cubism2Core/drawData'
+import { createCubism2DrawParamBase } from '@/components/blog/live2d/vendor/cubism2Core/drawParamBase'
+import { createCubism2Geometry } from '@/components/blog/live2d/vendor/cubism2Core/geometry'
+import { createCubism2GridBaseData } from '@/components/blog/live2d/vendor/cubism2Core/gridBaseData'
+import { createCubism2IdTypes } from '@/components/blog/live2d/vendor/cubism2Core/idTypes'
+import { createCubism2Interpolation } from '@/components/blog/live2d/vendor/cubism2Core/interpolation'
+import { createCubism2LDGL } from '@/components/blog/live2d/vendor/cubism2Core/ldgl'
+import { createCubism2LDTransform } from '@/components/blog/live2d/vendor/cubism2Core/ldTransform'
+import { createCubism2Live2DRuntime } from '@/components/blog/live2d/vendor/cubism2Core/live2dRuntime'
+import { createCubism2Math } from '@/components/blog/live2d/vendor/cubism2Core/math'
+import { createCubism2Matrix44 } from '@/components/blog/live2d/vendor/cubism2Core/matrix44'
+import { createCubism2ModelBase } from '@/components/blog/live2d/vendor/cubism2Core/modelBase'
+import { createCubism2ModelContext } from '@/components/blog/live2d/vendor/cubism2Core/modelContext'
+import { createCubism2ModelData } from '@/components/blog/live2d/vendor/cubism2Core/modelData'
+import { createCubism2ModelWrappers } from '@/components/blog/live2d/vendor/cubism2Core/modelWrappers'
+import {
+  createCubism2MotionBase,
+  type Cubism2MotionModelLike,
+} from '@/components/blog/live2d/vendor/cubism2Core/motionBase'
+import { createCubism2MotionParser } from '@/components/blog/live2d/vendor/cubism2Core/motionParser'
+import { createCubism2ParamBindings } from '@/components/blog/live2d/vendor/cubism2Core/paramBinding'
+import { createCubism2ParamDefinitions } from '@/components/blog/live2d/vendor/cubism2Core/paramDefinition'
+import { createCubism2PartsData } from '@/components/blog/live2d/vendor/cubism2Core/partsData'
+import { createCubism2PhysicsHair } from '@/components/blog/live2d/vendor/cubism2Core/physicsHair'
+import { createCubism2RuntimeConstants } from '@/components/blog/live2d/vendor/cubism2Core/runtimeConstants'
+import { createCubism2RuntimeUtilities } from '@/components/blog/live2d/vendor/cubism2Core/runtimeUtilities'
+import { createCubism2TransformBaseData } from '@/components/blog/live2d/vendor/cubism2Core/transformBaseData'
+import { createCubism2TransformValue } from '@/components/blog/live2d/vendor/cubism2Core/transformValue'
+import { createCubism2UtVector } from '@/components/blog/live2d/vendor/cubism2Core/utVector'
 import {
   uploadCubism2WebGLArrayBuffer,
   uploadCubism2WebGLElementArrayBuffer,
-} from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglBuffers'
-import { enableCubism2WebGLAttributePointer } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglAttributes'
-import {
-  bindCubism2WebGLGeneratedMaskTexture,
-  bindCubism2WebGLSourceTexture,
-} from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglTextureBindings'
-import {
-  applyCubism2WebGLClippedUniforms,
-  applyCubism2WebGLMaskUniforms,
-  applyCubism2WebGLUnclippedUniforms,
-} from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglUniforms'
-import { applyCubism2WebGLDrawTail } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglDrawTail'
+} from '@/components/blog/live2d/vendor/cubism2Core/webglBuffers'
 import {
   installCubism2WebGLTextureReleaseHook,
   releaseCubism2WebGLTextures,
-} from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglTextureRelease'
-import { createCubism2WebGLClipping } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglClipping'
-import { resolveCubism2WebGLBlendFactors } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglBlendFactors'
-import { createCubism2WebGLDrawParam } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglDrawParam'
-import type { Cubism2WebGLDrawParamInstance } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglDrawParam'
-import { createCubism2WebGLMaskFramebuffer } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglFramebuffer'
-import { cacheCubism2WebGLShaderLocations } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglShaderLocations'
-import { CUBISM2_WEBGL_SHADER_SOURCES } from '@/components/blog/live2d/vendor/cubism2Core/compatibility/webglShaderSources'
+} from '@/components/blog/live2d/vendor/cubism2Core/webglTextureRelease'
+import { createCubism2WebGLClipping } from '@/components/blog/live2d/vendor/cubism2Core/webglClipping'
+import { createCubism2WebGLDrawParam } from '@/components/blog/live2d/vendor/cubism2Core/webglDrawParam'
+import type { Cubism2WebGLDrawParamInstance } from '@/components/blog/live2d/vendor/cubism2Core/webglDrawParam'
+import { CUBISM2_WEBGL_SHADER_SOURCES } from '@/components/blog/live2d/vendor/cubism2Core/webglShaderSources'
 import type {
   Live2DRendererAdapter,
   Live2DResolvedState,
@@ -111,6 +86,24 @@ function createMemoryStorage(entries: Array<[string, string]> = []): Storage {
     setItem(key: string, value: string) {
       values.set(key, value)
     },
+  }
+}
+
+/**
+ * Creates the smallest semantic model contract accepted by Cubism2 motion queues.
+ * @param marker Optional identity used by forwarding assertions.
+ * @returns Motion-compatible model stub with deterministic parameter bounds.
+ */
+function createMotionModelStub(marker?: string): Cubism2MotionModelLike & { marker?: string } {
+  return {
+    marker,
+    getModelContext: () => ({
+      getParamFloat: () => 0,
+      getParamMax: () => 1,
+      getParamMin: () => -1,
+    }),
+    getParamIndex: () => -1,
+    setParamFloat: () => undefined,
   }
 }
 
@@ -291,7 +284,7 @@ function createRecordingBinaryReader(
         integerValueConstructor: createValueConstructor('integerValue'),
         pointConstructor: createValueConstructor('point'),
         rectangleConstructor: createValueConstructor('rectangle'),
-        tag22XYValueConstructor: createValueConstructor('tag22XYValue'),
+        xyValueConstructor: createValueConstructor('tag22XYValue'),
       },
     }),
   }
@@ -546,18 +539,18 @@ function createWebGLDrawParamHarness(glIndex = 3): {
     ) => void
   }
   live2DProfile: {
-    EXPAND_W: number
+    polygonExpansionWidth: number
     clippingMaskBufferSize: number
-    fTexture: unknown[]
+    maskTextures: unknown[]
   }
   WebGLDrawParam: ReturnType<typeof createCubism2WebGLDrawParam>
 } {
   const { calls, constants, gl } = createRecordingWebGLContext()
   const debugMessages: string[] = []
   const live2DProfile = {
-    EXPAND_W: 4,
+    polygonExpansionWidth: 4,
     clippingMaskBufferSize: 128,
-    fTexture: [] as unknown[],
+    maskTextures: [] as unknown[],
   }
 
   /**
@@ -576,8 +569,8 @@ function createWebGLDrawParamHarness(glIndex = 3): {
     baseBlue: number
     baseGreen: number
     baseRed: number
-    clipBufPre_clipContextDraw: unknown | null
-    clipBufPre_clipContextMask: unknown | null
+    clippingContextForDraw: unknown | null
+    clippingContextForMask: unknown | null
     culling: boolean
     matrix4x4: Float32Array
   }): void {
@@ -587,24 +580,24 @@ function createWebGLDrawParamHarness(glIndex = 3): {
     this.baseBlue = 1
     this.culling = false
     this.matrix4x4 = new Float32Array(16)
-    this.clipBufPre_clipContextMask = null
-    this.clipBufPre_clipContextDraw = null
+    this.clippingContextForMask = null
+    this.clippingContextForDraw = null
   }
 
   /**
    * Reads the current mask-generation clip context from the fake base state.
    * @returns Mask clip context or null when the test exercises another branch.
    */
-  WebGLDrawParamBaseStub.prototype.getClipBufPre_clipContextMask = function (): unknown | null {
-    return this.clipBufPre_clipContextMask
+  WebGLDrawParamBaseStub.prototype.getClippingContextForMask = function (): unknown | null {
+    return this.clippingContextForMask
   }
 
   /**
    * Reads the current draw clip context from the fake base state.
    * @returns Draw clip context or null when the test exercises another branch.
    */
-  WebGLDrawParamBaseStub.prototype.getClipBufPre_clipContextDraw = function (): unknown | null {
-    return this.clipBufPre_clipContextDraw
+  WebGLDrawParamBaseStub.prototype.getClippingContextForDraw = function (): unknown | null {
+    return this.clippingContextForDraw
   }
 
   /**
@@ -799,101 +792,6 @@ function expectCubism2WebGLAttributePointerOrder(
 }
 
 describe('Cubism2 vendor core boundary', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-    delete window.Live2D
-    delete window.Live2DModelWebGL
-    delete window.Live2DMotion
-    delete window.MotionQueueManager
-  })
-
-  it('keeps the public vendor entrypoint small and delegates legacy compatibility out of the entry file', () => {
-    const entrySource = readFileSync(
-      resolve(process.cwd(), 'src/components/blog/live2d/vendor/cubism2Core.ts'),
-      'utf-8',
-    )
-
-    expect(entrySource.length).toBeLessThan(5000)
-    expect(entrySource).toContain('installReadableCubism2Kernel')
-    expect(entrySource).toContain('assertCubism2CoreReady')
-  })
-
-  it('shares the min.js tail SDK global order between the capsule and installer', () => {
-    const sharedGlobalsPath = resolve(
-      process.cwd(),
-      'src/components/blog/live2d/vendor/cubism2Core/sdkGlobalNames.ts',
-    )
-    const installerSource = readFileSync(
-      resolve(process.cwd(), 'src/components/blog/live2d/vendor/cubism2Core/sdkGlobalInstaller.ts'),
-      'utf-8',
-    )
-    const compatibilitySource = readFileSync(
-      resolve(
-        process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/minjsDerivedCubism2Sdk2.ts',
-      ),
-      'utf-8',
-    )
-    const expectedTailGlobalNames = [
-      'UtSystem',
-      'UtDebug',
-      'LDTransform',
-      'LDGL',
-      'Live2D',
-      'Live2DModelWebGL',
-      'Live2DModelJS',
-      'Live2DMotion',
-      'MotionQueueManager',
-      'PhysicsHair',
-      'AMotion',
-      'PartsDataID',
-      'DrawDataID',
-      'BaseDataID',
-      'ParamID',
-    ]
-
-    expect(existsSync(sharedGlobalsPath)).toBe(true)
-
-    const sharedGlobalsSource = readFileSync(sharedGlobalsPath, 'utf-8')
-    const sharedGlobalNames = Array.from(
-      sharedGlobalsSource.matchAll(/'([^']+)'/g),
-      (match) => match[1],
-    )
-
-    expect(sharedGlobalNames).toEqual(expectedTailGlobalNames)
-    expect(new Set(sharedGlobalNames).size).toBe(sharedGlobalNames.length)
-    expect(installerSource).toContain("from './sdkGlobalNames'")
-    expect(compatibilitySource).toContain("from '../sdkGlobalNames'")
-    expect(compatibilitySource).not.toContain('const cubism2SdkGlobalNames')
-  })
-
-  it('installs every shared tail global from its matching capsule export at runtime', () => {
-    const target = {} as Cubism2CoreTarget
-    const installedGlobals = target as unknown as Record<string, unknown>
-
-    installCubism2SdkGlobals(target)
-
-    expect(Object.keys(installedGlobals)).toEqual([...CUBISM2_SDK_GLOBALS])
-    for (const globalName of CUBISM2_SDK_GLOBALS) {
-      expect(installedGlobals[globalName]).toBe(Cubism2Sdk2[globalName])
-    }
-  })
-
-  it('keeps the compatibility capsule wired through semantic factories', () => {
-    const compatibilitySource = readFileSync(
-      resolve(
-        process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/minjsDerivedCubism2Sdk2.ts',
-      ),
-      'utf-8',
-    )
-
-    expect(compatibilitySource).toContain('cubism2RuntimeTarget')
-    expect(compatibilitySource).toContain('createCubism2Live2DRuntime')
-    expect(compatibilitySource).toContain('createCubism2ModelContext')
-    expect(compatibilitySource).not.toContain('window.')
-  })
-
   it('keeps ModelContext runtime tables and draw ordering on semantic APIs', () => {
     class FakeDrawDataID {
       constructor(private readonly id: string) {}
@@ -1208,6 +1106,11 @@ describe('Cubism2 vendor core boundary', () => {
        * @returns Parts id string.
        */
       getPartsID: () => 'PARTS_A',
+      /**
+       * Reads the independently restored parts-id slot consumed by ModelContext lookup.
+       * @returns Parts id string used by the reverse lookup scan.
+       */
+      getPartsIDForModelLookup: () => 'PARTS_A',
     }
     const paramDefinitions = [
       {
@@ -1323,7 +1226,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(context.isInitialParamUpdatePending()).toBe(false)
   })
 
-  it('routes MOC type tags through a dedicated object factory module', () => {
+  it('routes MOC type tags through the direct Cubism2MocVersion owner', () => {
     class VersionedMocFixture {}
     class GridBaseData extends VersionedMocFixture {
       readonly kind = 'grid'
@@ -1359,7 +1262,7 @@ describe('Cubism2 vendor core boundary', () => {
       readonly kind = 'parts-link'
     }
 
-    const { createObjectByTypeTag } = createCubism2MocObjectFactory({
+    const { Cubism2MocVersion } = createCubism2CoreTypes({
       Cubism2GridBaseData: GridBaseData,
       Cubism2MeshDrawData: MeshDrawData,
       Cubism2ModelImpl: ModelImpl,
@@ -1371,7 +1274,9 @@ describe('Cubism2 vendor core boundary', () => {
       Cubism2PartsDataLinkRecord: PartsDataLinkRecord,
       Cubism2TransformBaseData: TransformBaseData,
       Cubism2TransformValue: TransformValue,
+      isBootstrapping: () => false,
     })
+    const createObjectByTypeTag = Cubism2MocVersion.createObjectByTypeTag
 
     expect(createObjectByTypeTag(65)).toBeInstanceOf(GridBaseData)
     expect(createObjectByTypeTag(66)).toBeInstanceOf(ParamBindingSet)
@@ -1385,26 +1290,6 @@ describe('Cubism2 vendor core boundary', () => {
     expect(createObjectByTypeTag(137)).toBeInstanceOf(ParamDefinitionSet)
     expect(createObjectByTypeTag(142)).toBeInstanceOf(PartsDataLinkRecord)
     expect(createObjectByTypeTag(999)).toBeNull()
-  })
-
-  it('centralizes required Cubism2 globals and asserts missing core state by name', () => {
-    expect(CUBISM2_REQUIRED_GLOBALS).toEqual([
-      'Live2D',
-      'Live2DModelWebGL',
-      'Live2DMotion',
-      'MotionQueueManager',
-    ])
-    expect(isCubism2CoreReady(window)).toBe(false)
-    expect(() => assertCubism2CoreReady(window)).toThrow(/Live2D/)
-  })
-
-  it('installs the Cubism2 core without appending a public script tag', () => {
-    const appendChild = vi.spyOn(document.body, 'appendChild')
-
-    installCubism2Core(window)
-
-    expect(appendChild).not.toHaveBeenCalled()
-    expect(isCubism2CoreReady(window)).toBe(true)
   })
 
   it('decodes Cubism2 object references from the binary-reader cache', () => {
@@ -1550,6 +1435,18 @@ describe('Cubism2 vendor core boundary', () => {
        */
       getParamFloat(): number {
         return 0
+      }
+      /**
+       * @returns Default upper parameter bound for this focused loader fixture.
+       */
+      getParamMax(): number {
+        return 1
+      }
+      /**
+       * @returns Default lower parameter bound for this focused loader fixture.
+       */
+      getParamMin(): number {
+        return -1
       }
       /**
        * @returns Missing parameter index for unused parameter lookup paths.
@@ -2632,7 +2529,7 @@ describe('Cubism2 vendor core boundary', () => {
       isBootstrapping: () => false,
     })
     const point = new valueTypes.Cubism2PointValue()
-    const size = new valueTypes.Cubism2Tag22XYValue()
+    const size = new valueTypes.Cubism2XYValue()
 
     point.copyFromPoint({ x: 12, y: 24 })
     size.setXYSlots(12, 24)
@@ -2643,7 +2540,7 @@ describe('Cubism2 vendor core boundary', () => {
     size.setXYSlots(36, 48)
     expect(point).toMatchObject({ x: 36, y: 48 })
     expect(size).toMatchObject({ x: 36, y: 48 })
-    expect(new valueTypes.Cubism2LegacyIntegerValue()).toMatchObject({ color: null })
+    expect(new valueTypes.Cubism2IntegerValue()).toMatchObject({ color: null })
   })
 
   it('keeps Cubism2 rectangles in a separate module with semantic copy APIs', () => {
@@ -2695,22 +2592,22 @@ describe('Cubism2 vendor core boundary', () => {
     expect(Cubism2Math.randomUnit()).toBe(0.375)
   })
 
-  it('routes compatibility random and verbose wiring through semantic helpers', () => {
-    const compatibilitySource = readFileSync(
+  it('keeps semantic random and runtime verbose helpers without short-name wiring', () => {
+    const runtimeCoreSource = readFileSync(
       resolve(
         process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/minjsDerivedCubism2Sdk2.ts',
+        'src/components/blog/live2d/vendor/cubism2Core/runtimeCore.ts',
       ),
       'utf-8',
     )
     const mathSource = readFileSync(
-      resolve(process.cwd(), 'src/components/blog/live2d/vendor/cubism2Core/compatibility/math.ts'),
+      resolve(process.cwd(), 'src/components/blog/live2d/vendor/cubism2Core/math.ts'),
       'utf-8',
     )
     const live2dRuntimeSource = readFileSync(
       resolve(
         process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/live2dRuntime.ts',
+        'src/components/blog/live2d/vendor/cubism2Core/live2dRuntime.ts',
       ),
       'utf-8',
     )
@@ -2718,8 +2615,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(mathSource).toContain('randomUnit')
     expect(mathSource).toContain('Cubism2Math.randomUnit = function randomUnit')
     expect(live2dRuntimeSource).toContain('isVerboseLoggingEnabled')
-    expect(compatibilitySource).toContain('random: Cubism2Math.randomUnit')
-    expect(compatibilitySource).toContain('return Live2D.isVerboseLoggingEnabled()')
+    expect(runtimeCoreSource).toContain('return Live2D.isVerboseLoggingEnabled()')
 
     const Live2D = createCubism2Live2DRuntime({
       /**
@@ -2742,28 +2638,28 @@ describe('Cubism2 vendor core boundary', () => {
     const live2dRuntimeSource = readFileSync(
       resolve(
         process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/live2dRuntime.ts',
+        'src/components/blog/live2d/vendor/cubism2Core/live2dRuntime.ts',
       ),
       'utf-8',
     )
     const gridBaseDataSource = readFileSync(
       resolve(
         process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/gridBaseData.ts',
+        'src/components/blog/live2d/vendor/cubism2Core/gridBaseData.ts',
       ),
       'utf-8',
     )
     const drawDataSource = readFileSync(
       resolve(
         process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/drawData.ts',
+        'src/components/blog/live2d/vendor/cubism2Core/drawData.ts',
       ),
       'utf-8',
     )
     const transformBaseDataSource = readFileSync(
       resolve(
         process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/transformBaseData.ts',
+        'src/components/blog/live2d/vendor/cubism2Core/transformBaseData.ts',
       ),
       'utf-8',
     )
@@ -2800,18 +2696,26 @@ describe('Cubism2 vendor core boundary', () => {
     expect(Live2D.isVerboseLoggingEnabled()).toBe(true)
   })
 
-  it('restores Cubism2MocVersion semantic static names and object-factory behavior', () => {
+  it('restores Cubism2MocVersion semantic static names and direct owner behavior', () => {
     const createdObjects: number[] = []
+    const UnusedMocObject = class {}
     const { Cubism2MocVersion } = createCubism2CoreTypes({
-      /**
-       * Records the type tag delegated by the restored MocVersion object factory.
-       * @param typeTag MOC object type tag that passed min.js unsupported-tag filtering.
-       * @returns Fake MOC object so the caller can prove the semantic factory path was used.
-       */
-      createObjectByTypeTag(typeTag) {
-        createdObjects.push(typeTag)
-        return { typeTag }
+      Cubism2GridBaseData: UnusedMocObject,
+      Cubism2MeshDrawData: UnusedMocObject,
+      Cubism2ModelImpl: class {
+        /** Records that the direct type-136 constructor branch executed. */
+        constructor() {
+          createdObjects.push(136)
+        }
       },
+      Cubism2ParamBinding: UnusedMocObject,
+      Cubism2ParamBindingSet: UnusedMocObject,
+      Cubism2ParamDefinition: UnusedMocObject,
+      Cubism2ParamDefinitionSet: UnusedMocObject,
+      Cubism2PartsData: UnusedMocObject,
+      Cubism2PartsDataLinkRecord: UnusedMocObject,
+      Cubism2TransformBaseData: UnusedMocObject,
+      Cubism2TransformValue: UnusedMocObject,
       /**
        * Keeps constructor initialization active for this alias characterization.
        * @returns False because the test wants normal static initialization.
@@ -2834,7 +2738,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(Cubism2MocVersion.OBJECT_REFERENCE_TYPE_TAG).toBe(33)
 
     const delegatedObject = Cubism2MocVersion.createObjectByTypeTag(136)
-    expect(delegatedObject).toEqual({ typeTag: 136 })
+    expect(delegatedObject).toBeTruthy()
     expect(createdObjects).toEqual([136])
 
     const unsupportedTypeLogger = vi.fn()
@@ -3019,19 +2923,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(Object.prototype.hasOwnProperty.call(bootstrapBaseData, 'baseDataId')).toBe(false)
   })
 
-  it('restores Cubism2 base-data reader payload names while preserving read gates', () => {
-    const baseDataSource = readFileSync(
-      resolve('src/components/blog/live2d/vendor/cubism2Core/compatibility/baseData.ts'),
-      'utf-8',
-    )
-
-    expect(baseDataSource).toContain('interface Cubism2BaseDataPayload')
-    expect(baseDataSource).toContain('interface Cubism2BaseDataOpacityPayload')
-    expect(baseDataSource).toContain('readCubism2BaseDataPayload')
-    expect(baseDataSource).toContain('applyCubism2BaseDataPayload')
-    expect(baseDataSource).toContain('readCubism2BaseDataOpacityPayload')
-    expect(baseDataSource).toContain('applyCubism2BaseDataOpacityPayload')
-
+  it('preserves direct Cubism2 base-data reader assignments and read gates', () => {
     const defaultBaseDataId = { id: 'DST_BASE' }
     const BaseData = createCubism2BaseData({
       BaseDataID: createTestBaseDataIdDependency(defaultBaseDataId),
@@ -3141,7 +3033,7 @@ describe('Cubism2 vendor core boundary', () => {
 
   it('restores Cubism2 transform-base-data reader payload names while preserving read order', () => {
     const transformBaseDataSource = readFileSync(
-      resolve('src/components/blog/live2d/vendor/cubism2Core/compatibility/transformBaseData.ts'),
+      resolve('src/components/blog/live2d/vendor/cubism2Core/transformBaseData.ts'),
       'utf-8',
     )
 
@@ -3267,16 +3159,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(transformBaseData.opacityValues).toBe(opacityValues)
   })
 
-  it('restores Cubism2 grid-base-data reader payload names while preserving read order', () => {
-    const gridBaseDataSource = readFileSync(
-      resolve('src/components/blog/live2d/vendor/cubism2Core/compatibility/gridBaseData.ts'),
-      'utf-8',
-    )
-
-    expect(gridBaseDataSource).toContain('interface Cubism2GridBaseDataPayload')
-    expect(gridBaseDataSource).toContain('readCubism2GridBaseDataPayload')
-    expect(gridBaseDataSource).toContain('applyCubism2GridBaseDataPayload')
-
+  it('preserves direct Cubism2 grid-base-data reader assignments and read order', () => {
     const defaultBaseDataId = { id: 'DEFAULT_BASE' }
     const baseDataId = { id: 'GridBase' }
     const targetBaseDataId = { id: 'GridTarget' }
@@ -4615,7 +4498,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(drawContext).toMatchObject({
       isActive: true,
       baseOpacity: 1,
-      clipBufPre_clipContext: null,
+      clippingContext: null,
     })
   })
 
@@ -4821,7 +4704,7 @@ describe('Cubism2 vendor core boundary', () => {
 
   it('keeps Cubism2 interpolation in a separate module with integer, float, and point semantics', async () => {
     const { createCubism2Interpolation } =
-      await import('@/components/blog/live2d/vendor/cubism2Core/compatibility/interpolation')
+      await import('@/components/blog/live2d/vendor/cubism2Core/interpolation')
     const copyCalls: Array<{
       length: number
       sourceOffset: number
@@ -5442,6 +5325,20 @@ describe('Cubism2 vendor core boundary', () => {
        */
       getParamFloat(paramIndex: number) {
         return this.paramValues.get(paramIndex) ?? 0
+      }
+
+      /**
+       * @returns Default upper parameter bound used by motion interpolation tests.
+       */
+      getParamMax() {
+        return 1
+      }
+
+      /**
+       * @returns Default lower parameter bound used by motion interpolation tests.
+       */
+      getParamMin() {
+        return -1
       }
 
       /**
@@ -6160,9 +6057,9 @@ describe('Cubism2 vendor core boundary', () => {
 
     partsData.readPartsData(reader)
 
-    expect(partsData.getLegacyFlag()).toBe(true)
+    expect(partsData.isLocked()).toBe(true)
     expect(partsData.isVisible()).toBe(false)
-    expect(partsData.legacyFlag).toBe(true)
+    expect(partsData.locked).toBe(true)
     expect(partsData.partsId).toBe(partsId)
     expect(partsData.getPartsID()).toBe(partsId)
     expect(partsData.getPartsIDForModelLookup()).toBe(partsData.getPartsID())
@@ -6184,12 +6081,12 @@ describe('Cubism2 vendor core boundary', () => {
     partsData.addBaseData(baseData)
     partsData.addDrawData(drawData)
     partsData.setPartsIDViaObSlot(nextPartsId)
-    partsData.setLegacyFlag(false)
+    partsData.setLocked(false)
 
     expect(partsData.getBaseDataList()).toEqual([baseData])
     expect(partsData.getDrawDataList()).toEqual([drawData])
     expect(partsData.getPartsID()).toBe(nextPartsId)
-    expect(partsData.getLegacyFlag()).toBe(false)
+    expect(partsData.isLocked()).toBe(false)
 
     partsData.setPartsIDViaMpSlot(partsId)
     partsData.setVisible(false)
@@ -6239,22 +6136,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(Object.prototype.hasOwnProperty.call(prototypeBootstrapPartsData, 'partsId')).toBe(false)
   })
 
-  it('restores Cubism2 parts-data reader payload names while preserving read order', () => {
-    const partsDataSource = readFileSync(
-      resolve(
-        process.cwd(),
-        'src/components/blog/live2d/vendor/cubism2Core/compatibility/partsData.ts',
-      ),
-      'utf-8',
-    )
-
-    expect(partsDataSource).toContain('interface Cubism2PartsDataPayload')
-    expect(partsDataSource).toContain('interface Cubism2PartsDataLinkPayload')
-    expect(partsDataSource).toContain('readCubism2PartsDataPayload')
-    expect(partsDataSource).toContain('applyCubism2PartsDataPayload')
-    expect(partsDataSource).toContain('readCubism2PartsDataLinkPayload')
-    expect(partsDataSource).toContain('applyCubism2PartsDataLinkPayload')
-
+  it('preserves direct Cubism2 parts-data reader assignments and read order', () => {
     const partsConstructors = createCubism2PartsData({
       isBootstrapping: () => false,
     })
@@ -6286,7 +6168,7 @@ describe('Cubism2 vendor core boundary', () => {
     })
 
     expect(partsReadOrder).toEqual(['bit', 'bit', 'object', 'object', 'object'])
-    expect(partsData.getLegacyFlag()).toBe(false)
+    expect(partsData.isLocked()).toBe(false)
     expect(partsData.isVisible()).toBe(true)
     expect(partsData.getPartsID()).toBe(partsId)
     expect(partsData.getBaseDataList()).toBe(baseDataList)
@@ -6591,7 +6473,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(meshData.getTargetBaseDataID()).toBe(targetBaseDataId)
     expect(meshData.targetBaseDataId).toBe(targetBaseDataId)
     expect(meshData.getClipIDList()).toEqual(['DrawMaskA,DrawMaskB'])
-    expect(meshData.getTextureNo()).toBe(4)
+    expect(meshData.getTextureIndex()).toBe(4)
     expect(meshData.getNumPoints()).toBe(2)
     expect(meshData.getIndexArray()).toEqual(new Int16Array([2, 1, 0]))
     expect(meshData.getUVCoordinates()).toEqual([0.1, 0.2, 0.3, 0.4])
@@ -6604,7 +6486,7 @@ describe('Cubism2 vendor core boundary', () => {
     drawConstructors.Cubism2DrawDataBase.trackDrawOrderBounds([-9, 640])
     expect(drawConstructors.Cubism2DrawDataBase.getMinDrawOrder()).toBe(-9)
     expect(drawConstructors.Cubism2DrawDataBase.getMaxDrawOrder()).toBe(640)
-    expect(Object.prototype.hasOwnProperty.call(bootstrapMeshData, 'textureNo')).toBe(false)
+    expect(Object.prototype.hasOwnProperty.call(bootstrapMeshData, 'textureIndex')).toBe(false)
 
     const drawContext = meshData.createDrawContext()
 
@@ -6749,7 +6631,7 @@ describe('Cubism2 vendor core boundary', () => {
        * Records the clipping context passed into the draw parameter.
        * @param clipContext Current clipping mask context.
        */
-      setClipBufPre_clipContextForDraw(clipContext: unknown) {
+      setClippingContextForDraw(clipContext: unknown) {
         expect(clipContext).toBeNull()
       },
     }
@@ -6780,7 +6662,7 @@ describe('Cubism2 vendor core boundary', () => {
     }
 
     const live2DProfile = {
-      L2D_COLOR_BLEND_MODE_MULT: 42,
+      COLOR_BLEND_MODE_MULTIPLY: 42,
     }
     const drawParamConstructors = createCubism2DrawParamBase({
       Live2D: live2DProfile,
@@ -6788,7 +6670,7 @@ describe('Cubism2 vendor core boundary', () => {
     })
     const bootstrappingConstructors = createCubism2DrawParamBase({
       Live2D: {
-        L2D_COLOR_BLEND_MODE_MULT: 99,
+        COLOR_BLEND_MODE_MULTIPLY: 99,
       },
       /**
        * Reports prototype bootstrap mode for constructor side-effect checks.
@@ -6800,7 +6682,7 @@ describe('Cubism2 vendor core boundary', () => {
     })
     const drawParam = new drawParamConstructors.Cubism2DrawParamBase()
     const bootstrapDrawParam = new bootstrappingConstructors.Cubism2DrawParamBase()
-    live2DProfile.L2D_COLOR_BLEND_MODE_MULT = 77
+    live2DProfile.COLOR_BLEND_MODE_MULTIPLY = 77
     const channelColor = new drawParamConstructors.Cubism2RgbaColor()
     const matrixValues = Array.from({ length: 16 }, (_value, index) => index + 0.5)
     const maskContext = { kind: 'mask-context' }
@@ -6834,8 +6716,8 @@ describe('Cubism2 vendor core boundary', () => {
     drawParam.setPremultipliedAlpha(true)
     drawParam.setAnisotropy(8)
     drawParam.setClippingProcess(drawParamConstructors.Cubism2DrawParamBase.CLIPPING_PROCESS_DRAW)
-    drawParam.setClipBufPre_clipContextForMask(maskContext)
-    drawParam.setClipBufPre_clipContextForDraw(drawContext)
+    drawParam.setClippingContextForMask(maskContext)
+    drawParam.setClippingContextForDraw(drawContext)
 
     expect(drawParam.getChannelFlagAsColor(2)).toBe(channelColor)
     expect(drawParam.baseAlpha).toBe(0)
@@ -6849,8 +6731,8 @@ describe('Cubism2 vendor core boundary', () => {
     expect(drawParam.getClippingProcess()).toBe(
       drawParamConstructors.Cubism2DrawParamBase.CLIPPING_PROCESS_DRAW,
     )
-    expect(drawParam.getClipBufPre_clipContextMask()).toBe(maskContext)
-    expect(drawParam.getClipBufPre_clipContextDraw()).toBe(drawContext)
+    expect(drawParam.getClippingContextForMask()).toBe(maskContext)
+    expect(drawParam.getClippingContextForDraw()).toBe(drawContext)
     expect(drawParam.getTextureCount()).toBe(-1)
     expect(drawParam.setDrawParam({ kind: 'ignored-semantic' })).toBeUndefined()
     expect(drawParam.getTextureCount()).toBe(-1)
@@ -6877,7 +6759,7 @@ describe('Cubism2 vendor core boundary', () => {
     })
     const { Cubism2RgbaColor } = createCubism2DrawParamBase({
       Live2D: {
-        L2D_COLOR_BLEND_MODE_MULT: 0,
+        COLOR_BLEND_MODE_MULTIPLY: 0,
       },
       isBootstrapping: () => false,
     })
@@ -6900,10 +6782,10 @@ describe('Cubism2 vendor core boundary', () => {
     })
     const drawParam = {
       gl,
-      glno: 0,
+      glIndex: 0,
       createFramebuffer: vi.fn(() => ({ framebuffer: { id: 'mask-framebuffer' } })),
       setChannelFlagAsColor: vi.fn(),
-      setClipBufPre_clipContextForMask: vi.fn((clipContextArg: unknown) => {
+      setClippingContextForMask: vi.fn((clipContextArg: unknown) => {
         const marker = clipContextArg == null ? 'null' : 'context'
         interleavedCalls.push(`setMaskContext:${marker}`)
       }),
@@ -6938,7 +6820,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(Cubism2ClippingManager.CHANNEL_COUNT).toBe(4)
     expect(Cubism2ClippingManager.RENDER_TEXTURE_USE_MIPMAP).toBe(false)
     expect(Cubism2ClippingManager.NOT_USED_FRAME).toBe(-100)
-    expect(manager.curFrameNo).toBe(0)
+    expect(manager.maskFramebufferSlot).toBe(0)
     expect(drawParam.createFramebuffer).toHaveBeenCalledTimes(1)
     expect(live2DProfile.frameBuffers[0]).toEqual({
       framebuffer: { id: 'mask-framebuffer' },
@@ -6966,7 +6848,7 @@ describe('Cubism2 vendor core boundary', () => {
         getDrawDataID: () => 'draw-b',
       },
     ]
-    const drawContextList = [{ clipBufPre_clipContext: null }, { clipBufPre_clipContext: null }]
+    const drawContextList = [{ clippingContext: null }, { clippingContext: null }]
     const transformedPointsByIndex: Record<number, number[]> = {
       3: [-2, -1, 4, 5],
       4: [1, 2, 6, 8],
@@ -7046,8 +6928,8 @@ describe('Cubism2 vendor core boundary', () => {
     manager.init(modelContext, drawDataList, drawContextList)
 
     expect(manager.clipContextList).toHaveLength(1)
-    expect(drawContextList[0]!.clipBufPre_clipContext).toBe(manager.clipContextList[0])
-    expect(drawContextList[1]!.clipBufPre_clipContext).toBe(manager.clipContextList[0])
+    expect(drawContextList[0]!.clippingContext).toBe(manager.clipContextList[0])
+    expect(drawContextList[1]!.clippingContext).toBe(manager.clipContextList[0])
     const clipContext = manager.clipContextList[0]!
 
     manager.colorBuffer = 77
@@ -7136,8 +7018,8 @@ describe('Cubism2 vendor core boundary', () => {
       'setMaskContext:null',
       'viewport:0,0,640,480',
     ])
-    expect(drawParam.setClipBufPre_clipContextForMask).toHaveBeenLastCalledWith(null)
-    expect(drawParam.setClipBufPre_clipContextForMask.mock.calls).toEqual([
+    expect(drawParam.setClippingContextForMask).toHaveBeenLastCalledWith(null)
+    expect(drawParam.setClippingContextForMask.mock.calls).toEqual([
       [clipContext],
       [clipContext],
       [inactiveClipContext],
@@ -7294,16 +7176,15 @@ describe('Cubism2 vendor core boundary', () => {
       y: 2 / 3,
     })
 
-    expect(() => manager.releaseFramebuffers()).not.toThrow()
+    expect(() => manager.releaseResources()).not.toThrow()
     expect(gl.deleteFramebuffer).toHaveBeenCalledWith({ id: 'mask-framebuffer' })
     expect(live2DProfile.frameBuffers).toEqual([])
     expect(live2DProfile.glContext).toEqual([])
     expect(manager.CHANNEL_COLORS).toEqual([])
-    expect(manager.tmpBoundsOnModel).toBeNull()
-    expect(manager.tmpMatrix2).toBeNull()
-    expect(manager.tmpMatrixForDraw).toBeNull()
-    expect(manager.tmpMatrixForMask).toBeNull()
-    expect(manager.tmpModelToViewMatrix).toBeNull()
+    expect(manager.expandedClippedDrawBounds).toBeNull()
+    expect(manager.clippingMatrixScratch).toBeNull()
+    expect(manager.drawMatrixScratch).toBeNull()
+    expect(manager.maskMatrixScratch).toBeNull()
   })
 
   it('preserves Cubism2 WebGL clipping layout bounds branch distribution', () => {
@@ -7320,7 +7201,7 @@ describe('Cubism2 vendor core boundary', () => {
     })
     const { Cubism2RgbaColor } = createCubism2DrawParamBase({
       Live2D: {
-        L2D_COLOR_BLEND_MODE_MULT: 0,
+        COLOR_BLEND_MODE_MULTIPLY: 0,
       },
       isBootstrapping: () => false,
     })
@@ -7332,10 +7213,10 @@ describe('Cubism2 vendor core boundary', () => {
     const debugLog = vi.fn()
     const drawParam = {
       gl,
-      glno: 0,
+      glIndex: 0,
       createFramebuffer: vi.fn(() => ({ framebuffer: { id: 'layout-framebuffer' } })),
       setChannelFlagAsColor: vi.fn(),
-      setClipBufPre_clipContextForMask: vi.fn(),
+      setClippingContextForMask: vi.fn(),
     }
     const { Cubism2ClippingManager } = createCubism2WebGLClipping({
       Cubism2FloatRectangle,
@@ -7600,7 +7481,7 @@ describe('Cubism2 vendor core boundary', () => {
       isBootstrapping: () => false,
     })
     const motion = new motionBase.AMotion()
-    const model = { marker: 'model' }
+    const model = createMotionModelStub('model')
     const updates: Array<{ time: number; weight: number }> = []
 
     motion.setFadeIn(1000)
@@ -7664,6 +7545,7 @@ describe('Cubism2 vendor core boundary', () => {
     })
     const motion = new motionBase.AMotion()
     const queueEntry = new motionBase.Cubism2MotionQueueEntry()
+    const model = createMotionModelStub()
     const weights: number[] = []
 
     motion.getDurationMSec = () => 1000
@@ -7674,13 +7556,13 @@ describe('Cubism2 vendor core boundary', () => {
     motion.fadeOutMillis = 0
 
     motion.motionWeight = null
-    motion.updateParam({}, queueEntry)
+    motion.updateParam(model, queueEntry)
     expect(weights[0]).toBe(0)
 
     userTime = 200
     queueEntry.isFinishedFlag = false
     motion.motionWeight = undefined
-    motion.updateParam({}, queueEntry)
+    motion.updateParam(model, queueEntry)
     expect(Number.isNaN(weights[1])).toBe(true)
   })
 
@@ -7761,154 +7643,6 @@ describe('Cubism2 vendor core boundary', () => {
     expect(queueEntry.endTimeMillis).toBe(300)
     queueEntry.scheduleFadeOut(50)
     expect(queueEntry.endTimeMillis).toBe(250)
-  })
-
-  it('keeps Cubism2 auto eye blink state transitions in a separate module', () => {
-    let now = 1000
-    const eyeWrites: Array<[unknown, number]> = []
-    const autoEyeBlink = createCubism2AutoEyeBlink({
-      UtSystem: {
-        /**
-         * Supplies deterministic legacy time for blink state transitions.
-         * @returns Current fake user time in milliseconds.
-         */
-        getUserTimeMSec(): number {
-          return now
-        },
-      },
-      /**
-       * Supplies deterministic random value used to schedule the next blink.
-       * @returns Zero so the next interval boundary equals the current fake time.
-       */
-      random(): number {
-        return 0
-      },
-      /**
-       * Keeps constructor side effects enabled for the runtime instance under test.
-       * @returns False outside legacy prototype bootstrap.
-       */
-      isBootstrapping(): boolean {
-        return false
-      },
-    })
-    const blink = new autoEyeBlink.Cubism2AutoEyeBlink()
-    const model = {
-      /**
-       * Captures eye parameter writes from the blink state machine.
-       * @param paramId Left or right eye-open parameter id passed through from legacy fields.
-       * @param value Eye-open value computed by the current state.
-       * @returns Nothing; writes are appended for assertions.
-       */
-      setParamFloat(paramId: unknown, value: number): void {
-        eyeWrites.push([paramId, value])
-      },
-    }
-
-    expect(blink.currentState).toBe(autoEyeBlink.AutoEyeBlinkState.First)
-    expect(blink.scheduleNextBlinkMillis()).toBe(1000)
-
-    blink.setBlinkIntervalMillis(6000)
-    blink.setBlinkMotionMillis(100, 50, 150)
-    blink.updateBlinkParameters(model)
-    expect(blink.currentState).toBe(autoEyeBlink.AutoEyeBlinkState.Interval)
-    expect(blink.nextBlinkMillis).toBe(1000)
-    expect(eyeWrites[eyeWrites.length - 2]).toEqual(['PARAM_EYE_L_OPEN', 1])
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['PARAM_EYE_R_OPEN', 1])
-
-    now = 1001
-    blink.updateBlinkParameters(model)
-    expect(blink.currentState).toBe(autoEyeBlink.AutoEyeBlinkState.Closing)
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['PARAM_EYE_R_OPEN', 1])
-
-    now = 1051
-    blink.updateBlinkParameters(model)
-    expect(eyeWrites[eyeWrites.length - 2]).toEqual(['PARAM_EYE_L_OPEN', 0.5])
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['PARAM_EYE_R_OPEN', 0.5])
-
-    now = 1101
-    blink.updateBlinkParameters(model)
-    expect(blink.currentState).toBe(autoEyeBlink.AutoEyeBlinkState.Closed)
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['PARAM_EYE_R_OPEN', 0])
-
-    now = 1151
-    blink.updateBlinkParameters(model)
-    expect(blink.currentState).toBe(autoEyeBlink.AutoEyeBlinkState.Opening)
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['PARAM_EYE_R_OPEN', 0])
-
-    now = 1226
-    blink.updateBlinkParameters(model)
-    expect(eyeWrites[eyeWrites.length - 2]).toEqual(['PARAM_EYE_L_OPEN', 0.5])
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['PARAM_EYE_R_OPEN', 0.5])
-
-    blink.isEyeOpenPositive = false
-    now = 1301
-    blink.updateBlinkParameters(model)
-    expect(blink.currentState).toBe(autoEyeBlink.AutoEyeBlinkState.Interval)
-    expect(eyeWrites[eyeWrites.length - 2]).toEqual(['PARAM_EYE_L_OPEN', -1])
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['PARAM_EYE_R_OPEN', -1])
-  })
-
-  it('keeps Cubism2 auto eye blink exact scheduler formula and semantic state', () => {
-    let now = 2000
-    const eyeWrites: Array<[unknown, number]> = []
-    const autoEyeBlink = createCubism2AutoEyeBlink({
-      UtSystem: {
-        /**
-         * Supplies deterministic legacy time for exact blink scheduling assertions.
-         * @returns Current fake user time in milliseconds.
-         */
-        getUserTimeMSec(): number {
-          return now
-        },
-      },
-      /**
-       * Supplies a non-zero deterministic random value to lock the legacy interval formula.
-       * @returns Half of the random interval window.
-       */
-      random(): number {
-        return 0.5
-      },
-      /**
-       * Keeps constructor side effects enabled for semantic scheduler checks.
-       * @returns False outside runtime prototype bootstrap.
-       */
-      isBootstrapping(): boolean {
-        return false
-      },
-    })
-    const blink = new autoEyeBlink.Cubism2AutoEyeBlink()
-    const model = {
-      /**
-       * Captures raw eye parameter ids exactly as the legacy state machine passes them.
-       * @param paramId Raw parameter id value received from the blink state machine.
-       * @param value Eye-open value computed by the current state.
-       */
-      setParamFloat(paramId: unknown, value: number): void {
-        eyeWrites.push([paramId, value])
-      },
-    }
-
-    blink.setBlinkIntervalMillis(6000)
-    expect(blink.blinkIntervalMillis).toBe(6000)
-    expect(blink.scheduleNextBlinkMillis()).toBe(2000 + 0.5 * (2 * 6000 - 1))
-
-    blink.setBlinkMotionMillis(110, 60, 160)
-    expect(blink.closingMillis).toBe(110)
-    expect(blink.closedMillis).toBe(60)
-    expect(blink.openingMillis).toBe(160)
-    blink.nextBlinkMillis = 2222
-    blink.stateStartMillis = 2111
-    blink.currentState = autoEyeBlink.AutoEyeBlinkState.Interval
-    blink.leftEyeParamId = null
-    blink.rightEyeParamId = 'RIGHT_EYE'
-    blink.updateBlinkParameters(model)
-    expect(blink.nextBlinkMillis).toBe(2222)
-    expect(blink.stateStartMillis).toBe(2111)
-    expect(blink.currentState).toBe(autoEyeBlink.AutoEyeBlinkState.Interval)
-    expect(blink.leftEyeParamId).toBeNull()
-    expect(blink.rightEyeParamId).toBe('RIGHT_EYE')
-    expect(eyeWrites[eyeWrites.length - 2]).toEqual([null, 1])
-    expect(eyeWrites[eyeWrites.length - 1]).toEqual(['RIGHT_EYE', 1])
   })
 
   it('keeps Live2DMotion MTN parsing and parameter updates in a separate module', () => {
@@ -8099,166 +7833,6 @@ describe('Cubism2 vendor core boundary', () => {
       new TextEncoder().encode('LAYOUT:SCALE_Y=1').buffer,
     )
     expect(layoutMotion.motions[0]!.curveType).toBe(188)
-  })
-
-  it('keeps the dormant legacy Live2DMotion parser in a separate module with byte-reader semantics', () => {
-    const motionBase = createCubism2MotionBase({
-      Cubism2Math: createCubism2Math(),
-      UtDebug: {
-        /**
-         * Suppresses queue debug output during legacy parser tests.
-         */
-        logDebug() {},
-        /**
-         * Suppresses queue errors during legacy parser tests.
-         */
-        logWithLegacyPrefix() {},
-      },
-      UtSystem: {
-        /**
-         * Returns deterministic test time for queue entry scheduling.
-         * @returns Current fake user time in milliseconds.
-         */
-        getUserTimeMSec: () => 0,
-      },
-      isBootstrapping: () => false,
-    })
-    const motionParser = createCubism2MotionParser({
-      AMotion: motionBase.AMotion,
-      isBootstrapping: () => false,
-    })
-    const legacyMotion = createCubism2LegacyMotion({
-      AMotion: motionBase.AMotion,
-      Cubism2MotionCurve: motionParser.Cubism2MotionCurve,
-      MotionTextReader: motionParser.MotionTextReader,
-      isBootstrapping: () => false,
-    })
-    const motionText = [
-      '# comment ignored by legacy parser',
-      '$fps=24',
-      'ParamAngleX=0,12,24',
-      'VISIBLE:PARTS_01=1,0,1',
-      'LAYOUT:Y=2,4,6',
-    ].join('\n')
-    const motion = legacyMotion.LegacyLive2DMotion.loadMotion(new TextEncoder().encode(motionText))
-
-    expect(motion.framesPerSecond).toBe(24)
-    expect(motion.maxCurveValueCount).toBe(3)
-    expect(motion.getDurationMSec()).toBe(125)
-    expect(motion.motions).toHaveLength(3)
-    expect(motion.motions.map((curve) => curve.targetId)).toEqual([
-      'ParamAngleX',
-      'VISIBLE:PARTS_01',
-      'Y',
-    ])
-    expect(motion.motions.map((curve) => curve.curveType)).toEqual([
-      motionParser.Cubism2MotionCurve.PARAMETER_CURVE_TYPE,
-      motionParser.Cubism2MotionCurve.VISIBILITY_CURVE_TYPE,
-      motionParser.Cubism2MotionCurve.LAYOUT_Y_CURVE_TYPE,
-    ])
-    expect(Array.from(motion.motions[0]!.keyframeValues!)).toEqual([0, 12, 24])
-    expect(motion.isLoop()).toBe(true)
-    motion.setLoop(false)
-    expect(motion.isLoop()).toBe(false)
-    motion.setLoop(true)
-
-    const writes: Array<{ id: string; value: number }> = []
-    const model = {
-      /**
-       * Reads the current model parameter value before legacy blending.
-       * @param id Parameter id requested by the legacy curve.
-       * @returns Current fake parameter value.
-       */
-      getParamFloat(id: string) {
-        return id === 'ParamAngleX' ? 4 : 0
-      },
-      /**
-       * Records legacy parser writes.
-       * @param id Parameter id or visibility id parsed from the curve key.
-       * @param value Blended value written by the legacy branch.
-       */
-      setParamFloat(id: string, value: number) {
-        writes.push({ id, value })
-      },
-    }
-    const queueEntry = {
-      fadeInStartTimeMillis: 1000,
-      isFinishedFlag: false,
-      startTimeMillis: 1000,
-    }
-
-    motion.updateParamExe(model, 1041.6666666667, 0.5, queueEntry as never)
-
-    expect(writes[0]?.id).toBe('ParamAngleX')
-    expect(writes[0]?.value).toBeCloseTo(8)
-    expect(writes[1]).toEqual({ id: 'VISIBLE:PARTS_01', value: 0 })
-
-    motion.setLoop(true)
-    motion.setLoopFadeIn(true)
-    motion.updateParamExe(model, 1200, 1, queueEntry as never)
-    expect(queueEntry.isFinishedFlag).toBe(false)
-    expect(queueEntry.startTimeMillis).toBe(1200)
-    expect(queueEntry.fadeInStartTimeMillis).toBe(1200)
-
-    motion.setLoop(false)
-    motion.updateParamExe(model, 1400, 1, queueEntry as never)
-    expect(queueEntry.isFinishedFlag).toBe(true)
-  })
-
-  it('covers every active and dormant legacy layout curve classification branch', () => {
-    const motionBase = createCubism2MotionBase({
-      Cubism2Math: createCubism2Math(),
-      UtDebug: {
-        /**
-         * Suppresses queue debug output during layout classification tests.
-         */
-        logDebug() {},
-        /**
-         * Suppresses queue errors during layout classification tests.
-         */
-        logWithLegacyPrefix() {},
-      },
-      UtSystem: {
-        /**
-         * Returns deterministic test time for layout classification.
-         * @returns Current fake user time in milliseconds.
-         */
-        getUserTimeMSec: () => 0,
-      },
-      isBootstrapping: () => false,
-    })
-    const motionParser = createCubism2MotionParser({
-      AMotion: motionBase.AMotion,
-      isBootstrapping: () => false,
-    })
-    const legacyMotion = createCubism2LegacyMotion({
-      AMotion: motionBase.AMotion,
-      Cubism2MotionCurve: motionParser.Cubism2MotionCurve,
-      MotionTextReader: motionParser.MotionTextReader,
-      isBootstrapping: () => false,
-    })
-    const cases = [
-      ['LAYOUT:ANCHOR_X=1', 'ANCHOR_X', motionParser.Cubism2MotionCurve.LAYOUT_ANCHOR_X_CURVE_TYPE],
-      ['LAYOUT:ANCHOR_Y=1', 'ANCHOR_Y', motionParser.Cubism2MotionCurve.LAYOUT_ANCHOR_Y_CURVE_TYPE],
-      ['LAYOUT:SCALE_X=1', 'SCALE_X', motionParser.Cubism2MotionCurve.LAYOUT_SCALE_X_CURVE_TYPE],
-      ['LAYOUT:SCALE_Y=1', 'SCALE_Y', motionParser.Cubism2MotionCurve.LAYOUT_SCALE_Y_CURVE_TYPE],
-      ['LAYOUT:X=1', 'X', motionParser.Cubism2MotionCurve.LAYOUT_X_CURVE_TYPE],
-      ['LAYOUT:Y=1', 'Y', motionParser.Cubism2MotionCurve.LAYOUT_Y_CURVE_TYPE],
-    ] as const
-    const activeMotion = motionParser.Live2DMotion.loadMotion(
-      new TextEncoder().encode(cases.map(([line]) => line).join('\n')).buffer,
-    )
-    expect(activeMotion.motions.map((curve) => [curve.targetId, curve.curveType])).toEqual(
-      cases.map(([, targetId, curveType]) => [targetId, curveType]),
-    )
-
-    const motion = legacyMotion.LegacyLive2DMotion.loadMotion(
-      new TextEncoder().encode(cases.map(([line]) => line).join('\n')),
-    )
-
-    expect(motion.motions.map((curve) => [curve.targetId, curve.curveType])).toEqual(
-      cases.map(([, targetId, curveType]) => [targetId, curveType]),
-    )
   })
 
   it('keeps Cubism2 runtime utility timers and array copying in a separate module', () => {
@@ -8520,7 +8094,7 @@ describe('Cubism2 vendor core boundary', () => {
       },
     })
     runtimeUtilities.UtDebug.logWithLegacyPrefix('calc', 1, 2)
-    expect(logCalls).toEqual([['legacyLog : calc\n', 1, 2]])
+    expect(logCalls).toEqual([['legacyLog : calc\n', 1]])
   })
 
   it('preserves UtDebug plain debug behavior', () => {
@@ -8692,20 +8266,20 @@ describe('Cubism2 vendor core boundary', () => {
     expect(Live2D.shouldUpdateClippedDrawContextOpacity).toBe(false)
     expect(Live2D.L2D_NO_ERROR).toBe(0)
     expect(Live2D.L2D_ERROR_MODEL_UPDATE).toBe(4000)
-    expect(Live2D.L2D_COLOR_BLEND_MODE_MULT).toBe(0)
+    expect(Live2D.COLOR_BLEND_MODE_MULTIPLY).toBe(0)
     expect(Live2D.L2D_COLOR_BLEND_MODE_ADD).toBe(1)
     expect(Live2D.L2D_COLOR_BLEND_MODE_INTERPOLATE).toBe(2)
     expect(Live2D.getClippingMaskBufferSize()).toBe(256)
 
     Live2D.setupProfile(9901, false)
     expect(Live2D.PROFILE_NAME).toBe('iOS Speed')
-    expect(Live2D.EXPAND_W).toBe(4)
+    expect(Live2D.polygonExpansionWidth).toBe(4)
     expect(Live2D.USE_CACHED_POLYGON_IMAGE).toBe(true)
 
     Live2D.setupProfile(9904, false)
     expect(Live2D.PROFILE_NAME).toBe('Android')
     expect(Live2D.USE_ADJUST_TRANSLATION).toBe(false)
-    expect(Live2D.EXPAND_W).toBe(2)
+    expect(Live2D.polygonExpansionWidth).toBe(2)
 
     Live2D.setErrorCode(Live2D.L2D_ERROR_MODEL_UPDATE)
     expect(Live2D.getError()).toBe(4000)
@@ -8722,7 +8296,7 @@ describe('Cubism2 vendor core boundary', () => {
     }
     Live2D.setGL(glContext, 3)
     Live2D.frameBuffers[3] = { framebuffer: 'framebuffer-3' }
-    Live2D.fTexture[3] = 'texture-3'
+    Live2D.maskTextures[3] = 'texture-3'
     expect(Live2D.getGL(3)).toBe(glContext)
 
     Live2D.deleteBuffer(3)
@@ -8735,7 +8309,7 @@ describe('Cubism2 vendor core boundary', () => {
     Live2D.dispose()
     expect(Live2D.glContext).toEqual([])
     expect(Live2D.frameBuffers).toEqual([])
-    expect(Live2D.fTexture).toEqual([])
+    expect(Live2D.maskTextures).toEqual([])
 
     Live2D.setupProfile(1234, false)
     expect(alertCalls).toEqual(['Unknown Live2D profile: 1234'])
@@ -9284,7 +8858,7 @@ describe('Cubism2 vendor core boundary', () => {
 
     const CanvasDrawParam = createCubism2CanvasDrawParam({
       Cubism2DrawParamBase: DrawParamBaseStub as never,
-      Live2D: { EXPAND_W: 4 },
+      Live2D: { polygonExpansionWidth: 4 },
       UtSystem: runtimeUtilities.UtSystem,
       isBootstrapping: () => false,
     })
@@ -9316,7 +8890,7 @@ describe('Cubism2 vendor core boundary', () => {
        * @param vertexArray Vertex positions forwarded to the renderer.
        * @param uvArray Texture UVs forwarded to the renderer.
        * @param opacity Effective opacity forwarded to the renderer.
-       * @param expandedStrokeWidth Expansion width derived from `Live2D.EXPAND_W`.
+       * @param expandedStrokeWidth Expansion width derived from `Live2D.polygonExpansionWidth`.
        * @param nextTransform Canvas transform forwarded to the renderer.
        * @param nextDrawContext Draw context forwarded to the renderer.
        */
@@ -9390,104 +8964,26 @@ describe('Cubism2 vendor core boundary', () => {
     expect(CanvasDrawParam.createFloatBuffer(2)).toBeInstanceOf(Float32Array)
     expect(CanvasDrawParam.createIndexBuffer(2)).toBeInstanceOf(Int16Array)
 
-    const floatBuffer = {
-      data: [0, 0, 0] as number[],
-      position: -1,
-      /**
-       * Reports the buffer capacity available to the Canvas staging helper.
-       * @returns Current writable capacity.
-       */
-      getCapacity() {
-        return this.data.length
-      },
-      /**
-       * Rewinds the legacy buffer cursor.
-       * @param position New cursor position.
-       */
-      setWritePosition(position: number) {
-        this.position = position
-      },
-      /**
-       * Clears staged values before reusing an existing buffer.
-       */
-      clear() {
-        this.data = []
-      },
-      /**
-       * Copies source values into the fake staging buffer.
-       * @param values Values copied by the Canvas staging helper.
-       */
-      put(values: ArrayLike<number>) {
-        this.data = Array.from(values)
-      },
-    }
-    const updatedFloatBuffer = CanvasDrawParam.updateFloatBuffer(floatBuffer as never, [1, 2, 3])
+    const floatBuffer = new Float32Array(3)
+    const updatedFloatBuffer = CanvasDrawParam.updateFloatBuffer(floatBuffer, [1, 2, 3])
 
     expect(updatedFloatBuffer).toBe(floatBuffer)
-    expect(floatBuffer.data).toEqual([1, 2, 3])
-    expect(floatBuffer.position).toBe(0)
+    expect(Array.from(floatBuffer)).toEqual([1, 2, 3])
 
-    const indexBuffer = {
-      data: [0, 0, 0] as number[],
-      position: -1,
-      /**
-       * Reports the buffer capacity available to the Canvas index helper.
-       * @returns Current writable capacity.
-       */
-      getCapacity() {
-        return this.data.length
-      },
-      /**
-       * Rewinds the legacy index buffer cursor.
-       * @param position New cursor position.
-       */
-      setWritePosition(position: number) {
-        this.position = position
-      },
-      /**
-       * Clears staged indexes before reusing an existing buffer.
-       */
-      clear() {
-        this.data = []
-      },
-      /**
-       * Copies triangle indexes into the fake staging buffer.
-       * @param values Index values copied by the Canvas staging helper.
-       */
-      put(values: ArrayLike<number>) {
-        this.data = Array.from(values)
-      },
-    }
-    const updatedIndexBuffer = CanvasDrawParam.updateIndexBuffer(indexBuffer as never, [2, 1, 0])
+    const indexBuffer = new Int16Array(3)
+    const updatedIndexBuffer = CanvasDrawParam.updateIndexBuffer(indexBuffer, [2, 1, 0])
 
     expect(updatedIndexBuffer).toBe(indexBuffer)
-    expect(indexBuffer.data).toEqual([2, 1, 0])
-    expect(indexBuffer.position).toBe(0)
+    expect(Array.from(indexBuffer)).toEqual([2, 1, 0])
 
-    const tinyFloatBuffer = {
-      /**
-       * Reports too-small capacity so the helper allocates a replacement buffer.
-       * @returns Current fake capacity.
-       */
-      getCapacity() {
-        return 1
-      },
-    }
-    const grownFloatBuffer = CanvasDrawParam.updateFloatBuffer(tinyFloatBuffer as never, [1, 2, 3])
+    const tinyFloatBuffer = new Float32Array(1)
+    const grownFloatBuffer = CanvasDrawParam.updateFloatBuffer(tinyFloatBuffer, [1, 2, 3])
     expect(grownFloatBuffer).toBeInstanceOf(Float32Array)
     expect(grownFloatBuffer.length).toBe(6)
     expect(Array.from(grownFloatBuffer.slice(0, 3))).toEqual([1, 2, 3])
 
-    const tinyIndexBuffer = {
-      /**
-       * Reports too-small capacity so the helper allocates a replacement index buffer.
-       * @returns Current fake capacity.
-       */
-      getCapacity() {
-        return 1
-      },
-    }
-    const grownIndexBuffer = CanvasDrawParam.updateIndexBuffer(tinyIndexBuffer as never, [2, 1, 0])
+    const tinyIndexBuffer = new Int16Array(1)
+    const grownIndexBuffer = CanvasDrawParam.updateIndexBuffer(tinyIndexBuffer, [2, 1, 0])
     expect(grownIndexBuffer).toBeInstanceOf(Int16Array)
     expect(grownIndexBuffer.length).toBe(6)
     expect(Array.from(grownIndexBuffer.slice(0, 3))).toEqual([2, 1, 0])
@@ -9591,7 +9087,7 @@ describe('Cubism2 vendor core boundary', () => {
     expect(drawParam.textures[0]).toBeNull()
 
     const framebufferResources = drawParam.createFramebuffer()
-    expect(framebufferResources.texture).toBe(live2DProfile.fTexture[3])
+    expect(framebufferResources.texture).toBe(live2DProfile.maskTextures[3])
     expect(calls.some((call) => call.method === 'framebufferTexture2D')).toBe(true)
   })
 
@@ -9615,11 +9111,11 @@ describe('Cubism2 vendor core boundary', () => {
     expectCubism2WebGLAttributePointerOrder(
       calls,
       constants,
-      drawParam.a_position_Loc,
-      drawParam.a_texCoord_Loc,
+      drawParam.attributePositionLocation,
+      drawParam.attributeTexCoordLocation,
       sourceTexture,
       constants.TEXTURE1!,
-      drawParam.s_texture0_Loc,
+      drawParam.samplerTexture0Location,
     )
   })
 
@@ -9627,7 +9123,7 @@ describe('Cubism2 vendor core boundary', () => {
     const { calls, constants, debugMessages, drawParam } = createWebGLDrawParamHarness()
     const sourceTexture = drawParam.textures[0]
     const maskMatrix = new Float32Array(16)
-    drawParam.clipBufPre_clipContextMask = {
+    drawParam.clippingContextForMask = {
       layoutBounds: {
         /**
          * Reports the right edge of the mask layout tile.
@@ -9693,11 +9189,11 @@ describe('Cubism2 vendor core boundary', () => {
     expectCubism2WebGLAttributePointerOrder(
       calls,
       constants,
-      drawParam.a_position_Loc,
-      drawParam.a_texCoord_Loc,
+      drawParam.attributePositionLocation,
+      drawParam.attributeTexCoordLocation,
       sourceTexture,
       constants.TEXTURE1!,
-      drawParam.s_texture0_Loc,
+      drawParam.samplerTexture0Location,
     )
     expect(maskMatrixCall).toBeTruthy()
     expect(channelCall).toBeTruthy()
@@ -9718,8 +9214,8 @@ describe('Cubism2 vendor core boundary', () => {
     const sourceTexture = drawParam.textures[0]
     const maskTexture = { id: 'mask-texture' }
     const drawMatrix = new Float32Array(16)
-    live2DProfile.fTexture[3] = maskTexture
-    drawParam.clipBufPre_clipContextDraw = {
+    live2DProfile.maskTextures[3] = maskTexture
+    drawParam.clippingContextForDraw = {
       layoutBounds: {
         /**
          * Reports the unused right edge for shape compatibility with clip contexts.
@@ -9790,11 +9286,11 @@ describe('Cubism2 vendor core boundary', () => {
     expectCubism2WebGLAttributePointerOrder(
       calls,
       constants,
-      drawParam.a_position_Loc_Off,
-      drawParam.a_texCoord_Loc_Off,
+      drawParam.clippedAttributePositionLocation,
+      drawParam.clippedAttributeTexCoordLocation,
       sourceTexture,
       constants.TEXTURE1!,
-      drawParam.s_texture0_Loc_Off,
+      drawParam.clippedSamplerTexture0Location,
     )
     expect(texture2Call).toBeTruthy()
     expect(maskTextureBindCall).toBeTruthy()
@@ -9815,81 +9311,6 @@ describe('Cubism2 vendor core boundary', () => {
     ])
   })
 
-  it('resolves Cubism2 WebGL blend factor tables outside the draw parameter', () => {
-    const { constants, gl } = createRecordingWebGLContext()
-    const blendModes = {
-      BLEND_ADD: 1,
-      BLEND_MULTIPLY: 2,
-      BLEND_NORMAL: 0,
-    }
-
-    expect(
-      resolveCubism2WebGLBlendFactors({
-        blendMode: blendModes.BLEND_ADD,
-        blendModes,
-        gl,
-        isMaskDraw: true,
-      }),
-    ).toEqual({
-      dstAlphaBlendFactor: constants.ONE_MINUS_SRC_ALPHA,
-      dstRgbBlendFactor: constants.ONE_MINUS_SRC_ALPHA,
-      srcAlphaBlendFactor: constants.ONE,
-      srcRgbBlendFactor: constants.ONE,
-    })
-    expect(
-      resolveCubism2WebGLBlendFactors({
-        blendMode: blendModes.BLEND_NORMAL,
-        blendModes,
-        gl,
-        isMaskDraw: false,
-      }),
-    ).toEqual({
-      dstAlphaBlendFactor: constants.ONE_MINUS_SRC_ALPHA,
-      dstRgbBlendFactor: constants.ONE_MINUS_SRC_ALPHA,
-      srcAlphaBlendFactor: constants.ONE,
-      srcRgbBlendFactor: constants.ONE,
-    })
-    expect(
-      resolveCubism2WebGLBlendFactors({
-        blendMode: blendModes.BLEND_ADD,
-        blendModes,
-        gl,
-        isMaskDraw: false,
-      }),
-    ).toEqual({
-      dstAlphaBlendFactor: constants.ONE,
-      dstRgbBlendFactor: constants.ONE,
-      srcAlphaBlendFactor: constants.ZERO,
-      srcRgbBlendFactor: constants.ONE,
-    })
-    expect(
-      resolveCubism2WebGLBlendFactors({
-        blendMode: blendModes.BLEND_MULTIPLY,
-        blendModes,
-        gl,
-        isMaskDraw: false,
-      }),
-    ).toEqual({
-      dstAlphaBlendFactor: constants.ONE,
-      dstRgbBlendFactor: constants.ONE_MINUS_SRC_ALPHA,
-      srcAlphaBlendFactor: constants.ZERO,
-      srcRgbBlendFactor: constants.DST_COLOR,
-    })
-    expect(
-      resolveCubism2WebGLBlendFactors({
-        blendMode: 999,
-        blendModes,
-        gl,
-        isMaskDraw: false,
-      }),
-    ).toEqual({
-      dstAlphaBlendFactor: undefined,
-      dstRgbBlendFactor: undefined,
-      srcAlphaBlendFactor: undefined,
-      srcRgbBlendFactor: undefined,
-    })
-  })
-
   it('keeps Cubism2 WebGL shader sources in a dedicated source catalog', () => {
     expect(CUBISM2_WEBGL_SHADER_SOURCES.meshVertex).toBe(
       'attribute vec4     a_position;attribute vec2     a_texCoord;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform mat4       u_mvpMatrix;void main(){    gl_Position = u_mvpMatrix * a_position;    v_ClipPos = u_mvpMatrix * a_position;    v_texCoord = a_texCoord;}',
@@ -9903,57 +9324,6 @@ describe('Cubism2 vendor core boundary', () => {
     expect(CUBISM2_WEBGL_SHADER_SOURCES.clippedMeshFragment).toBe(
       'precision mediump float ;varying vec2       v_texCoord;varying vec4       v_ClipPos;uniform sampler2D  s_texture0;uniform sampler2D  s_texture1;uniform vec4       u_channelFlag;uniform vec4       u_baseColor ;void main(){    vec4 col_formask = texture2D(s_texture0, v_texCoord) * u_baseColor;    vec4 clipMask = texture2D(s_texture1, v_ClipPos.xy / v_ClipPos.w) * u_channelFlag;    float maskVal = clipMask.r + clipMask.g + clipMask.b + clipMask.a;    col_formask = col_formask * maskVal;    gl_FragColor = col_formask;}',
     )
-  })
-
-  it('caches Cubism2 WebGL shader locations in the min.js initShader order', () => {
-    const { calls, gl } = createRecordingWebGLContext()
-    const normalProgram = { id: 'normal-program' }
-    const clippedProgram = { id: 'clipped-program' }
-    const drawParam = {
-      shaderProgram: normalProgram as unknown as WebGLProgram,
-      shaderProgramOff: clippedProgram as unknown as WebGLProgram,
-    } as Partial<Cubism2WebGLDrawParamInstance> & Record<string, unknown>
-
-    cacheCubism2WebGLShaderLocations(drawParam as Cubism2WebGLDrawParamInstance, gl)
-
-    expect(
-      calls.map((call) => ({
-        method: call.method,
-        name: call.args[1],
-        program: call.args[0],
-      })),
-    ).toEqual([
-      { method: 'getAttribLocation', name: 'a_position', program: normalProgram },
-      { method: 'getAttribLocation', name: 'a_texCoord', program: normalProgram },
-      { method: 'getUniformLocation', name: 'u_mvpMatrix', program: normalProgram },
-      { method: 'getUniformLocation', name: 's_texture0', program: normalProgram },
-      { method: 'getUniformLocation', name: 'u_channelFlag', program: normalProgram },
-      { method: 'getUniformLocation', name: 'u_baseColor', program: normalProgram },
-      { method: 'getUniformLocation', name: 'u_maskFlag', program: normalProgram },
-      { method: 'getAttribLocation', name: 'a_position', program: clippedProgram },
-      { method: 'getAttribLocation', name: 'a_texCoord', program: clippedProgram },
-      { method: 'getUniformLocation', name: 'u_mvpMatrix', program: clippedProgram },
-      { method: 'getUniformLocation', name: 'u_ClipMatrix', program: clippedProgram },
-      { method: 'getUniformLocation', name: 's_texture0', program: clippedProgram },
-      { method: 'getUniformLocation', name: 's_texture1', program: clippedProgram },
-      { method: 'getUniformLocation', name: 'u_channelFlag', program: clippedProgram },
-      { method: 'getUniformLocation', name: 'u_baseColor', program: clippedProgram },
-    ])
-    expect(drawParam.a_position_Loc).toBe(1)
-    expect(drawParam.a_texCoord_Loc).toBe(2)
-    expect(drawParam.u_matrix_Loc).toEqual({ id: 3, method: 'getUniformLocation' })
-    expect(drawParam.s_texture0_Loc).toEqual({ id: 4, method: 'getUniformLocation' })
-    expect(drawParam.u_channelFlag).toEqual({ id: 5, method: 'getUniformLocation' })
-    expect(drawParam.u_baseColor_Loc).toEqual({ id: 6, method: 'getUniformLocation' })
-    expect(drawParam.u_maskFlag_Loc).toEqual({ id: 7, method: 'getUniformLocation' })
-    expect(drawParam.a_position_Loc_Off).toBe(8)
-    expect(drawParam.a_texCoord_Loc_Off).toBe(9)
-    expect(drawParam.u_matrix_Loc_Off).toEqual({ id: 10, method: 'getUniformLocation' })
-    expect(drawParam.u_clipMatrix_Loc_Off).toEqual({ id: 11, method: 'getUniformLocation' })
-    expect(drawParam.s_texture0_Loc_Off).toEqual({ id: 12, method: 'getUniformLocation' })
-    expect(drawParam.s_texture1_Loc_Off).toEqual({ id: 13, method: 'getUniformLocation' })
-    expect(drawParam.u_channelFlag_Loc_Off).toEqual({ id: 14, method: 'getUniformLocation' })
-    expect(drawParam.u_baseColor_Loc_Off).toEqual({ id: 15, method: 'getUniformLocation' })
   })
 
   it('uploads Cubism2 WebGL array and element-array buffers with min.js reuse semantics', () => {
@@ -10006,203 +9376,6 @@ describe('Cubism2 vendor core boundary', () => {
         args: [constants.ELEMENT_ARRAY_BUFFER, indexValues, constants.DYNAMIC_DRAW],
         method: 'bufferData',
       },
-    ])
-  })
-
-  it('enables Cubism2 WebGL attribute pointers after callers preserve the min.js upload order', () => {
-    const { calls, constants, gl } = createRecordingWebGLContext()
-
-    enableCubism2WebGLAttributePointer(gl, 14)
-
-    expect(calls.map((call) => ({ args: call.args, method: call.method }))).toEqual([
-      { args: [14], method: 'enableVertexAttribArray' },
-      { args: [14, 2, constants.FLOAT, false, 0, 0], method: 'vertexAttribPointer' },
-    ])
-  })
-
-  it('binds Cubism2 WebGL source and generated mask texture samplers in the min.js order', () => {
-    const { calls, constants, gl } = createRecordingWebGLContext()
-    const sourceTexture = { id: 'source-texture' }
-    const generatedMaskTexture = { id: 'generated-mask-texture' }
-    const sourceUniform = { id: 'source-uniform' } as unknown as WebGLUniformLocation
-    const generatedMaskUniform = { id: 'generated-mask-uniform' } as unknown as WebGLUniformLocation
-
-    bindCubism2WebGLSourceTexture(gl, [sourceTexture], 0, sourceUniform)
-    bindCubism2WebGLGeneratedMaskTexture(
-      gl,
-      { fTexture: [null, null, null, generatedMaskTexture] },
-      3,
-      generatedMaskUniform,
-    )
-
-    expect(calls.map((call) => ({ args: call.args, method: call.method }))).toEqual([
-      { args: [constants.TEXTURE1], method: 'activeTexture' },
-      { args: [constants.TEXTURE_2D, sourceTexture], method: 'bindTexture' },
-      { args: [sourceUniform, 1], method: 'uniform1i' },
-      { args: [constants.TEXTURE2], method: 'activeTexture' },
-      { args: [constants.TEXTURE_2D, generatedMaskTexture], method: 'bindTexture' },
-      { args: [generatedMaskUniform, 2], method: 'uniform1i' },
-    ])
-  })
-
-  it('applies Cubism2 WebGL mask, clipped, and unclipped uniforms in the min.js order', () => {
-    const { calls, drawParam, gl } = createWebGLDrawParamHarness()
-    const maskMatrix = new Float32Array(16)
-    const drawMatrix = new Float32Array(16)
-    const modelMatrix = new Float32Array(16)
-    drawParam.matrix4x4 = modelMatrix
-    drawParam.clipBufPre_clipContextMask = {
-      layoutBounds: {
-        /**
-         * Reports the right edge used to convert mask layout bounds into clip-space uniforms.
-         * @returns Normalized right edge.
-         */
-        getRight() {
-          return 0.7
-        },
-        /**
-         * Reports the bottom edge used to convert mask layout bounds into clip-space uniforms.
-         * @returns Normalized bottom edge.
-         */
-        getBottom() {
-          return 0.9
-        },
-        x: 0.2,
-        y: 0.3,
-      },
-      layoutChannelNo: 0,
-      matrixForDraw: new Float32Array(16),
-      matrixForMask: maskMatrix,
-    }
-    drawParam.clipBufPre_clipContextDraw = {
-      layoutBounds: {
-        /**
-         * Reports the unused right edge for clipped-uniform shape compatibility.
-         * @returns Normalized right edge.
-         */
-        getRight() {
-          return 1
-        },
-        /**
-         * Reports the unused bottom edge for clipped-uniform shape compatibility.
-         * @returns Normalized bottom edge.
-         */
-        getBottom() {
-          return 1
-        },
-        x: 0,
-        y: 0,
-      },
-      layoutChannelNo: 1,
-      matrixForDraw: drawMatrix,
-      matrixForMask: new Float32Array(16),
-    }
-    calls.length = 0
-
-    /**
-     * Records the clipped-branch texture binding boundary that min.js keeps between matrix and color uniforms.
-     */
-    function recordGeneratedMaskTextureBoundary(): void {
-      calls.push({ args: [], method: 'bindGeneratedMaskTextureBoundary' })
-    }
-
-    applyCubism2WebGLMaskUniforms(gl, drawParam)
-    applyCubism2WebGLClippedUniforms(
-      gl,
-      drawParam,
-      0.75,
-      0.75,
-      0.75,
-      0.75,
-      recordGeneratedMaskTextureBoundary,
-    )
-    applyCubism2WebGLUnclippedUniforms(gl, drawParam, 0.2, 0.3, 0.4, 0.5)
-
-    expect(calls.map((call) => ({ args: call.args, method: call.method }))).toEqual([
-      { args: [drawParam.u_matrix_Loc, false, maskMatrix], method: 'uniformMatrix4fv' },
-      { args: [drawParam.u_channelFlag, 0.1, 0.2, 0.3, 0.4], method: 'uniform4f' },
-      {
-        args: [drawParam.u_baseColor_Loc, -0.6, -0.4, 0.3999999999999999, 0.8],
-        method: 'uniform4f',
-      },
-      { args: [drawParam.u_maskFlag_Loc, true], method: 'uniform1i' },
-      { args: [drawParam.u_clipMatrix_Loc_Off, false, drawMatrix], method: 'uniformMatrix4fv' },
-      { args: [drawParam.u_matrix_Loc_Off, false, modelMatrix], method: 'uniformMatrix4fv' },
-      { args: [], method: 'bindGeneratedMaskTextureBoundary' },
-      {
-        args: [drawParam.u_channelFlag_Loc_Off, 0.5, 0.6, 0.7, 0.8],
-        method: 'uniform4f',
-      },
-      { args: [drawParam.u_baseColor_Loc_Off, 0.75, 0.75, 0.75, 0.75], method: 'uniform4f' },
-      { args: [drawParam.u_matrix_Loc, false, modelMatrix], method: 'uniformMatrix4fv' },
-      { args: [drawParam.u_baseColor_Loc, 0.2, 0.3, 0.4, 0.5], method: 'uniform4f' },
-      { args: [drawParam.u_maskFlag_Loc, false], method: 'uniform1i' },
-    ])
-  })
-
-  it('applies Cubism2 WebGL culling, blend, anisotropy, draw, and texture release tail in the min.js order', () => {
-    const { calls, constants, gl } = createRecordingWebGLContext()
-    const blendModes = {
-      BLEND_ADD: 1,
-      BLEND_MULTIPLY: 2,
-      BLEND_NORMAL: 0,
-    }
-    const anisotropyExt = {
-      MAX_TEXTURE_MAX_ANISOTROPY_EXT: 77,
-      TEXTURE_MAX_ANISOTROPY_EXT: 88,
-    }
-    const drawState: {
-      anisotropyExt: typeof anisotropyExt | null
-      clipBufPre_clipContextMask: unknown
-      culling: boolean
-      maxAnisotropy: number
-    } = {
-      anisotropyExt,
-      clipBufPre_clipContextMask: null,
-      culling: true,
-      maxAnisotropy: 4,
-    }
-
-    applyCubism2WebGLDrawTail(gl, drawState, blendModes.BLEND_ADD, blendModes, 5)
-
-    expect(calls.map((call) => ({ args: call.args, method: call.method }))).toEqual([
-      { args: [constants.CULL_FACE], method: 'enable' },
-      { args: [constants.BLEND], method: 'enable' },
-      { args: [constants.FUNC_ADD, constants.FUNC_ADD], method: 'blendEquationSeparate' },
-      {
-        args: [constants.ONE, constants.ONE, constants.ZERO, constants.ONE],
-        method: 'blendFuncSeparate',
-      },
-      {
-        args: [constants.TEXTURE_2D, anisotropyExt.TEXTURE_MAX_ANISOTROPY_EXT, 4],
-        method: 'texParameteri',
-      },
-      { args: [constants.TRIANGLES, 5, constants.UNSIGNED_SHORT, 0], method: 'drawElements' },
-      { args: [constants.TEXTURE_2D, null], method: 'bindTexture' },
-    ])
-
-    calls.length = 0
-    drawState.culling = false
-    drawState.anisotropyExt = null
-    drawState.clipBufPre_clipContextMask = { id: 'mask-context' }
-
-    applyCubism2WebGLDrawTail(gl, drawState, blendModes.BLEND_MULTIPLY, blendModes, 3)
-
-    expect(calls.map((call) => ({ args: call.args, method: call.method }))).toEqual([
-      { args: [constants.CULL_FACE], method: 'disable' },
-      { args: [constants.BLEND], method: 'enable' },
-      { args: [constants.FUNC_ADD, constants.FUNC_ADD], method: 'blendEquationSeparate' },
-      {
-        args: [
-          constants.ONE,
-          constants.ONE_MINUS_SRC_ALPHA,
-          constants.ONE,
-          constants.ONE_MINUS_SRC_ALPHA,
-        ],
-        method: 'blendFuncSeparate',
-      },
-      { args: [constants.TRIANGLES, 3, constants.UNSIGNED_SHORT, 0], method: 'drawElements' },
-      { args: [constants.TEXTURE_2D, null], method: 'bindTexture' },
     ])
   })
 
@@ -10274,123 +9447,6 @@ describe('Cubism2 vendor core boundary', () => {
 
     expect(deletedTextures).toEqual([textureA, textureB])
     expect(textures).toEqual([0, null, null, null])
-  })
-
-  it('creates Cubism2 WebGL mask framebuffer resources in the min.js order', () => {
-    const { calls, constants, gl } = createRecordingWebGLContext()
-    const textureReadback = { id: 'registry-readback' }
-    const registryEvents: Array<{ slot: string; type: 'get' | 'set'; value?: unknown }> = []
-    const textureRegistry = new Proxy([] as unknown[], {
-      /**
-       * Records texture-registry reads so the test can distinguish min.js read-back from local return.
-       * @param target Backing texture registry used by the fake Live2D profile.
-       * @param property Registry property requested by the helper.
-       * @param receiver Proxy receiver forwarded to the default array behavior.
-       * @returns Sentinel texture for slot 3, otherwise the backing array value.
-       */
-      get(target, property: string | symbol, receiver: unknown): unknown {
-        if (property === '3') {
-          registryEvents.push({ slot: property, type: 'get' })
-          return textureReadback
-        }
-        return Reflect.get(target, property, receiver)
-      },
-      /**
-       * Records texture-registry writes before forwarding to the backing array.
-       * @param target Backing texture registry used by the fake Live2D profile.
-       * @param property Registry property being written.
-       * @param value Texture handle assigned by the helper.
-       * @param receiver Proxy receiver forwarded to the default array behavior.
-       * @returns True when the backing array accepted the write.
-       */
-      set(target, property: string | symbol, value: unknown, receiver: unknown): boolean {
-        if (property === '3') {
-          registryEvents.push({ slot: property, type: 'set', value })
-        }
-        return Reflect.set(target, property, value, receiver)
-      },
-    })
-    const live2DProfile = {
-      EXPAND_W: 2,
-      clippingMaskBufferSize: 256,
-      fTexture: textureRegistry,
-    }
-
-    const resources = createCubism2WebGLMaskFramebuffer(gl, live2DProfile, 3)
-    const allocatedTexture = registryEvents.find((event) => event.type === 'set')?.value
-
-    expect(resources.framebuffer).toEqual({ id: 1, method: 'createFramebuffer' })
-    expect(resources.renderbuffer).toEqual({ id: 3, method: 'createRenderbuffer' })
-    expect(allocatedTexture).toEqual({ id: 7, method: 'createTexture' })
-    expect(resources.texture).toBe(textureReadback)
-    expect(registryEvents).toEqual([
-      { slot: '3', type: 'set', value: allocatedTexture },
-      { slot: '3', type: 'get' },
-    ])
-    expect(calls.map((call) => ({ args: call.args, method: call.method }))).toEqual([
-      { args: [], method: 'createFramebuffer' },
-      { args: [constants.FRAMEBUFFER, resources.framebuffer], method: 'bindFramebuffer' },
-      { args: [], method: 'createRenderbuffer' },
-      { args: [constants.RENDERBUFFER, resources.renderbuffer], method: 'bindRenderbuffer' },
-      {
-        args: [constants.RENDERBUFFER, constants.RGBA4, 256, 256],
-        method: 'renderbufferStorage',
-      },
-      {
-        args: [
-          constants.FRAMEBUFFER,
-          constants.COLOR_ATTACHMENT0,
-          constants.RENDERBUFFER,
-          resources.renderbuffer,
-        ],
-        method: 'framebufferRenderbuffer',
-      },
-      { args: [], method: 'createTexture' },
-      { args: [constants.TEXTURE_2D, allocatedTexture], method: 'bindTexture' },
-      {
-        args: [
-          constants.TEXTURE_2D,
-          0,
-          constants.RGBA,
-          256,
-          256,
-          0,
-          constants.RGBA,
-          constants.UNSIGNED_BYTE,
-          null,
-        ],
-        method: 'texImage2D',
-      },
-      {
-        args: [constants.TEXTURE_2D, constants.TEXTURE_MIN_FILTER, constants.LINEAR],
-        method: 'texParameteri',
-      },
-      {
-        args: [constants.TEXTURE_2D, constants.TEXTURE_MAG_FILTER, constants.LINEAR],
-        method: 'texParameteri',
-      },
-      {
-        args: [constants.TEXTURE_2D, constants.TEXTURE_WRAP_S, constants.CLAMP_TO_EDGE],
-        method: 'texParameteri',
-      },
-      {
-        args: [constants.TEXTURE_2D, constants.TEXTURE_WRAP_T, constants.CLAMP_TO_EDGE],
-        method: 'texParameteri',
-      },
-      {
-        args: [
-          constants.FRAMEBUFFER,
-          constants.COLOR_ATTACHMENT0,
-          constants.TEXTURE_2D,
-          allocatedTexture,
-          0,
-        ],
-        method: 'framebufferTexture2D',
-      },
-      { args: [constants.TEXTURE_2D, null], method: 'bindTexture' },
-      { args: [constants.RENDERBUFFER, null], method: 'bindRenderbuffer' },
-      { args: [constants.FRAMEBUFFER, null], method: 'bindFramebuffer' },
-    ])
   })
 
   it('keeps LDTransform matrix operations in a separate module', () => {
@@ -10649,8 +9705,8 @@ describe('Cubism2 vendor core boundary', () => {
     }
     const hair = new PhysicsHair()
 
-    hair.addSrcParam(PhysicsHair.Src.SRC_TO_X, 'ParamHairRootX', 1, 1)
-    hair.addTargetParam(PhysicsHair.Target.TARGET_FROM_ANGLE, 'ParamHairAngle', 1, 1)
+    hair.addSrcParam(PhysicsHair.Source.TO_ROOT_X, 'ParamHairRootX', 1, 1)
+    hair.addTargetParam(PhysicsHair.Target.FROM_ANGLE, 'ParamHairAngle', 1, 1)
     hair.update(model, 1000)
     hair.update(model, 1033)
 
@@ -10700,8 +9756,8 @@ describe('Cubism2 vendor core boundary', () => {
     expect(hair.firstUpdateTimeMillis).toBe(100)
     expect(hair.previousUpdateTimeMillis).toBe(120)
 
-    hair.addSrcParam(PhysicsHair.Src.SRC_TO_G_ANGLE, 'ParamGravity', 1, 1)
-    hair.addTargetParam(PhysicsHair.Target.TARGET_FROM_ANGLE_V, 'ParamAngleVelocity', 1, 1)
+    hair.addSrcParam(PhysicsHair.Source.TO_GRAVITY_ANGLE, 'ParamGravity', 1, 1)
+    hair.addTargetParam(PhysicsHair.Target.FROM_ANGULAR_VELOCITY, 'ParamAngleVelocity', 1, 1)
     expect(hair.sourceParamBindings).toHaveLength(1)
     expect(hair.targetParamBindings).toHaveLength(1)
   })
@@ -10720,27 +9776,27 @@ describe('Cubism2 vendor core boundary', () => {
       isBootstrapping: isRuntimeBootstrapping,
     })
     const hair = new PhysicsHair()
-    hair.addSrcParam(PhysicsHair.Src.SRC_TO_Y, 'ParamHairRootY', 2, 0.25)
-    hair.addTargetParam(PhysicsHair.Target.TARGET_FROM_ANGLE, 'ParamHairAngle', 3, 0.5)
+    hair.addSrcParam(PhysicsHair.Source.TO_ROOT_Y, 'ParamHairRootY', 2, 0.25)
+    hair.addTargetParam(PhysicsHair.Target.FROM_ANGLE, 'ParamHairAngle', 3, 0.5)
 
     const sourceBinding = hair.sourceParamBindings[0]!
     const targetBinding = hair.targetParamBindings[0]!
     expect(sourceBinding).toMatchObject({
       paramId: 'ParamHairRootY',
       scale: 2,
-      sourceKind: PhysicsHair.Src.SRC_TO_Y,
+      sourceKind: PhysicsHair.Source.TO_ROOT_Y,
       weight: 0.25,
     })
     expect(targetBinding).toMatchObject({
       paramId: 'ParamHairAngle',
       scale: 3,
-      targetKind: PhysicsHair.Target.TARGET_FROM_ANGLE,
+      targetKind: PhysicsHair.Target.FROM_ANGLE,
       weight: 0.5,
     })
 
     sourceBinding.paramId = 'ParamHairRootX'
     sourceBinding.weight = 1
-    sourceBinding.sourceKind = PhysicsHair.Src.SRC_TO_X
+    sourceBinding.sourceKind = PhysicsHair.Source.TO_ROOT_X
     sourceBinding.applySourceParameter(
       {
         /**
@@ -10786,7 +9842,7 @@ describe('Cubism2 vendor core boundary', () => {
     targetWrites.length = 0
     targetBinding.paramId = 'ParamHairAngleVelocity'
     targetBinding.weight = 0.75
-    targetBinding.targetKind = PhysicsHair.Target.TARGET_FROM_ANGLE_V
+    targetBinding.targetKind = PhysicsHair.Target.FROM_ANGULAR_VELOCITY
     hair.angularVelocityDegreesPerSecond = 4
     targetBinding.writeTargetParameter(targetModel, hair)
     expect(targetWrites).toEqual([
@@ -10808,8 +9864,8 @@ describe('Cubism2 vendor core boundary', () => {
       isBootstrapping: isRuntimeBootstrapping,
     })
     const hair = new PhysicsHair()
-    hair.addSrcParam(PhysicsHair.Src.SRC_TO_X, 'ParamHairRootX', 1, 1)
-    hair.addTargetParam(PhysicsHair.Target.TARGET_FROM_ANGLE, 'ParamHairAngle', 1, 1)
+    hair.addSrcParam(PhysicsHair.Source.TO_ROOT_X, 'ParamHairRootX', 1, 1)
+    hair.addTargetParam(PhysicsHair.Target.FROM_ANGLE, 'ParamHairAngle', 1, 1)
 
     let sourceSemanticCallCount = 0
     let targetSemanticCallCount = 0

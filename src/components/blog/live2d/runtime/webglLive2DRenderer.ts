@@ -1,4 +1,3 @@
-import { loadCubism2Core } from './cubism2CoreLoader';
 import {
   createCubism2ModelAnimator,
   type Cubism2ModelAnimator,
@@ -9,7 +8,13 @@ import {
   toCubism2PageTarget,
 } from './cubism2PointerCoordinates';
 import type { Live2DCoreModel, Live2DRendererAdapter, Live2DResolvedState } from './live2dRuntimeTypes';
-import { installCubism2WebGLTextureReleaseHook } from '../vendor/cubism2Core/compatibility/webglTextureRelease';
+import {
+  Live2D,
+  Live2DModelWebGL,
+  Live2DMotion,
+  MotionQueueManager,
+} from '../vendor/cubism2Core/runtimeCore';
+import { installCubism2WebGLTextureReleaseHook } from '../vendor/cubism2Core/webglTextureRelease';
 
 /**
  * Creates the browser WebGL renderer used by the TypeScript Live2D runtime.
@@ -31,12 +36,12 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
   const applyState = async (state: Live2DResolvedState): Promise<void> => {
     const context = await resolveContext();
     const modelBuffer = await fetchArrayBuffer(resolveAssetUrl(state.settings.baseUrl, state.settings.model));
-    const nextModel = window.Live2DModelWebGL!.loadModel(modelBuffer);
+    const nextModel = Live2DModelWebGL.loadModel(modelBuffer);
     configureCubism2ModelProjection(nextModel, canvas, state.settings.layout);
     nextModel.saveParam();
     const nextAnimator = createCubism2ModelAnimator({
-      Live2DMotion: window.Live2DMotion!,
-      MotionQueueManager: window.MotionQueueManager!,
+      Live2DMotion,
+      MotionQueueManager,
       loadMotionBytes: fetchArrayBuffer,
       settings: state.settings,
     });
@@ -70,14 +75,13 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     if (gl) {
       return gl;
     }
-    await loadCubism2Core();
     const context = canvas.getContext('webgl', { premultipliedAlpha: true })
       || canvas.getContext('experimental-webgl', { premultipliedAlpha: true });
     if (!(context instanceof WebGLRenderingContext)) {
       throw new Error('Live2D WebGL context is not available.');
     }
     installCubism2WebGLTextureReleaseHook(context);
-    window.Live2D?.setGL?.(context);
+    Live2D.setGL(context);
     context.clearColor(0, 0, 0, 0);
     gl = context;
     return context;

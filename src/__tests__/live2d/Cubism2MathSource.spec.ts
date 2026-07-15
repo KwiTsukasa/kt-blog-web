@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 
 import { describe, expect, it } from 'vitest'
 
-import { createCubism2Math } from '../../components/blog/live2d/vendor/cubism2Core/compatibility/math'
+import { createCubism2Math } from '../../components/blog/live2d/vendor/cubism2Core/math'
 
 const SEMANTIC_STATIC_KEYS = [
   'DEGREES_TO_RADIANS',
@@ -29,7 +29,7 @@ function createObservedVector(label: string, reads: string[], values: [number, n
 }
 
 describe('Cubism2Math immutable source behavior', () => {
-  it('exposes only semantic math operations without a compatibility mapping layer', () => {
+  it('preserves reviewed math.ts source behavior through semantic TypeScript', () => {
     const math = createCubism2Math({ random: () => 0.25 })
 
     expect(math.name).toBe('Cubism2Math')
