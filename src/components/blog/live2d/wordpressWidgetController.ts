@@ -9,9 +9,7 @@ export interface WordPressWidgetControllerElements {
   chat: HTMLElement;
   closeButton: HTMLButtonElement;
   input: HTMLInputElement;
-  modelButton: HTMLButtonElement;
   sendButton: HTMLButtonElement;
-  textureButton: HTMLButtonElement;
   tips: HTMLElement;
   tool: HTMLElement;
   widget: HTMLElement;
@@ -26,15 +24,13 @@ export interface WordPressWidgetControllerHandle {
 
 export interface WordPressWidgetControllerOptions {
   /**
-   * Mutable texture counts by WordPress model index; unknown values keep destructive texture switching disabled.
+   * Opens the Vue-owned model picker instead of cycling the legacy hidden model button.
    */
-  textureCounts?: Array<number | undefined>;
+  onModelPickerRequested?: () => void;
   /**
-   * Lazily inspects the WordPress model JSON for the selected model index.
-   * @param modelIndex Index inside `window.LAppDefine.MODELS` that is currently selected by the legacy runtime.
-   * @returns Texture count for that model, or `undefined` when the metadata cannot be read.
+   * Opens the Vue-owned texture picker instead of cycling the legacy hidden texture button.
    */
-  resolveTextureCount?: (modelIndex: number) => Promise<number | undefined>;
+  onTexturePickerRequested?: () => void;
 }
 
 /**
@@ -49,8 +45,6 @@ export function mountWordPressWidgetController(
 ): WordPressWidgetControllerHandle {
   let hideTipsTimer = 0;
   let closeTimer = 0;
-  let activeModelIndex = 0;
-  const modelCount = Math.max(options.textureCounts?.length ?? 1, 1);
 
   /**
    * Shows the WordPress-style tips bubble and schedules it to fade like the original plugin.
@@ -97,19 +91,6 @@ export function mountWordPressWidgetController(
   };
 
   /**
-   * Reads the currently selected model's texture count without starting a destructive runtime action.
-   * @returns Texture count cached for the active model, or `undefined` while the metadata is still unknown.
-   */
-  const getActiveTextureCount = () => options.textureCounts?.[activeModelIndex];
-
-  /**
-   * Starts a background metadata read for the active model when a previous model switch made it necessary.
-   */
-  const warmActiveTextureCount = () => {
-    void options.resolveTextureCount?.(activeModelIndex);
-  };
-
-  /**
    * Dispatches one toolbar action using the same feature set exposed by the WordPress plugin shell.
    * @param action WordPress toolbar action encoded on the clicked `fui-*` icon span.
    */
@@ -133,35 +114,13 @@ export function mountWordPressWidgetController(
         showMessage(WORDPRESS_WAIFU_MESSAGES.about);
         break;
       case 'model':
-        if (elements.modelButton.disabled) {
-          showMessage(WORDPRESS_WAIFU_MESSAGES.modelLoading);
-          break;
-        }
-        elements.modelButton.click();
-        activeModelIndex = (activeModelIndex + 1) % modelCount;
-        warmActiveTextureCount();
-        showMessage(WORDPRESS_WAIFU_MESSAGES.model);
+        options.onModelPickerRequested?.();
         break;
       case 'photo':
         saveCanvas();
         break;
       case 'texture':
-        if (elements.modelButton.disabled) {
-          showMessage(WORDPRESS_WAIFU_MESSAGES.modelLoading);
-          break;
-        }
-        const textureCount = getActiveTextureCount();
-        if (typeof textureCount !== 'number') {
-          warmActiveTextureCount();
-          showMessage(WORDPRESS_WAIFU_MESSAGES.textureLoading);
-          break;
-        }
-        if (textureCount < 2) {
-          showMessage(WORDPRESS_WAIFU_MESSAGES.singleTexture);
-          break;
-        }
-        elements.textureButton.click();
-        showMessage(WORDPRESS_WAIFU_MESSAGES.texture);
+        options.onTexturePickerRequested?.();
         break;
       default:
         break;

@@ -110,6 +110,94 @@
     line-height: 16px;
   }
 
+  &__live2d-picker-modal &__modal-body {
+    display: block;
+  }
+
+  &__live2d-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 10px;
+    width: 100%;
+  }
+
+  &__live2d-picker-option {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--argon-border);
+    border-radius: var(--card-radius);
+    color: var(--argon-text);
+    background: var(--argon-control-soft);
+    cursor: pointer;
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease,
+      background-color 0.2s ease,
+      transform 0.2s ease;
+
+    &:hover,
+    &:focus {
+      border-color: var(--themecolor);
+      color: var(--themecolor);
+      outline: 0;
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.65;
+      transform: none;
+    }
+  }
+
+  &__live2d-picker-option--active {
+    border-color: var(--themecolor);
+    color: #fff;
+    background: var(--themecolor);
+  }
+
+  &__live2d-picker-option-label {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__live2d-picker-option-badge {
+    flex: 0 0 auto;
+    padding: 2px 7px;
+    border-radius: 999px;
+    color: var(--themecolor);
+    background: var(--argon-card);
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  &__live2d-picker-empty {
+    min-height: 72px;
+    padding: 18px 0;
+    color: var(--argon-muted);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  &__live2d-picker-error {
+    margin-bottom: 12px;
+    padding: 9px 12px;
+    border: 1px solid rgb(220 53 69 / 35%);
+    border-radius: var(--card-radius);
+    color: var(--argon-danger, #dc3545);
+    background: rgb(220 53 69 / 10%);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
   &__popover-enter-active,
   &__popover-leave-active {
     transition: var(--kt-blog-motion-modal-popover, opacity 0.25s ease, transform 0.25s ease);

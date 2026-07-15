@@ -42,7 +42,8 @@ pnpm exec playwright test e2e/argon-parity/baseline.spec.ts --project=chromium
 - 左栏 overview sticky/relative 切换用 no-headroom 回归用例固定，解除 fixed 后不得重放卡片入场动画或产生缩放闪烁。
 - 左栏文章目录/站点概览切换必须保留 Bootstrap tab fade 节奏，采用 active/show 分帧保持 Argon 手感；回归用例需要断言切换中 opacity 处于 0 到 1 之间，而不是只检查最终显隐。
 - Argon motion、滚动几何、延迟、RAF 调度、DOM id/selector、hash anchor 和跨组件 ref 必须从 `src/factories/blogAnimationFactory.ts` 与 `src/factories/blogDomFactory.ts` 取值；组件和 Hook 不再散写行为层 id、裸 `requestAnimationFrame`、裸 `setTimeout` 或重复 timing。
-- Live2D 使用旧 WordPress 站点同款 Cubism2 MOC 链路，静态运行时固定在 `public/live2d/wordpress-moc/live2d.min.js`；`BlogLive2D` 只在桌面端创建页面级单例 canvas，写入 `window.LAppDefine.MODELS = [['/api/blog/live2d/pio/moc/index.json']]` 并调用一次 `window.InitLive2D()`，hash 路由切换必须复用该实例。鼠标视线追踪必须通过页面级 `mousemove` 写入旧 runtime 的 `dragMgr` 目标点，不限制在模型 canvas 内，也不能伪造 tap 事件；服装按钮必须先读取模型 `textures` 数量，单贴图时只提示不调用旧 runtime 的破坏式切换。线上 MinIO Pio 公共根只允许 `catalog.json`、`moc/`、`moc3/` 三个入口，`moc/` 是当前 WordPress 同款源，且 `index.json`、`manifest.json`、`textures/manifest.json` 的贴图计数必须一致；`moc3/` 只保留重建模型资产；前端不得再接入自研 `KtPioLive2D`、manifest runtime、canvas transform fallback、`live2d-widgets` 或随机 CDN 模型。
+- Live2D 使用旧 WordPress 站点同款 Cubism2 MOC 资源，`BlogLive2D` 与 `src/components/blog/live2d/runtime/*` 负责 canvas、Pio/Tia catalog、MOC metadata、选择缓存、WebGL 渲染、页面级鼠标视差和模型/服装直达切换。当前 `vendor/cubism2Core/compatibility/*`、`legacyKernel.ts`、`sdkGlobalInstaller.ts` 和 `window.Live2D*` 仍是反混淆迁移路径，不是最终架构；目标是调用方直接导入类型化、语义化的 TS Core API。运行时不得 append 原始 `live2d.min.js`，也不得恢复旧 `InitLive2D`、隐藏按钮轮换、自研 `KtPioLive2D`、manifest runtime、canvas transform fallback、`live2d-widgets` 或随机 CDN 模型。
+- Cubism2 反混淆只以 `public/live2d/wordpress-moc/live2d.min.js` 为源码，并严格按“函数名恢复 -> 调用逻辑理清 -> 拆分压缩耦合 -> 变量名恢复”推进。进度维护在 `docs/blog-live2d-cubism2-minjs-deobfuscation-ledger.md`；稳定函数/调用决策和已复审 `module-splits.json` 位于 `docs/live2d-deobfuscation/`。当前 627 个函数身份、1411 个调用和 627 个模块 owner 决策已闭合，实际源码迁移审计仍为 5 migrated / 562 pending / 60 omitted；迁移必须直接在生产实现中使用源码可证的语义名，禁止短名映射层和兼容 alias。现有 TS 名或测试通过都不能替代恢复证明，最终交付是可维护 TS Core。
 - Modal 不强求一比一复刻线上 Argon 动画，打开/关闭 motion 与 `centered` 居中定位交给 antdv-next；外层按 `packages/@core/ui-kit/popup-ui/src/modal/modal.vue` 保留 Header/Content/Footer 三段能力、`p-0`、`max-height`、纵向 flex、Content `min-h-40` 滚动和 `px-5 py-4`/`p-3`/`p-2` 间距，但无 footer slot 时不渲染 footer，不搬 draggable/fullscreen/loading/footer 按钮等复杂能力，自有颜色只守 Blog 主题色和暗色可读性。
 - Admin 文章预览通过 `VITE_KT_BLOG_WEB_BASE_URL` 打开公开 Blog Web 路由，本地默认 `http://127.0.0.1:5173/#/post/<slug>?adminPreview=1&articleId=<id>`。
 
@@ -51,4 +52,4 @@ pnpm exec playwright test e2e/argon-parity/baseline.spec.ts --project=chromium
 | 一级来源 | 使用方式 | License |
 | --- | --- | --- |
 | [Argon Theme](https://github.com/solstice23/argon-theme) | 博客视觉资产、主题样式、滚动/搜索/过渡参考和页脚主题署名 | GPL-3.0 |
-| Pio Cubism2 MOC runtime/model assets | `public/live2d/wordpress-moc/live2d.min.js` 与 MinIO `moc/` 源用于旧 WordPress Live2D 行为还原 | 上游本地包未显式附带 license，外部分发前必须复核 |
+| Pio/Tia Cubism2 MOC runtime/model assets | MinIO `moc/` 源用于旧 WordPress Live2D 视觉行为还原；Cubism2 v2 TypeScript Core 由旧 WordPress `live2d.min.js` 按反混淆清单恢复 | 上游本地包未显式附带 license，外部分发前必须复核 |

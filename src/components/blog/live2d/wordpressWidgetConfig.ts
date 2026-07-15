@@ -1,5 +1,3 @@
-import { blogDomId } from '@/factories/blogDomFactory';
-
 export const WORDPRESS_WAIFU_SIZE = {
   height: 250,
   width: 280,
@@ -11,8 +9,6 @@ export const WORDPRESS_WAIFU_TIPS_SIZE = {
 } as const;
 
 export const WORDPRESS_WAIFU_MIN_WIDTH = 768;
-
-export const WORDPRESS_WAIFU_TEXTURE_BUTTON_ID = blogDomId('live2dTextureButton');
 
 export type WordPressWaifuToolAction = 'bot' | 'chat' | 'close' | 'home' | 'info' | 'model' | 'photo' | 'texture';
 
