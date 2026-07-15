@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { toCubism2ViewPoint } from '../../components/blog/live2d/runtime/cubism2PointerCoordinates'
 
 describe('Cubism2 pointer coordinates', () => {
-  it('uses canvas-local coordinates and canvas width for both source axes', () => {
+  it('preserves source coordinates for points inside the canvas', () => {
     const canvas = {
       getBoundingClientRect: () => ({
         bottom: 270,
@@ -31,6 +31,37 @@ describe('Cubism2 pointer coordinates', () => {
     expect(toCubism2ViewPoint(canvas, { clientX: 150, clientY: 145 })).toEqual({
       x: 0,
       y: 0,
+    })
+  })
+
+  it('projects page-level pointers onto the canvas boundary around the model center', () => {
+    const canvas = {
+      getBoundingClientRect: () => ({
+        bottom: 270,
+        height: 250,
+        left: 10,
+        right: 290,
+        top: 20,
+        width: 280,
+        x: 10,
+        y: 20,
+        toJSON: () => ({}),
+      }),
+      height: 500,
+      width: 560,
+    }
+
+    expect(toCubism2ViewPoint(canvas, { clientX: 1_000, clientY: 145 })).toEqual({
+      x: 1,
+      y: 0,
+    })
+    expect(toCubism2ViewPoint(canvas, { clientX: 150, clientY: -1_000 })).toEqual({
+      x: 0,
+      y: 500 / 560,
+    })
+    expect(toCubism2ViewPoint(canvas, { clientX: 710, clientY: -355 })).toEqual({
+      x: 1,
+      y: 500 / 560,
     })
   })
 })

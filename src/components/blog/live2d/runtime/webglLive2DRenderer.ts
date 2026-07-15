@@ -101,15 +101,12 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
   };
 
   /**
-   * Tracks the mouse in the source canvas-local coordinate space.
-   * @param event Canvas mouse move event.
+   * Updates the smoothed look-at target from a page-level pointer.
+   * @param event Mouse or touch coordinates in the browser client space.
    */
-  const handleModelTurnHead = (event: Pick<MouseEvent, 'clientX' | 'clientY'>) => {
+  const updatePointerTarget = (event: Pick<MouseEvent, 'clientX' | 'clientY'>) => {
     const point = toCubism2ViewPoint(canvas, event);
     animator?.setPointerTarget(point.x, point.y);
-    void animator?.startMotionForPoint(point.x, point.y).catch((error: unknown) => {
-      console.warn('[KT Blog] Live2D interaction motion failed.', error);
-    });
   };
 
   /** Restores the source look-front behavior after the pointer leaves or is released. */
@@ -126,16 +123,19 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
       return;
     }
     event.preventDefault();
-    handleModelTurnHead(event);
+    const point = toCubism2ViewPoint(canvas, event);
+    animator?.setPointerTarget(point.x, point.y);
+    void animator?.startMotionForPoint(point.x, point.y).catch((error: unknown) => {
+      console.warn('[KT Blog] Live2D interaction motion failed.', error);
+    });
   };
 
   /**
-   * Handles the source hover behavior, including hit-motion attempts.
-   * @param event Canvas mouse-move event.
+   * Preserves the WordPress widget's page-wide gaze tracking.
+   * @param event Page-level mouse-move event.
    */
   const handleMouseMove = (event: MouseEvent) => {
-    event.preventDefault();
-    handleModelTurnHead(event);
+    updatePointerTarget(event);
   };
 
   /**
@@ -150,7 +150,11 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     const touch = event.touches[0];
     if (touch) {
       touchDragging = true;
-      handleModelTurnHead(touch);
+      const point = toCubism2ViewPoint(canvas, touch);
+      animator?.setPointerTarget(point.x, point.y);
+      void animator?.startMotionForPoint(point.x, point.y).catch((error: unknown) => {
+        console.warn('[KT Blog] Live2D interaction motion failed.', error);
+      });
     }
   };
 
@@ -167,8 +171,7 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
       return;
     }
     event.preventDefault();
-    const point = toCubism2ViewPoint(canvas, touch);
-    animator?.setPointerTarget(point.x, point.y);
+    updatePointerTarget(touch);
   };
 
   /**
@@ -192,20 +195,18 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     activeTexture = null;
   };
 
+  window.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseleave', handlePointerRelease);
   canvas.addEventListener('mousedown', handleMouseDown);
-  canvas.addEventListener('mousemove', handleMouseMove);
-  canvas.addEventListener('mouseup', handlePointerRelease);
-  canvas.addEventListener('mouseout', handlePointerRelease);
   canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
   canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
   canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
   return {
     destroy() {
+      window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handlePointerRelease);
       canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', handlePointerRelease);
-      canvas.removeEventListener('mouseout', handlePointerRelease);
       canvas.removeEventListener('touchstart', handleTouchStart);
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);

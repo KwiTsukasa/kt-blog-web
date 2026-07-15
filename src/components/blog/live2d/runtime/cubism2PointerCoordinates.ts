@@ -2,15 +2,14 @@ export interface Cubism2ViewPoint {
   x: number;
   y: number;
 }
-
 type Cubism2PointerCanvas = Pick<HTMLCanvasElement, 'height' | 'width' | 'getBoundingClientRect'>;
 type Cubism2ClientPoint = Pick<MouseEvent, 'clientX' | 'clientY'>;
 
 /**
- * Converts a browser pointer into the source runtime's canvas-local Cubism2 view coordinates.
- * @param canvas Canvas whose drawing-buffer dimensions define `deviceToScreen`.
+ * Converts a page-level browser pointer into the bounded WordPress Cubism2 view range.
+ * @param canvas Canvas whose bounds and drawing-buffer dimensions define the view range.
  * @param point Browser client coordinates from a mouse or touch event.
- * @returns Source view point where both axes use canvas width as the scale denominator.
+ * @returns View point projected from the model center to the canvas boundary when needed.
  */
 export function toCubism2ViewPoint(
   canvas: Cubism2PointerCanvas,
@@ -19,8 +18,21 @@ export function toCubism2ViewPoint(
   const bounds = canvas.getBoundingClientRect();
   const cssWidth = Math.max(bounds.width, 1);
   const cssHeight = Math.max(bounds.height, 1);
-  const deviceX = (point.clientX - bounds.left) * canvas.width / cssWidth;
-  const deviceY = (point.clientY - bounds.top) * canvas.height / cssHeight;
+  const centerX = bounds.left + cssWidth / 2;
+  const centerY = bounds.top + cssHeight / 2;
+  const deltaX = point.clientX - centerX;
+  const deltaY = point.clientY - centerY;
+  const horizontalProjection = deltaX === 0
+    ? Number.POSITIVE_INFINITY
+    : cssWidth / 2 / Math.abs(deltaX);
+  const verticalProjection = deltaY === 0
+    ? Number.POSITIVE_INFINITY
+    : cssHeight / 2 / Math.abs(deltaY);
+  const projectionScale = Math.min(1, horizontalProjection, verticalProjection);
+  const projectedX = centerX + deltaX * projectionScale;
+  const projectedY = centerY + deltaY * projectionScale;
+  const deviceX = (projectedX - bounds.left) * canvas.width / cssWidth;
+  const deviceY = (projectedY - bounds.top) * canvas.height / cssHeight;
   const coordinateScale = Math.max(canvas.width, 1);
   return {
     x: (deviceX - canvas.width / 2) * 2 / coordinateScale,
