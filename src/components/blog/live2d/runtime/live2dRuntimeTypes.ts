@@ -1,6 +1,12 @@
 export interface Live2DCoreMotion {
-  setFadeIn?: (milliseconds: number) => void;
-  setFadeOut?: (milliseconds: number) => void;
+  setFadeIn: (milliseconds: number) => void;
+  setFadeOut: (milliseconds: number) => void;
+}
+
+export interface Live2DCoreModelContext {
+  getParamFloat(paramIndex: number): number;
+  getParamMax(paramIndex: number): number;
+  getParamMin(paramIndex: number): number;
 }
 
 export interface Live2DModelEntry {
@@ -70,15 +76,17 @@ export interface Live2DCoreMotionConstructor {
 }
 
 export interface Live2DCoreModel {
-  addToParamFloat?: (id: string, value: number, weight?: number) => void;
+  addToParamFloat(id: string, value: number, weight?: number): void;
   draw(): void;
   getCanvasHeight(): number;
   getCanvasWidth(): number;
+  getModelContext(): Live2DCoreModelContext;
+  getParamIndex(id: string): number;
   isPremultipliedAlpha?: () => boolean;
-  loadParam?: () => void;
-  saveParam?: () => void;
+  loadParam(): void;
+  saveParam(): void;
   setMatrix?: (matrix: Float32Array) => void;
-  setParamFloat?: (id: string, value: number, weight?: number) => void;
+  setParamFloat(id: string, value: number, weight?: number): void;
   setTexture(index: number, texture: WebGLTexture): void;
   update(): void;
 }
@@ -92,8 +100,15 @@ export interface Live2DCoreModelConstructor {
   loadModel(buffer: ArrayBuffer): Live2DCoreModel;
 }
 
+export interface Live2DMotionQueueManager {
+  isFinished(motionHandle?: number): boolean;
+  startMotion(motion: Live2DCoreMotion, priority?: number): number;
+  stopAllMotions(): void;
+  updateParam(model: Live2DCoreModel): boolean;
+}
+
 export interface MotionQueueManagerConstructor {
-  new (): unknown;
+  new (): Live2DMotionQueueManager;
 }
 
 declare global {

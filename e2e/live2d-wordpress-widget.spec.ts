@@ -218,6 +218,26 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
       ),
     )
     .toBeGreaterThan(5000)
+  await expect
+    .poll(() =>
+      assetRequests.some((requestPath) =>
+        requestPath.includes('/moc/motions/Breath') && requestPath.endsWith('.mtn'),
+      ),
+    )
+    .toBe(true)
+  const firstAnimatedFrame = await canvas.evaluate((element) => element.toDataURL('image/png'))
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL('image/png')))
+    .not.toBe(firstAnimatedFrame)
+  await canvas.click({ position: { x: 102, y: 163 } })
+  await expect
+    .poll(() =>
+      assetRequests.some((requestPath) =>
+        /\/moc\/motions\/(?:Sukebei|Touch)[^/]*\.mtn$/.test(requestPath),
+      ),
+    )
+    .toBe(true)
+  await page.mouse.move(1180, 120)
   const widgetBox = await widget.boundingBox()
   expect(widgetBox).not.toBeNull()
   expect(Math.round(widgetBox?.x ?? -1)).toBe(0)

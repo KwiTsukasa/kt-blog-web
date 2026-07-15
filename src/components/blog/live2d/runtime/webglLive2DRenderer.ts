@@ -1,5 +1,10 @@
 import { loadCubism2Core } from './cubism2CoreLoader';
+import {
+  createCubism2ModelAnimator,
+  type Cubism2ModelAnimator,
+} from './cubism2ModelAnimator';
 import { configureCubism2ModelProjection } from './cubism2ModelProjection';
+import { toCubism2ViewPoint } from './cubism2PointerCoordinates';
 import type { Live2DCoreModel, Live2DRendererAdapter, Live2DResolvedState } from './live2dRuntimeTypes';
 import { installCubism2WebGLTextureReleaseHook } from '../vendor/cubism2Core/compatibility/webglTextureRelease';
 
@@ -11,17 +16,10 @@ import { installCubism2WebGLTextureReleaseHook } from '../vendor/cubism2Core/com
 export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRendererAdapter {
   let gl: WebGLRenderingContext | null = null;
   let model: Live2DCoreModel | null = null;
+  let animator: Cubism2ModelAnimator | null = null;
   let activeTexture: WebGLTexture | null = null;
   let frame = 0;
-  let startedAt = Date.now();
-  const pointer = {
-    x: 0,
-    y: 0,
-  };
-  const pointerTarget = {
-    x: 0,
-    y: 0,
-  };
+  let touchDragging = false;
 
   /**
    * Loads and displays one model state.
@@ -32,15 +30,32 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     const modelBuffer = await fetchArrayBuffer(resolveAssetUrl(state.settings.baseUrl, state.settings.model));
     const nextModel = window.Live2DModelWebGL!.loadModel(modelBuffer);
     configureCubism2ModelProjection(nextModel, canvas, state.settings.layout);
-    const nextTexture = await loadTexture(
-      context,
-      nextModel,
-      resolveAssetUrl(state.settings.baseUrl, state.settings.textures[state.textureIndex] || state.settings.textures[0] || ''),
-    );
+    nextModel.saveParam();
+    const nextAnimator = createCubism2ModelAnimator({
+      Live2DMotion: window.Live2DMotion!,
+      MotionQueueManager: window.MotionQueueManager!,
+      loadMotionBytes: fetchArrayBuffer,
+      settings: state.settings,
+    });
+    let nextTexture: WebGLTexture;
+    try {
+      nextTexture = await loadTexture(
+        context,
+        nextModel,
+        resolveAssetUrl(state.settings.baseUrl, state.settings.textures[state.textureIndex] || state.settings.textures[0] || ''),
+      );
+    } catch (error: unknown) {
+      nextAnimator.stop();
+      throw error;
+    }
     releaseActiveTexture();
+    animator?.stop();
     model = nextModel;
+    animator = nextAnimator;
     activeTexture = nextTexture;
-    startedAt = Date.now();
+    void nextAnimator.preloadMotionGroup('idle').catch((error: unknown) => {
+      console.warn('[KT Blog] Live2D idle motion preload failed.', error);
+    });
     startLoop();
   };
 
@@ -72,26 +87,98 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     if (frame) {
       return;
     }
+    /** Draws one source-ordered Cubism2 animation frame. */
     const tick = () => {
       frame = window.requestAnimationFrame(tick);
-      if (!gl || !model) {
+      if (!gl || !model || !animator) {
         return;
       }
       gl.clear(gl.COLOR_BUFFER_BIT);
-      animateModel(model, startedAt, pointer, pointerTarget);
-      model.update();
+      animator.update(model);
       model.draw();
     };
     frame = window.requestAnimationFrame(tick);
   };
 
   /**
-   * Tracks the mouse against the whole page, matching the WordPress widget's global look-at behavior.
-   * @param event Page-level mouse move event.
+   * Tracks the mouse in the source canvas-local coordinate space.
+   * @param event Canvas mouse move event.
+   */
+  const handleModelTurnHead = (event: Pick<MouseEvent, 'clientX' | 'clientY'>) => {
+    const point = toCubism2ViewPoint(canvas, event);
+    animator?.setPointerTarget(point.x, point.y);
+    void animator?.startMotionForPoint(point.x, point.y).catch((error: unknown) => {
+      console.warn('[KT Blog] Live2D interaction motion failed.', error);
+    });
+  };
+
+  /** Restores the source look-front behavior after the pointer leaves or is released. */
+  const handlePointerRelease = () => {
+    animator?.setPointerTarget(0, 0);
+  };
+
+  /**
+   * Handles the source left-button press behavior.
+   * @param event Canvas mouse-down event.
+   */
+  const handleMouseDown = (event: MouseEvent) => {
+    if (event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    handleModelTurnHead(event);
+  };
+
+  /**
+   * Handles the source hover behavior, including hit-motion attempts.
+   * @param event Canvas mouse-move event.
    */
   const handleMouseMove = (event: MouseEvent) => {
-    pointerTarget.x = (event.clientX / Math.max(window.innerWidth, 1)) * 2 - 1;
-    pointerTarget.y = -((event.clientY / Math.max(window.innerHeight, 1)) * 2 - 1);
+    event.preventDefault();
+    handleModelTurnHead(event);
+  };
+
+  /**
+   * Starts source-compatible single-touch tracking and interaction.
+   * @param event Canvas touch-start event.
+   */
+  const handleTouchStart = (event: TouchEvent) => {
+    if (event.touches.length !== 1) {
+      return;
+    }
+    event.preventDefault();
+    const touch = event.touches[0];
+    if (touch) {
+      touchDragging = true;
+      handleModelTurnHead(touch);
+    }
+  };
+
+  /**
+   * Follows a source-compatible single touch without repeatedly starting hit motions.
+   * @param event Canvas touch-move event.
+   */
+  const handleTouchMove = (event: TouchEvent) => {
+    if (!touchDragging) {
+      return;
+    }
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+    event.preventDefault();
+    const point = toCubism2ViewPoint(canvas, touch);
+    animator?.setPointerTarget(point.x, point.y);
+  };
+
+  /**
+   * Ends source-compatible touch tracking and restores the front-facing target.
+   * @param event Canvas touch-end event.
+   */
+  const handleTouchEnd = (event: TouchEvent) => {
+    event.preventDefault();
+    touchDragging = false;
+    handlePointerRelease();
   };
 
   /**
@@ -105,16 +192,30 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     activeTexture = null;
   };
 
-  window.addEventListener('mousemove', handleMouseMove);
+  canvas.addEventListener('mousedown', handleMouseDown);
+  canvas.addEventListener('mousemove', handleMouseMove);
+  canvas.addEventListener('mouseup', handlePointerRelease);
+  canvas.addEventListener('mouseout', handlePointerRelease);
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
   return {
     destroy() {
-      window.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseup', handlePointerRelease);
+      canvas.removeEventListener('mouseout', handlePointerRelease);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
       if (frame) {
         window.cancelAnimationFrame(frame);
         frame = 0;
       }
       releaseActiveTexture();
+      animator?.stop();
+      animator = null;
       model = null;
       gl = null;
     },
@@ -188,32 +289,6 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     image.onerror = () => reject(new Error(`Live2D texture request failed: ${url}`));
     image.src = url;
   });
-}
-
-/**
- * Applies lightweight idle motion parameters before drawing.
- * @param model Live2D core model.
- * @param startedAt Runtime model start timestamp.
- * @param pointer Current smoothed page-level look-at value.
- * @param pointerTarget Latest target look-at value derived from global pointer movement.
- */
-function animateModel(
-  model: Live2DCoreModel,
-  startedAt: number,
-  pointer: { x: number; y: number },
-  pointerTarget: { x: number; y: number },
-): void {
-  const timeSec = (Date.now() - startedAt) / 1000;
-  const t = timeSec * 2 * Math.PI;
-  pointer.x += (pointerTarget.x - pointer.x) * 0.12;
-  pointer.y += (pointerTarget.y - pointer.y) * 0.12;
-  model.loadParam?.();
-  model.addToParamFloat?.('PARAM_ANGLE_X', pointer.x * 25 + 15 * Math.sin(t / 6.5345), 0.5);
-  model.addToParamFloat?.('PARAM_ANGLE_Y', pointer.y * 16 + 8 * Math.sin(t / 3.5345), 0.5);
-  model.addToParamFloat?.('PARAM_ANGLE_Z', 10 * Math.sin(t / 5.5345), 0.5);
-  model.addToParamFloat?.('PARAM_BODY_ANGLE_X', 4 * Math.sin(t / 15.5345), 0.5);
-  model.setParamFloat?.('PARAM_BREATH', 0.5 + 0.5 * Math.sin(t / 3.2345), 1);
-  model.saveParam?.();
 }
 
 /**
