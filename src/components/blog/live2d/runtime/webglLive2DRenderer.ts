@@ -1,4 +1,5 @@
 import { loadCubism2Core } from './cubism2CoreLoader';
+import { configureCubism2ModelProjection } from './cubism2ModelProjection';
 import type { Live2DCoreModel, Live2DRendererAdapter, Live2DResolvedState } from './live2dRuntimeTypes';
 import { installCubism2WebGLTextureReleaseHook } from '../vendor/cubism2Core/compatibility/webglTextureRelease';
 
@@ -30,6 +31,7 @@ export function createWebGLLive2DRenderer(canvas: HTMLCanvasElement): Live2DRend
     const context = await resolveContext();
     const modelBuffer = await fetchArrayBuffer(resolveAssetUrl(state.settings.baseUrl, state.settings.model));
     const nextModel = window.Live2DModelWebGL!.loadModel(modelBuffer);
+    configureCubism2ModelProjection(nextModel, canvas, state.settings.layout);
     const nextTexture = await loadTexture(
       context,
       nextModel,

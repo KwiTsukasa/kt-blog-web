@@ -109,6 +109,38 @@ async function fulfillLocalBlogImageAsset(route: Route) {
 }
 
 /**
+ * Preserves WebGL drawing-buffer pixels so the E2E can inspect a completed rendered frame.
+ */
+function installPreservedWebGLDrawingBuffer(): void {
+  type CanvasContextGetter = (
+    this: HTMLCanvasElement,
+    contextId: string,
+    options?: Record<string, unknown>,
+  ) => unknown
+  const originalGetContext = HTMLCanvasElement.prototype.getContext as unknown as CanvasContextGetter
+  const canvasPrototype = HTMLCanvasElement.prototype as unknown as {
+    getContext: CanvasContextGetter
+  }
+
+  /**
+   * Delegates canvas context creation while enabling pixel retention only for WebGL contexts.
+   * @param contextId Browser canvas context identifier.
+   * @param options Caller-provided context attributes.
+   * @returns Canvas rendering context returned by the browser.
+   */
+  canvasPrototype.getContext = function getContextWithPreservedBuffer(
+    contextId: string,
+    options?: Record<string, unknown>,
+  ): unknown {
+    const contextOptions =
+      contextId === 'webgl' || contextId === 'experimental-webgl'
+        ? { ...options, preserveDrawingBuffer: true }
+        : options
+    return originalGetContext.call(this, contextId, contextOptions)
+  }
+}
+
+/**
  * Routes the Pio/Tia MOC API to local release artifacts and records runtime console errors.
  * @param page Playwright page that will open Blog Web.
  * @param errors Mutable error list used by assertions after interactions complete.
@@ -121,6 +153,7 @@ async function prepareLive2DPage(
   scriptRequests: string[] = [],
   assetRequests: string[] = [],
 ) {
+  await page.addInitScript(installPreservedWebGLDrawingBuffer)
   await page.route('https://s3.kwitsukasa.top/images/*', fulfillLocalBlogImageAsset)
   await page.route('**/api/blog/live2d/*/moc/**', fulfillLocalMocAsset)
   page.on('request', (request) => {
@@ -173,6 +206,18 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
   await expect(widget).toBeVisible()
   await expect(canvas).toHaveAttribute('width', '280')
   await expect(canvas).toHaveAttribute('height', '250')
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('kt-blog-live2d:model')))
+    .toBe('pio')
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document.querySelector<HTMLCanvasElement>('canvas#live2d')?.toDataURL('image/png')
+            .length ?? 0,
+      ),
+    )
+    .toBeGreaterThan(5000)
   const widgetBox = await widget.boundingBox()
   expect(widgetBox).not.toBeNull()
   expect(Math.round(widgetBox?.x ?? -1)).toBe(0)
@@ -191,6 +236,9 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
   await expect(modelPicker).toContainText('选择看板娘')
   await modelPicker.locator('.kt-blog__live2d-picker-option', { hasText: 'Tia' }).click()
   await expect(modelPicker).toHaveCount(0)
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('kt-blog-live2d:model')))
+    .toBe('tia')
   await clickLive2DToolbarIcon(page, '.fui-eye')
   const texturePicker = page.locator('.kt-blog__modal-host--open.kt-blog__live2d-picker-modal')
   await expect(texturePicker).toContainText('选择服装')
@@ -204,7 +252,7 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
             .length ?? 0,
       ),
     )
-    .toBeGreaterThan(1000)
+    .toBeGreaterThan(5000)
   await clickLive2DToolbarIcon(page, '.fui-photo')
   await expect(page.locator('.waifu-tips')).toContainText('保存')
   await clickLive2DToolbarIcon(page, '.fui-info-circle')
