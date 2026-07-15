@@ -265,8 +265,15 @@ describe('App', () => {
     });
     await flushPromises();
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('/api/blog/theme/config');
+    const requestedUrls = fetchMock.mock.calls.map(([url]) => `${url}`);
+    expect(requestedUrls).toHaveLength(2);
+    expect(requestedUrls).toEqual(
+      expect.arrayContaining([
+        '/api/blog/theme/config',
+        '/api/blog/live2d/pio/moc/index.json',
+      ]),
+    );
+    expect(requestedUrls).not.toContain('/api/wordpress/theme/config');
   });
 
   it('can load WordPress migration theme config through env override', async () => {
