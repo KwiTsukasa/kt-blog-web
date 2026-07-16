@@ -33,6 +33,7 @@ export default defineComponent({
       errorMessage: '',
       modelOpen: false,
       pending: false,
+      previewTextureIndex: 0,
       settings: null as Live2DModelSettings | null,
       textureOpen: false,
     });
@@ -47,7 +48,17 @@ export default defineComponent({
     const applyRuntimeState = (state: Live2DResolvedState) => {
       picker.activeModelKey = state.modelKey;
       picker.activeTextureIndex = state.textureIndex;
+      picker.previewTextureIndex = state.textureIndex;
       picker.settings = state.settings;
+    };
+
+    /**
+     * Opens the costume picker with its preview anchored to the committed texture.
+     */
+    const openTexturePicker = () => {
+      picker.errorMessage = '';
+      picker.previewTextureIndex = picker.activeTextureIndex;
+      picker.textureOpen = true;
     };
 
     /**
@@ -56,14 +67,14 @@ export default defineComponent({
      */
     const resolveControllerElements = () => {
       if (
-        !canvasRef.value
-        || !chatRef.value
-        || !closeButtonRef.value
-        || !inputRef.value
-        || !sendButtonRef.value
-        || !tipsRef.value
-        || !toolRef.value
-        || !widgetRef.value
+        !canvasRef.value ||
+        !chatRef.value ||
+        !closeButtonRef.value ||
+        !inputRef.value ||
+        !sendButtonRef.value ||
+        !tipsRef.value ||
+        !toolRef.value ||
+        !widgetRef.value
       ) {
         return null;
       }
@@ -95,8 +106,7 @@ export default defineComponent({
           picker.modelOpen = true;
         },
         onTexturePickerRequested: () => {
-          picker.errorMessage = '';
-          picker.textureOpen = true;
+          openTexturePicker();
         },
       });
 
@@ -145,22 +155,70 @@ export default defineComponent({
     };
 
     /**
-     * Switches the active texture from the picker modal.
-     * @param textureIndex Selected texture index for the active model.
+     * Applies a costume to the visible model without committing it to storage.
+     * @param textureIndex Selected preview texture index for the active model.
      */
-    const selectTexture = async (textureIndex: number) => {
+    const previewTexture = async (textureIndex: number) => {
+      if (!runtimeHandle || textureIndex === picker.previewTextureIndex) {
+        return;
+      }
+      picker.pending = true;
+      picker.errorMessage = '';
+      try {
+        await runtimeHandle.previewTexture(textureIndex);
+        picker.previewTextureIndex = textureIndex;
+      } catch (error: unknown) {
+        picker.errorMessage = resolveSelectionErrorMessage(error);
+        console.warn('[KT Blog] Live2D texture preview failed.', error);
+      } finally {
+        picker.pending = false;
+      }
+    };
+
+    /**
+     * Commits the currently previewed costume and closes the picker after persistence succeeds.
+     */
+    const confirmTexture = async () => {
       if (!runtimeHandle) {
         return;
       }
       picker.pending = true;
       picker.errorMessage = '';
       try {
-        const state = await runtimeHandle.switchTexture(textureIndex);
+        const state = await runtimeHandle.switchTexture(picker.previewTextureIndex);
         applyRuntimeState(state);
         picker.textureOpen = false;
       } catch (error: unknown) {
         picker.errorMessage = resolveSelectionErrorMessage(error);
-        console.warn('[KT Blog] Live2D texture switch failed.', error);
+        console.warn('[KT Blog] Live2D texture confirmation failed.', error);
+      } finally {
+        picker.pending = false;
+      }
+    };
+
+    /**
+     * Cancels costume selection, restoring the committed texture before closing the picker.
+     */
+    const closeTexturePicker = async () => {
+      if (picker.pending) {
+        return;
+      }
+      if (!runtimeHandle || picker.previewTextureIndex === picker.activeTextureIndex) {
+        picker.errorMessage = '';
+        picker.previewTextureIndex = picker.activeTextureIndex;
+        picker.textureOpen = false;
+        return;
+      }
+
+      picker.pending = true;
+      picker.errorMessage = '';
+      try {
+        await runtimeHandle.previewTexture(picker.activeTextureIndex);
+        picker.previewTextureIndex = picker.activeTextureIndex;
+        picker.textureOpen = false;
+      } catch (error: unknown) {
+        picker.errorMessage = resolveSelectionErrorMessage(error);
+        console.warn('[KT Blog] Live2D texture preview restore failed.', error);
       } finally {
         picker.pending = false;
       }
@@ -171,8 +229,9 @@ export default defineComponent({
      * @returns Listener object accepted by Vue's generated TSX component types.
      */
     const pickerListeners = () => ({
+      'onConfirm-texture': confirmTexture,
+      'onPreview-texture': previewTexture,
       'onSelect-model': selectModel,
-      'onSelect-texture': selectTexture,
     });
 
     return () => {
@@ -213,6 +272,7 @@ export default defineComponent({
             models={BLOG_LIVE2D_MODELS}
             open={picker.modelOpen}
             pending={picker.pending}
+            previewTextureIndex={picker.previewTextureIndex}
             settings={picker.settings}
             type="model"
             onClose={() => {
@@ -228,12 +288,10 @@ export default defineComponent({
             models={BLOG_LIVE2D_MODELS}
             open={picker.textureOpen}
             pending={picker.pending}
+            previewTextureIndex={picker.previewTextureIndex}
             settings={picker.settings}
             type="texture"
-            onClose={() => {
-              picker.errorMessage = '';
-              picker.textureOpen = false;
-            }}
+            onClose={closeTexturePicker}
             {...pickerListeners()}
           />
         </>

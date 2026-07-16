@@ -114,6 +114,17 @@
     display: block;
   }
 
+  &__live2d-picker-modal .ant-modal-footer {
+    gap: 8px;
+  }
+
+  &__live2d-picker-preview-status {
+    margin-bottom: 10px;
+    color: var(--argon-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
   &__live2d-picker-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
@@ -154,8 +165,20 @@
     }
   }
 
-  &__live2d-picker-option--active {
+  &__live2d-picker-option--active,
+  &__live2d-picker-option--preview {
     border-color: var(--themecolor);
+    color: #fff;
+    background: var(--themecolor);
+  }
+
+  &__live2d-picker-option--current {
+    border-color: var(--themecolor);
+    color: var(--themecolor);
+    background: var(--argon-card);
+  }
+
+  &__live2d-picker-option--current &__live2d-picker-option-badge {
     color: #fff;
     background: var(--themecolor);
   }
@@ -166,7 +189,10 @@
     font-size: 14px;
     line-height: 1.4;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   &__live2d-picker-option-badge {
@@ -196,6 +222,20 @@
     background: rgb(220 53 69 / 10%);
     font-size: 13px;
     line-height: 1.5;
+  }
+
+  @media (min-width: 769px) and (max-width: 1212px) {
+    &__live2d-picker-modal &__modal-wrap {
+      justify-content: flex-end;
+      padding-right: 16px;
+      padding-left: 296px;
+
+      .ant-modal {
+        width: min(620px, calc(100vw - 312px)) !important;
+        margin-right: 0;
+        margin-left: 0;
+      }
+    }
   }
 
   &__popover-enter-active,

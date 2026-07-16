@@ -5,10 +5,7 @@ import type {
 } from '../vendor/cubism2Core/motionBase';
 import type { Cubism2Live2DMotionConstructor } from '../vendor/cubism2Core/motionParser';
 import type { Cubism2ModelContextLike } from '../vendor/cubism2Core/modelBase';
-import type {
-  Cubism2ModelWebGLConstructor,
-  Cubism2ModelWebGLInstance,
-} from '../vendor/cubism2Core/modelWrappers';
+import type { Cubism2ModelWebGLConstructor, Cubism2ModelWebGLInstance } from '../vendor/cubism2Core/modelWrappers';
 
 export type Live2DCoreMotion = Cubism2AMotionInstance;
 
@@ -50,10 +47,17 @@ export interface Live2DResolvedState {
 }
 
 export interface Live2DTSRuntime {
+  /** Releases renderer resources and clears the in-memory runtime state. */
   destroy(): void;
+  /** Returns the last state committed by mount or an explicit switch operation. */
   getState(): Live2DResolvedState | null;
+  /** Mounts the stored model and texture selection. */
   mount(): Promise<Live2DResolvedState>;
+  /** Renders a texture temporarily without mutating committed state or persistent storage. */
+  previewTexture(textureIndex: number): Promise<Live2DResolvedState>;
+  /** Loads and persists a model selection. */
   switchModel(modelKey: string): Promise<Live2DResolvedState>;
+  /** Renders and persists a texture selection for the active model. */
   switchTexture(textureIndex: number): Promise<Live2DResolvedState>;
 }
 

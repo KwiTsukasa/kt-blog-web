@@ -1,8 +1,4 @@
-import {
-  BLOG_LIVE2D_MODELS,
-  DEFAULT_LIVE2D_MODEL_KEY,
-  findLive2DModelEntry,
-} from './live2dRuntimeCatalog';
+import { BLOG_LIVE2D_MODELS, DEFAULT_LIVE2D_MODEL_KEY, findLive2DModelEntry } from './live2dRuntimeCatalog';
 import { fetchLive2DModelSettings } from './live2dModelSettings';
 import { createWebGLLive2DRenderer } from './webglLive2DRenderer';
 import type {
@@ -35,6 +31,7 @@ export function createLive2DTSRuntime(options: CreateLive2DTSRuntimeOptions): Li
   const loadSettings = options.loadSettings || fetchLive2DModelSettings;
   const renderer = options.renderer || createWebGLLive2DRenderer(options.canvas);
   let state: Live2DResolvedState | null = null;
+  let renderedTextureIndex: number | null = null;
 
   /**
    * Resolves a model key to a registered entry, falling back to Pio.
@@ -67,10 +64,7 @@ export function createLive2DTSRuntime(options: CreateLive2DTSRuntimeOptions): Li
    * @param requestedTexture Optional explicit texture index.
    * @returns Runtime state for renderer application.
    */
-  const createState = async (
-    entry: Live2DModelEntry,
-    requestedTexture?: number,
-  ): Promise<Live2DResolvedState> => {
+  const createState = async (entry: Live2DModelEntry, requestedTexture?: number): Promise<Live2DResolvedState> => {
     const settings = await resolveSettings(entry);
     const textureIndex =
       typeof requestedTexture === 'number'
@@ -84,45 +78,96 @@ export function createLive2DTSRuntime(options: CreateLive2DTSRuntimeOptions): Li
   };
 
   return {
+    /**
+     * Releases renderer resources and clears the in-memory runtime state.
+     * @returns Nothing.
+     */
     destroy() {
       renderer.destroy();
       state = null;
+      renderedTextureIndex = null;
     },
+    /**
+     * Returns the last model and texture selection committed by the runtime.
+     * @returns Current committed state, or null before mount or after destruction.
+     */
     getState() {
       return state;
     },
+    /**
+     * Mounts the stored model selection and persists its normalized model and texture keys.
+     * @returns Resolved state applied to the renderer.
+     */
     async mount() {
       const nextState = await createState(resolveEntry(storage.readModelKey()));
       await renderer.mount(nextState);
       storage.writeModelKey(nextState.modelKey);
       storage.writeTextureIndex(nextState.modelKey, nextState.textureIndex);
       state = nextState;
+      renderedTextureIndex = nextState.textureIndex;
       return nextState;
     },
+    /**
+     * Applies a texture to the renderer without changing committed runtime state or storage.
+     * @param textureIndex Texture index to preview for the active model.
+     * @returns Temporary state applied to the renderer.
+     */
+    async previewTexture(textureIndex: number) {
+      const nextState = resolveTextureState(state, textureIndex);
+      if (renderedTextureIndex !== textureIndex) {
+        await renderer.switchTexture(nextState);
+        renderedTextureIndex = textureIndex;
+      }
+      return nextState;
+    },
+    /**
+     * Loads and commits a model selection, including its stored texture selection.
+     * @param modelKey Registered model key selected by the user.
+     * @returns Resolved model state committed to storage and the renderer.
+     */
     async switchModel(modelKey: string) {
       const nextState = await createState(resolveEntry(modelKey));
       await renderer.switchModel(nextState);
       storage.writeModelKey(nextState.modelKey);
       storage.writeTextureIndex(nextState.modelKey, nextState.textureIndex);
       state = nextState;
+      renderedTextureIndex = nextState.textureIndex;
       return nextState;
     },
+    /**
+     * Applies and persists a texture selection for the active model.
+     * @param textureIndex Texture index selected by the user.
+     * @returns Updated state committed to storage and the renderer.
+     */
     async switchTexture(textureIndex: number) {
-      if (!state) {
-        throw new Error('Live2D runtime is not mounted.');
+      const nextState = resolveTextureState(state, textureIndex);
+      if (renderedTextureIndex !== textureIndex) {
+        await renderer.switchTexture(nextState);
+        renderedTextureIndex = textureIndex;
       }
-      if (textureIndex < 0 || textureIndex >= state.settings.textures.length) {
-        throw new Error('Live2D texture index is out of range.');
-      }
-      const nextState = {
-        ...state,
-        textureIndex,
-      };
-      await renderer.switchTexture(nextState);
       storage.writeTextureIndex(nextState.modelKey, nextState.textureIndex);
       state = nextState;
       return nextState;
     },
+  };
+}
+
+/**
+ * Validates a texture target and derives the renderer state without mutating committed runtime state.
+ * @param state Current committed runtime state, or null before mount.
+ * @param textureIndex Requested texture index for preview or confirmation.
+ * @returns State object that can be applied to the renderer.
+ */
+function resolveTextureState(state: Live2DResolvedState | null, textureIndex: number): Live2DResolvedState {
+  if (!state) {
+    throw new Error('Live2D runtime is not mounted.');
+  }
+  if (!Number.isInteger(textureIndex) || textureIndex < 0 || textureIndex >= state.settings.textures.length) {
+    throw new Error('Live2D texture index is out of range.');
+  }
+  return {
+    ...state,
+    textureIndex,
   };
 }
 

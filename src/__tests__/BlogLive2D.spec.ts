@@ -12,7 +12,7 @@ const runtimeMocks = vi.hoisted(() => {
       hitAreas: {},
       model: 'pio.moc',
       motions: {},
-      textures: ['textures/default.png', 'textures/pink.png'],
+      textures: ['textures/default-costume.png', 'textures/bikini-costume-blue.png'],
       url: '/api/blog/live2d/pio/moc/index.json',
     },
     textureIndex: 0,
@@ -21,6 +21,12 @@ const runtimeMocks = vi.hoisted(() => {
     destroy: vi.fn(),
     getState: vi.fn(() => initialState),
     mount: vi.fn(() => Promise.resolve(initialState)),
+    previewTexture: vi.fn((textureIndex: number) =>
+      Promise.resolve({
+        ...initialState,
+        textureIndex,
+      }),
+    ),
     switchModel: vi.fn((modelKey: string) =>
       Promise.resolve({
         ...initialState,
@@ -83,6 +89,7 @@ vi.mock('@/components/blog/BlogModal', async () => {
                 vue.h('h2', props.title),
                 vue.h('button', { class: 'mock-blog-modal__close', onClick: () => emit('close') }, '关闭'),
                 slots.default?.(),
+                slots.footer ? vue.h('footer', { class: 'mock-blog-modal__footer' }, slots.footer()) : null,
               ])
             : null;
       },
@@ -188,7 +195,7 @@ describe('BlogLive2D', () => {
     wrapper.unmount();
   });
 
-  it('opens a texture picker modal and selects a specific costume through the direct runtime API', async () => {
+  it('previews a Chinese-named costume before committing it through the direct runtime API', async () => {
     const wrapper = await mountDesktopLive2D();
 
     document.querySelector<HTMLElement>('.waifu-tool .fui-eye')?.click();
@@ -197,8 +204,19 @@ describe('BlogLive2D', () => {
     const modal = document.querySelector('.mock-blog-modal.kt-blog__live2d-picker-modal');
     expect(modal?.textContent).toContain('选择服装');
     const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.kt-blog__live2d-picker-option'));
-    const secondTextureButton = buttons.find((button) => button.textContent?.includes('pink'));
+    const secondTextureButton = buttons.find((button) => button.textContent?.includes('天蓝色比基尼'));
     secondTextureButton?.click();
+    await flushPromises();
+
+    expect(mockedRuntime().previewTexture).toHaveBeenCalledWith(1);
+    expect(mockedRuntime().switchTexture).not.toHaveBeenCalled();
+    expect(document.querySelector('.mock-blog-modal.kt-blog__live2d-picker-modal')?.textContent).toContain(
+      '正在预览：天蓝色比基尼',
+    );
+    const confirmButton = Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
+      button.textContent?.includes('使用此服装'),
+    );
+    confirmButton?.click();
     await flushPromises();
 
     expect(mockedRuntime().switchTexture).toHaveBeenCalledWith(1);
@@ -206,24 +224,44 @@ describe('BlogLive2D', () => {
     wrapper.unmount();
   });
 
-  it('keeps the texture picker open when the runtime rejects a costume switch', async () => {
+  it('restores the committed costume when a preview is cancelled', async () => {
+    const wrapper = await mountDesktopLive2D();
+
+    document.querySelector<HTMLElement>('.waifu-tool .fui-eye')?.click();
+    await flushPromises();
+    const previewButton = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.kt-blog__live2d-picker-option'),
+    ).find((button) => button.textContent?.includes('天蓝色比基尼'));
+    previewButton?.click();
+    await flushPromises();
+    document.querySelector<HTMLButtonElement>('.mock-blog-modal__close')?.click();
+    await flushPromises();
+
+    expect(mockedRuntime().previewTexture).toHaveBeenNthCalledWith(1, 1);
+    expect(mockedRuntime().previewTexture).toHaveBeenNthCalledWith(2, 0);
+    expect(mockedRuntime().switchTexture).not.toHaveBeenCalled();
+    expect(document.querySelector('.mock-blog-modal.kt-blog__live2d-picker-modal')).toBeNull();
+    wrapper.unmount();
+  });
+
+  it('keeps the texture picker open when the runtime rejects a costume preview', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    runtimeMocks.runtime.switchTexture.mockRejectedValueOnce(new Error('Live2D texture index is out of range.'));
+    runtimeMocks.runtime.previewTexture.mockRejectedValueOnce(new Error('Live2D texture index is out of range.'));
     const wrapper = await mountDesktopLive2D();
 
     document.querySelector<HTMLElement>('.waifu-tool .fui-eye')?.click();
     await flushPromises();
     const secondTextureButton = Array.from(
       document.querySelectorAll<HTMLButtonElement>('.kt-blog__live2d-picker-option'),
-    ).find((button) => button.textContent?.includes('pink'));
+    ).find((button) => button.textContent?.includes('天蓝色比基尼'));
     secondTextureButton?.click();
     await flushPromises();
 
     const modal = document.querySelector('.mock-blog-modal.kt-blog__live2d-picker-modal');
-    expect(mockedRuntime().switchTexture).toHaveBeenCalledWith(1);
+    expect(mockedRuntime().previewTexture).toHaveBeenCalledWith(1);
     expect(modal).not.toBeNull();
     expect(modal?.textContent).toContain('服装切换失败，当前模型没有这个服装。');
-    expect(warn).toHaveBeenCalledWith('[KT Blog] Live2D texture switch failed.', expect.any(Error));
+    expect(warn).toHaveBeenCalledWith('[KT Blog] Live2D texture preview failed.', expect.any(Error));
     wrapper.unmount();
   });
 

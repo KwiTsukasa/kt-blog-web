@@ -117,7 +117,8 @@ function installPreservedWebGLDrawingBuffer(): void {
     contextId: string,
     options?: Record<string, unknown>,
   ) => unknown
-  const originalGetContext = HTMLCanvasElement.prototype.getContext as unknown as CanvasContextGetter
+  const originalGetContext = HTMLCanvasElement.prototype
+    .getContext as unknown as CanvasContextGetter
   const canvasPrototype = HTMLCanvasElement.prototype as unknown as {
     getContext: CanvasContextGetter
   }
@@ -220,8 +221,9 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
     .toBeGreaterThan(5000)
   await expect
     .poll(() =>
-      assetRequests.some((requestPath) =>
-        requestPath.includes('/moc/motions/Breath') && requestPath.endsWith('.mtn'),
+      assetRequests.some(
+        (requestPath) =>
+          requestPath.includes('/moc/motions/Breath') && requestPath.endsWith('.mtn'),
       ),
     )
     .toBe(true)
@@ -262,8 +264,29 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
   await clickLive2DToolbarIcon(page, '.fui-eye')
   const texturePicker = page.locator('.kt-blog__modal-host--open.kt-blog__live2d-picker-modal')
   await expect(texturePicker).toContainText('选择服装')
-  await texturePicker.locator('.kt-blog__live2d-picker-option').nth(1).click()
+  const blueBikiniOption = texturePicker.locator('.kt-blog__live2d-picker-option', {
+    hasText: '天蓝色比基尼',
+  })
+  await expect(blueBikiniOption).toBeVisible()
+  await blueBikiniOption.click()
+  await expect(texturePicker).toContainText('正在预览：天蓝色比基尼')
+  await expect(texturePicker).toHaveCount(1)
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('kt-blog-live2d:texture:tia')))
+    .toBe('0')
+  await expect
+    .poll(() =>
+      assetRequests.some(
+        (requestPath) =>
+          requestPath === '/api/blog/live2d/tia/moc/textures/bikini-costume-blue.png',
+      ),
+    )
+    .toBe(true)
+  await texturePicker.getByRole('button', { name: '使用此服装' }).click()
   await expect(texturePicker).toHaveCount(0)
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('kt-blog-live2d:texture:tia')))
+    .toBe('1')
   await expect
     .poll(() =>
       page.evaluate(
@@ -273,6 +296,19 @@ async function verifyDesktopWidgetParity({ page }: { page: Page }) {
       ),
     )
     .toBeGreaterThan(5000)
+  const switchedCostumeFrame = await canvas.evaluate((element) => element.toDataURL('image/png'))
+  await expect
+    .poll(() => canvas.evaluate((element) => element.toDataURL('image/png')))
+    .not.toBe(switchedCostumeFrame)
+  await clickLive2DToolbarIcon(page, '.fui-eye')
+  const cancelPicker = page.locator('.kt-blog__modal-host--open.kt-blog__live2d-picker-modal')
+  await cancelPicker.locator('.kt-blog__live2d-picker-option', { hasText: '粉色比基尼' }).click()
+  await expect(cancelPicker).toContainText('正在预览：粉色比基尼')
+  await cancelPicker.getByRole('button', { name: '取消' }).click()
+  await expect(cancelPicker).toHaveCount(0)
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('kt-blog-live2d:texture:tia')))
+    .toBe('1')
   await clickLive2DToolbarIcon(page, '.fui-photo')
   await expect(page.locator('.waifu-tips')).toContainText('保存')
   await clickLive2DToolbarIcon(page, '.fui-info-circle')
@@ -309,6 +345,33 @@ async function verifyMobileSkipsWidget({ page }: { page: Page }) {
   expect(errors).toEqual([])
 }
 
+/**
+ * Verifies narrow desktop modal placement leaves the on-model costume preview visible.
+ * @param page Playwright page for the local Blog Web app.
+ */
+async function verifyNarrowDesktopPreviewLayout({ page }: { page: Page }) {
+  const errors: string[] = []
+  await prepareLive2DPage(page, errors)
+  await page.setViewportSize({ height: 720, width: 900 })
+  await page.goto('/')
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('kt-blog-live2d:model')))
+    .toBe('pio')
+
+  await clickLive2DToolbarIcon(page, '.fui-eye')
+  const widgetBox = await page.locator('.waifu.kt-blog__live2d-widget').boundingBox()
+  const modal = page.locator('.kt-blog__live2d-picker-modal .ant-modal')
+  await expect(modal).toHaveCSS('transform', 'none')
+  const modalBox = await modal.boundingBox()
+
+  expect(widgetBox).not.toBeNull()
+  expect(modalBox).not.toBeNull()
+  expect(Math.round(modalBox?.x ?? 0)).toBeGreaterThanOrEqual(
+    Math.round((widgetBox?.x ?? 0) + (widgetBox?.width ?? 0) + 16),
+  )
+  expect(errors).toEqual([])
+}
+
 test(
   'WordPress Pio widget shell and toolbar interactions match the captured plugin',
   verifyDesktopWidgetParity,
@@ -316,4 +379,8 @@ test(
 test(
   'WordPress Pio widget stays disabled at the captured mobile threshold',
   verifyMobileSkipsWidget,
+)
+test(
+  'Live2D costume modal keeps the on-model preview visible on narrow desktops',
+  verifyNarrowDesktopPreviewLayout,
 )
