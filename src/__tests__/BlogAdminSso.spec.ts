@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   BLOG_ADMIN_MANAGEMENT_PATH,
   buildBlogAdminSsoUrl,
-  isLegacyWordpressAdminHref,
+  isLegacyBlogManagementHref,
   resolveBlogAdminBaseUrl,
 } from '@/factories/blogAdminSsoFactory'
 
@@ -31,12 +31,15 @@ describe('Blog Admin SSO URL factory', () => {
     expect(resolveBlogAdminBaseUrl({ PROD: false })).toBe('http://localhost:5999/')
   })
 
-  it('identifies only legacy WordPress management destinations', () => {
-    expect(isLegacyWordpressAdminHref('http://blog.kwitsukasa.top/wp-admin/')).toBe(true)
-    expect(isLegacyWordpressAdminHref('/wp-admin')).toBe(true)
-    expect(isLegacyWordpressAdminHref('https://blog.kwitsukasa.top/post/wp-admin-migration')).toBe(
+  it('identifies legacy WordPress and in-site management destinations', () => {
+    expect(isLegacyBlogManagementHref('http://blog.kwitsukasa.top/wp-admin/')).toBe(true)
+    expect(isLegacyBlogManagementHref('/wp-admin')).toBe(true)
+    expect(isLegacyBlogManagementHref('#/admin')).toBe(true)
+    expect(isLegacyBlogManagementHref('https://blog.kwitsukasa.top/#/admin/settings')).toBe(true)
+    expect(isLegacyBlogManagementHref('/admin')).toBe(true)
+    expect(isLegacyBlogManagementHref('https://blog.kwitsukasa.top/post/wp-admin-migration')).toBe(
       false,
     )
-    expect(isLegacyWordpressAdminHref('https://example.com/manage')).toBe(false)
+    expect(isLegacyBlogManagementHref('https://example.com/manage')).toBe(false)
   })
 })

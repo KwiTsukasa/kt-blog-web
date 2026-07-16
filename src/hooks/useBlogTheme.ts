@@ -12,7 +12,7 @@ import {
 import { createBlogMotionCssVariables } from '@/factories/blogAnimationFactory';
 import {
   buildBlogAdminSsoUrl,
-  isLegacyWordpressAdminHref,
+  isLegacyBlogManagementHref,
 } from '@/factories/blogAdminSsoFactory';
 import { BLOG_META_NAMES, blogDomId, blogDomSelector, blogMetaSelector } from '@/factories/blogDomFactory';
 
@@ -1019,17 +1019,17 @@ function normalizeMenuItems(items: BlogThemeMenuItem[], siteHome = ''): BlogThem
 }
 
 /**
- * Normalizes sidebar items and migrates the legacy WordPress dashboard entry to KT Admin SSO.
+ * Normalizes sidebar items and migrates historical management entries to KT Admin SSO.
  * @param items Raw sidebar items supplied by the Blog theme API.
  * @param siteHome Public Blog home URL used to collapse same-site links into RouterLink paths.
- * @returns Sidebar items with only the legacy management destination replaced by an external SSO URL.
+ * @returns Sidebar items with only historical management destinations replaced by an external SSO URL.
  */
 function normalizeSidebarMenuItems(
   items: BlogThemeMenuItem[],
   siteHome = '',
 ): BlogThemeMenuItem[] {
   return normalizeMenuItems(items, siteHome).map((item) =>
-    isLegacyWordpressAdminHref(item.href)
+    isLegacyBlogManagementHref(item.href)
       ? {
           ...item,
           external: true,

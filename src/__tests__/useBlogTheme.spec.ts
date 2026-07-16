@@ -198,13 +198,13 @@ describe('useBlogTheme', () => {
     expect(siteConfig.value.headerMenuVisible).toBe(true);
   });
 
-  it('migrates same-site WordPress management without changing unrelated sidebar links', async () => {
+  it('migrates the remote in-site management route without changing unrelated sidebar links', async () => {
     const { applyWordpressThemeConfig, siteConfig } = useBlogTheme();
 
     applyWordpressThemeConfig({
       sidebarMenu: [
         {
-          href: 'https://blog.kwitsukasa.top/wp-admin/',
+          href: '#/admin',
           icon: 'fa-user',
           label: '管理',
         },

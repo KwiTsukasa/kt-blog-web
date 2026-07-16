@@ -46,14 +46,24 @@ export function buildBlogAdminSsoUrl(adminBaseUrl = resolveBlogAdminBaseUrl()) {
 }
 
 /**
- * Detects the legacy WordPress dashboard destination that remote Argon theme data may still expose.
+ * Detects historical Blog management destinations that remote Argon theme data may still expose.
  * @param href Normalized sidebar destination, absolute or site-relative.
- * @returns Whether the destination is the WordPress administration root or one of its descendants.
+ * @returns Whether the destination is a legacy WordPress or in-site Blog administration route.
  */
-export function isLegacyWordpressAdminHref(href: string) {
+export function isLegacyBlogManagementHref(href: string) {
   try {
-    const pathname = new URL(href, 'https://blog.invalid/').pathname.replace(/\/+$/g, '')
-    return pathname === '/wp-admin' || pathname.startsWith('/wp-admin/')
+    const url = new URL(href, 'https://blog.invalid/')
+    const pathname = url.pathname.replace(/\/+$/g, '')
+    const hashParts = url.hash.replace(/^#/, '').split('?')
+    const hashPath = (hashParts[0] || '').replace(/\/+$/g, '')
+
+    return [pathname, hashPath].some(
+      (path) =>
+        path === '/admin' ||
+        path.startsWith('/admin/') ||
+        path === '/wp-admin' ||
+        path.startsWith('/wp-admin/'),
+    )
   } catch {
     return false
   }
