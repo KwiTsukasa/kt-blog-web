@@ -10,6 +10,10 @@ import {
   unwrapBlogCssImage,
 } from '@/data/blogStaticAssets';
 import { createBlogMotionCssVariables } from '@/factories/blogAnimationFactory';
+import {
+  buildBlogAdminSsoUrl,
+  isLegacyWordpressAdminHref,
+} from '@/factories/blogAdminSsoFactory';
 import { BLOG_META_NAMES, blogDomId, blogDomSelector, blogMetaSelector } from '@/factories/blogDomFactory';
 
 export type BlogThemeMode = 'dark' | 'light';
@@ -122,7 +126,7 @@ const ARGON_DEFAULT_AUTHOR_AVATAR = PREVIOUS_BLOG_AUTHOR_AVATAR;
 const defaultHeaderMenu: BlogThemeMenuItem[] = [];
 const defaultSidebarMenu: BlogThemeMenuItem[] = [
   { href: '/', icon: 'fa-home', label: '首页' },
-  { external: true, href: 'http://blog.kwitsukasa.top/wp-admin/', icon: 'fa-user', label: '管理' },
+  { external: true, href: buildBlogAdminSsoUrl(), icon: 'fa-user', label: '管理' },
 ];
 
 const defaultPreferences: BlogThemePreferences = {
@@ -336,7 +340,7 @@ function applyWordpressThemeConfig(config: WordpressArgonThemeConfig) {
   runtimeConfig.siteTitle = config.site?.title || runtimeConfig.siteTitle;
   runtimeConfig.siteUrl = config.site?.url || runtimeConfig.siteUrl;
   if (Array.isArray(config.sidebarMenu)) {
-    runtimeConfig.sidebarMenu = normalizeMenuItems(
+    runtimeConfig.sidebarMenu = normalizeSidebarMenuItems(
       config.sidebarMenu,
       config.site?.home || config.site?.url || runtimeConfig.siteHome || runtimeConfig.siteUrl,
     );
@@ -1012,6 +1016,27 @@ function normalizeMenuItems(items: BlogThemeMenuItem[], siteHome = ''): BlogThem
 
     return result;
   }, []);
+}
+
+/**
+ * Normalizes sidebar items and migrates the legacy WordPress dashboard entry to KT Admin SSO.
+ * @param items Raw sidebar items supplied by the Blog theme API.
+ * @param siteHome Public Blog home URL used to collapse same-site links into RouterLink paths.
+ * @returns Sidebar items with only the legacy management destination replaced by an external SSO URL.
+ */
+function normalizeSidebarMenuItems(
+  items: BlogThemeMenuItem[],
+  siteHome = '',
+): BlogThemeMenuItem[] {
+  return normalizeMenuItems(items, siteHome).map((item) =>
+    isLegacyWordpressAdminHref(item.href)
+      ? {
+          ...item,
+          external: true,
+          href: buildBlogAdminSsoUrl(),
+        }
+      : item,
+  );
 }
 
 function normalizeMenuHref(href: string, siteHome = '') {

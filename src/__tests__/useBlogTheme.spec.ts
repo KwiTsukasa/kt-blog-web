@@ -1,6 +1,7 @@
 import { nextTick } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { buildBlogAdminSsoUrl } from '@/factories/blogAdminSsoFactory';
 import { useBlogTheme } from '@/hooks/useBlogTheme';
 
 vi.mock('antdv-next', () => ({
@@ -120,7 +121,7 @@ describe('useBlogTheme', () => {
         },
         {
           external: true,
-          href: 'http://blog.kwitsukasa.top/wp-admin/',
+          href: buildBlogAdminSsoUrl(),
           icon: 'fa-user',
           label: '管理',
         },
@@ -195,6 +196,45 @@ describe('useBlogTheme', () => {
       },
     ]);
     expect(siteConfig.value.headerMenuVisible).toBe(true);
+  });
+
+  it('migrates same-site WordPress management without changing unrelated sidebar links', async () => {
+    const { applyWordpressThemeConfig, siteConfig } = useBlogTheme();
+
+    applyWordpressThemeConfig({
+      sidebarMenu: [
+        {
+          href: 'https://blog.kwitsukasa.top/wp-admin/',
+          icon: 'fa-user',
+          label: '管理',
+        },
+        {
+          external: true,
+          href: 'https://github.com/KwiTsukasa',
+          icon: 'fa-github',
+          label: 'GitHub',
+        },
+      ],
+      site: {
+        home: 'https://blog.kwitsukasa.top',
+      },
+    });
+    await nextTick();
+
+    expect(siteConfig.value.sidebarMenu).toEqual([
+      {
+        external: true,
+        href: buildBlogAdminSsoUrl(),
+        icon: 'fa-user',
+        label: '管理',
+      },
+      {
+        external: true,
+        href: 'https://github.com/KwiTsukasa',
+        icon: 'fa-github',
+        label: 'GitHub',
+      },
+    ]);
   });
 
   it('maps legacy Argon placeholder image config back to previous blog static assets', async () => {

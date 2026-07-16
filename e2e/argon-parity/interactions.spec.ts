@@ -1064,7 +1064,10 @@ function createSidebarMenuSurfaceTest() {
     await expect(homeIcon).toHaveCSS('display', 'inline-block');
     await expect(homeIcon).toHaveCSS('width', '15px');
     await expect(homeIcon).toHaveCSS('margin-right', '8px');
-    await expect(adminLink).toHaveAttribute('href', 'http://blog.kwitsukasa.top/wp-admin/');
+    await expect(adminLink).toHaveAttribute(
+      'href',
+      'http://localhost:5999/#/auth/login?sso=1&redirect=%2Fblog%2Farticle',
+    );
   };
 }
 
