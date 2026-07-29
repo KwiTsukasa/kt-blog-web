@@ -24,7 +24,8 @@ pipeline {
     booleanParam(name: 'DEPLOY_STATIC_FILES', defaultValue: true, description: '构建成功后是否发布 dist 到 Nginx 静态目录；仅发布分支生效')
     string(name: 'PUBLISH_BRANCH_PATTERN', defaultValue: '^(main|master|release/.+)$', description: '允许发布静态文件的分支正则')
     string(name: 'DEPLOY_TARGET_DIR', defaultValue: '/home/jenkins/agent/frontends/html/blog', description: 'Nginx 挂载目录中 blog-web 项目的静态文件目录')
-    string(name: 'VITE_BASE', defaultValue: '/', description: '构建进 blog-web 的 Vite base 路径')
+    string(name: 'VITE_BASE', defaultValue: './', description: '构建进 blog-web 的相对 Vite base 路径')
+    string(name: 'VITE_KT_ADMIN_BASE_URL', defaultValue: '/admin/', description: '统一网关下的 KT Admin 根相对路径')
     string(name: 'VITE_BLOG_THEME_CONFIG_URL', defaultValue: '/api/blog/theme/config', description: 'Blog 主题配置接口')
     string(name: 'VITE_BLOG_ARTICLE_LIST_URL', defaultValue: '/api/blog/article/public/list', description: 'Blog 文章列表接口')
     string(name: 'VITE_BLOG_ARTICLE_DETAIL_URL', defaultValue: '/api/blog/article/public/detail', description: 'Blog 文章详情接口')
@@ -84,6 +85,7 @@ pipeline {
             Deploy static files: ${params.DEPLOY_STATIC_FILES}
             Deploy target: ${params.DEPLOY_TARGET_DIR}
             Vite base: ${params.VITE_BASE}
+            Admin base URL: ${params.VITE_KT_ADMIN_BASE_URL}
             Theme config URL: ${params.VITE_BLOG_THEME_CONFIG_URL}
             Article list URL: ${params.VITE_BLOG_ARTICLE_LIST_URL}
             Article detail URL: ${params.VITE_BLOG_ARTICLE_DETAIL_URL}
@@ -113,6 +115,7 @@ pipeline {
         script {
           withEnv([
             "VITE_BASE=${params.VITE_BASE}",
+            "VITE_KT_ADMIN_BASE_URL=${params.VITE_KT_ADMIN_BASE_URL}",
             "VITE_BLOG_THEME_CONFIG_URL=${params.VITE_BLOG_THEME_CONFIG_URL}",
             "VITE_BLOG_ARTICLE_LIST_URL=${params.VITE_BLOG_ARTICLE_LIST_URL}",
             "VITE_BLOG_ARTICLE_DETAIL_URL=${params.VITE_BLOG_ARTICLE_DETAIL_URL}",

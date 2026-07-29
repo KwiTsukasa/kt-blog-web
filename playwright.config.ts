@@ -7,6 +7,8 @@ import { defineConfig, devices } from '@playwright/test'
  */
 // require('dotenv').config();
 
+const testArtifactRoot = process.env.KT_TEST_ARTIFACT_DIR?.trim()
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -28,7 +30,10 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: testArtifactRoot
+    ? [['html', { open: 'never', outputFolder: `${testArtifactRoot}/playwright-report` }]]
+    : 'html',
+  outputDir: testArtifactRoot ? `${testArtifactRoot}/test-results` : 'test-results',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
@@ -54,12 +59,14 @@ export default defineConfig({
     },
     {
       name: 'firefox',
+      testIgnore: '**/gateway-subpath.spec.ts',
       use: {
         ...devices['Desktop Firefox'],
       },
     },
     {
       name: 'webkit',
+      testIgnore: '**/gateway-subpath.spec.ts',
       use: {
         ...devices['Desktop Safari'],
       },

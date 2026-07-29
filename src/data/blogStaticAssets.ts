@@ -1,7 +1,13 @@
+import { resolveBlogRuntimeAssetPath } from '@/router/runtimeBase';
+
 export const PREVIOUS_BLOG_BACKGROUND_IMAGE = 'https://s3.kwitsukasa.top/images/bg-冬滚滚.png';
 export const PREVIOUS_BLOG_AUTHOR_AVATAR = 'https://s3.kwitsukasa.top/images/avatar-tsukasa-1.jpg';
-export const LOCAL_BLOG_BACKGROUND_IMAGE = '/blog-assets/bg-donggungun.png';
-export const LOCAL_BLOG_AUTHOR_AVATAR = '/blog-assets/avatar-tsukasa-1.jpg';
+export const LOCAL_BLOG_BACKGROUND_IMAGE = resolveBlogRuntimeAssetPath(
+  'blog-assets/bg-donggungun.png',
+);
+export const LOCAL_BLOG_AUTHOR_AVATAR = resolveBlogRuntimeAssetPath(
+  'blog-assets/avatar-tsukasa-1.jpg',
+);
 
 const LEGACY_ARGON_ASSET_REPLACEMENTS: Record<string, string> = {
   '/argon/theme/img-1-1200x1000.jpg': PREVIOUS_BLOG_BACKGROUND_IMAGE,

@@ -3,9 +3,11 @@ import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
 
 import viteConfig from './vite.config';
 
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
+export default defineConfig(async (configEnv) => {
+  const resolvedViteConfig =
+    typeof viteConfig === 'function' ? await viteConfig(configEnv) : await viteConfig;
+
+  return mergeConfig(resolvedViteConfig, {
     test: {
       environment: 'jsdom',
       exclude: [...configDefaults.exclude, 'test/e2e/**'],
@@ -16,5 +18,5 @@ export default mergeConfig(
         },
       },
     },
-  }),
-);
+  });
+});

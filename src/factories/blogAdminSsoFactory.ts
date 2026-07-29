@@ -10,15 +10,29 @@ const ADMIN_SSO_LOGIN_PATH = '/auth/login'
 export const BLOG_ADMIN_MANAGEMENT_PATH = '/blog/article'
 
 /**
- * Resolves the KT Admin origin used by the Blog management entry.
- * @param env Vite environment values; a configured HTTP(S) URL wins over the local/production default.
- * @returns Absolute KT Admin base URL.
+ * 解析 Blog 管理入口使用的 KT Admin 基址。
+ * @param env Vite 环境变量；受控的根相对路径或 HTTP(S) 绝对地址优先于环境默认值。
+ * @param currentOrigin 当前页面的 origin，用于保留统一网关的动态 Host 与端口。
+ * @returns KT Admin 绝对基址。
  */
-export function resolveBlogAdminBaseUrl(env: BlogAdminEnvironment = import.meta.env) {
+export function resolveBlogAdminBaseUrl(
+  env: BlogAdminEnvironment = import.meta.env,
+  currentOrigin = typeof window === 'undefined' ? '' : window.location.origin,
+) {
   const configured = env.VITE_KT_ADMIN_BASE_URL?.trim()
   const fallback = env.PROD ? PRODUCTION_ADMIN_BASE_URL : LOCAL_ADMIN_BASE_URL
 
   if (!configured) return fallback
+
+  if (configured.startsWith('/') && !configured.startsWith('//')) {
+    try {
+      return new URL(configured, new URL(currentOrigin).origin).toString()
+    } catch {
+      return fallback
+    }
+  }
+
+  if (!/^https?:\/\//i.test(configured)) return fallback
 
   try {
     const url = new URL(configured)
@@ -29,9 +43,9 @@ export function resolveBlogAdminBaseUrl(env: BlogAdminEnvironment = import.meta.
 }
 
 /**
- * Builds the cross-site Admin SSO bootstrap URL for Blog article management.
- * @param adminBaseUrl Absolute KT Admin base URL; defaults to the Vite environment contract.
- * @returns Token-free top-level navigation URL targeting the Admin SSO bootstrap.
+ * 构建 Blog 文章管理使用的跨入口 Admin SSO 地址。
+ * @param adminBaseUrl KT Admin 绝对基址，默认遵循 Vite 环境契约。
+ * @returns 不携带 token、指向 Admin SSO 启动页的顶层跳转地址。
  */
 export function buildBlogAdminSsoUrl(adminBaseUrl = resolveBlogAdminBaseUrl()) {
   const url = new URL(adminBaseUrl)
@@ -46,9 +60,9 @@ export function buildBlogAdminSsoUrl(adminBaseUrl = resolveBlogAdminBaseUrl()) {
 }
 
 /**
- * Detects historical Blog management destinations that remote Argon theme data may still expose.
- * @param href Normalized sidebar destination, absolute or site-relative.
- * @returns Whether the destination is a legacy WordPress or in-site Blog administration route.
+ * 识别远端 Argon 主题数据仍可能返回的历史 Blog 管理入口。
+ * @param href 已规范化的侧栏地址，可以是绝对地址或站内相对地址。
+ * @returns 该地址是否为旧 WordPress 或站内 Blog 管理路由。
  */
 export function isLegacyBlogManagementHref(href: string) {
   try {

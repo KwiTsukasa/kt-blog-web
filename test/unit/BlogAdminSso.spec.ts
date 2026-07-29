@@ -31,6 +31,22 @@ describe('Blog Admin SSO URL factory', () => {
     expect(resolveBlogAdminBaseUrl({ PROD: false })).toBe('http://localhost:5999/')
   })
 
+  it('resolves the gateway Admin path against the current dynamic origin', () => {
+    const origin = 'https://nas4.kwitsukasa.top:45123'
+    const adminBaseUrl = resolveBlogAdminBaseUrl(
+      {
+        PROD: true,
+        VITE_KT_ADMIN_BASE_URL: '/admin/',
+      },
+      origin,
+    )
+
+    expect(adminBaseUrl).toBe(`${origin}/admin/`)
+    expect(buildBlogAdminSsoUrl(adminBaseUrl)).toBe(
+      `${origin}/admin/#/auth/login?sso=1&redirect=%2Fblog%2Farticle`,
+    )
+  })
+
   it('identifies legacy WordPress and in-site management destinations', () => {
     expect(isLegacyBlogManagementHref('http://blog.kwitsukasa.top/wp-admin/')).toBe(true)
     expect(isLegacyBlogManagementHref('/wp-admin')).toBe(true)

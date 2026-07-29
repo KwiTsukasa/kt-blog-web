@@ -6,8 +6,10 @@ import PostPage from '@/views/blog/PostPage';
 import SearchPage from '@/views/blog/SearchPage';
 import TermPage from '@/views/blog/TermPage';
 
+import { resolveBlogRuntimeBase } from './runtimeBase';
+
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(resolveBlogRuntimeBase()),
   routes: [
     {
       path: '/',
