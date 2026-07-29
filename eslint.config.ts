@@ -24,12 +24,12 @@ export default defineConfigWithVueTs(
 
   {
     ...pluginPlaywright.configs['flat/recommended'],
-    files: ['e2e/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    files: ['test/e2e/**/*.{test,spec}.{js,ts,jsx,tsx}'],
   },
 
   {
     ...pluginVitest.configs.recommended,
-    files: ['src/**/__tests__/*'],
+    files: ['test/unit/*'],
   },
 
   ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),

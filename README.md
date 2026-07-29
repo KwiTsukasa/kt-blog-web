@@ -23,16 +23,16 @@ pnpm dev
 pnpm run type-check
 pnpm run build
 pnpm test:unit
-pnpm exec playwright test e2e/argon-parity/pages.spec.ts --project=chromium
-pnpm exec playwright test e2e/argon-parity/interactions.spec.ts --project=chromium
-pnpm exec playwright test e2e/argon-parity/baseline.spec.ts --project=chromium
+pnpm exec playwright test test/e2e/argon-parity/pages.spec.ts --project=chromium
+pnpm exec playwright test test/e2e/argon-parity/interactions.spec.ts --project=chromium
+pnpm exec playwright test test/e2e/argon-parity/baseline.spec.ts --project=chromium
 ```
 
 `baseline.spec.ts` 只在需要重新抓旧 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。公开域名 `https://blog.kwitsukasa.top/` 当前是 KT Blog Web 静态站入口，不是只读基准站；旧 WordPress 端口只作为视觉/交互基准和回滚入口。
 
 ## Argon 还原范围
 
-- `e2e/argon-parity` 保存与旧 WordPress Argon 基准对齐的页面、视口和交互矩阵；公开域名切到 KT Blog Web 后，基准抓取必须显式使用旧 WordPress 入口。
+- `test/e2e/argon-parity` 保存与旧 WordPress Argon 基准对齐的页面、视口和交互矩阵；公开域名切到 KT Blog Web 后，基准抓取必须显式使用旧 WordPress 入口。
 - 本地 hash 路由按语义映射 WordPress query 路由：文章、分类、标签、搜索和月份归档都用同一套矩阵验证。
 - 页面根节点通过 `kt-blog--home/search/category/tag/archive/post` 暴露 Argon 页面语义，方便样式、测试和 Admin iframe 预览复用。
 - 公开 Blog API 返回非空文章列表时优先使用 API；API 不可用或返回空列表时保留内置 WordPress 抓取文章种子，避免数据未迁移期间线上静态站变成空站。
