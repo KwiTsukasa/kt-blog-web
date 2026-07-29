@@ -276,11 +276,11 @@ describe('App', () => {
     expect(requestedUrls).not.toContain('/api/wordpress/theme/config');
   });
 
-  it('can load WordPress migration theme config through env override', async () => {
+  it('normalizes a legacy WordPress theme override to the local Blog contract', async () => {
     vi.stubEnv('VITE_BLOG_THEME_CONFIG_URL', '/api/wordpress/theme/config');
     const fetchMock = vi.fn((url: string | URL | Request) => {
       const target = `${url}`;
-      const body = target.includes('/api/wordpress/theme/config')
+      const body = target.includes('/api/blog/theme/config')
         ? {
             code: 0,
             data: {
@@ -356,9 +356,9 @@ describe('App', () => {
     await flushPromises();
     await nextTick();
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/wordpress/theme/config');
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/blog/theme/config');
     expect(fetchMock.mock.calls.map((item) => `${item[0]}`)).not.toContain(
-      '/api/blog/theme/config',
+      '/api/wordpress/theme/config',
     );
     expect(wrapper.find('.kt-blog').classes()).toEqual(
       expect.arrayContaining([

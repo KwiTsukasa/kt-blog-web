@@ -32,7 +32,7 @@ export default defineComponent({
       loadArticle,
     } = useBlogArticles();
     const slug = computed(() => String(route.params.slug ?? ''));
-    const article = computed(() => getArticleBySlug(slug.value) ?? articles.value[0]);
+    const article = computed(() => getArticleBySlug(slug.value));
     const articleIndex = computed(() => articles.value.findIndex((item) => item.slug === article.value?.slug));
     const previousArticle = computed(() => {
       const index = articleIndex.value;
@@ -50,9 +50,6 @@ export default defineComponent({
     const commentName = ref('');
     let cleanupPostContentEffects: (() => void) | null = null;
 
-    /**
-     * @param target Article body element rendered for the current route; null is emitted when Vue unmounts it.
-     */
     const registerPostContentRef = (target: Element | ComponentPublicInstance | null) => {
       cleanupPostContentEffects?.();
       cleanupPostContentEffects = null;

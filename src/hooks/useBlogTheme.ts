@@ -1,6 +1,7 @@
 import { theme } from 'antdv-next';
 import { computed, reactive, watch } from 'vue';
 
+import { resolveLocalBlogApiUrl } from '@/api/blogArticles';
 import {
   PREVIOUS_BLOG_AUTHOR_AVATAR,
   PREVIOUS_BLOG_BACKGROUND_IMAGE,
@@ -114,6 +115,7 @@ interface BlogRuntimeThemeConfig {
 }
 
 const STORAGE_KEY = 'KT_BLOG_THEME_PREFERENCES';
+const BLOG_THEME_CONFIG_URL = '/api/blog/theme/config';
 const BLOG_THEME_BLOCK_CLASS = 'kt-blog';
 const ARGON_SANS_FONT_FAMILY =
   'Comfortaa, "Open Sans", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimSun, sans-serif';
@@ -365,6 +367,12 @@ function applyWordpressThemeConfig(config: WordpressArgonThemeConfig) {
   if (nextMode) {
     preferences.mode = nextMode;
   }
+}
+
+export function resolveBlogThemeConfigUrl(
+  configuredUrl = import.meta.env.VITE_BLOG_THEME_CONFIG_URL,
+) {
+  return resolveLocalBlogApiUrl(configuredUrl, BLOG_THEME_CONFIG_URL);
 }
 
 /**
@@ -766,8 +774,8 @@ function createArgonColorVariables(
 }
 
 /**
- * @param variables CSS custom property map generated for the current Argon theme.
- * @returns Multiline CSS declarations ready to inject into the singleton theme style.
+ * @param variables 为当前 Argon 主题生成的 CSS 自定义属性映射。
+ * @returns 可注入单例主题样式的多行 CSS 声明。
  */
 function serializeCssVariables(variables: Record<string, string>) {
   return Object.entries(variables)
@@ -960,8 +968,8 @@ function normalizeBooleanFlag(value: unknown): boolean | undefined {
 }
 
 /**
- * @param value Theme image URL returned by the API or static defaults.
- * @returns CSS `url(...)` token after replacing legacy Argon demo placeholders with previous blog assets.
+ * @param value 接口或静态默认值提供的主题图片地址。
+ * @returns 把旧 Argon 演示占位图替换为既有博客资源后的 CSS `url(...)` 值。
  */
 function normalizeCssImage(value?: string) {
   const normalized = resolveBlogStaticAsset(value, '');
@@ -975,9 +983,9 @@ function normalizeCssImage(value?: string) {
 }
 
 /**
- * @param primaryCssImage CSS `url(...)` token for the preferred remote image.
- * @param localFallback Local packaged image path used when the remote image cannot load.
- * @returns A CSS background-image layer list with the remote image first and local backup second.
+ * @param primaryCssImage 首选远程图片的 CSS `url(...)` 值。
+ * @param localFallback 远程图片无法加载时使用的本地打包资源。
+ * @returns 远程图片优先、本地资源兜底的 CSS 背景图层列表。
  */
 function appendCssImageFallback(primaryCssImage: string, localFallback: string) {
   const fallbackCssImage = normalizeCssImage(localFallback);
@@ -990,8 +998,8 @@ function appendCssImageFallback(primaryCssImage: string, localFallback: string) 
 }
 
 /**
- * @param value Theme asset URL returned by WordPress-compatible config.
- * @returns Plain URL/path after replacing legacy Argon demo placeholders, suitable for component state.
+ * @param value WordPress 兼容主题配置返回的资源地址。
+ * @returns 替换旧 Argon 演示占位图后可直接存入组件状态的普通地址。
  */
 function normalizeThemeAsset(value?: string) {
   const asset = resolveBlogStaticAsset(unwrapBlogCssImage(value), '');
@@ -1019,10 +1027,10 @@ function normalizeMenuItems(items: BlogThemeMenuItem[], siteHome = ''): BlogThem
 }
 
 /**
- * Normalizes sidebar items and migrates historical management entries to KT Admin SSO.
- * @param items Raw sidebar items supplied by the Blog theme API.
- * @param siteHome Public Blog home URL used to collapse same-site links into RouterLink paths.
- * @returns Sidebar items with only historical management destinations replaced by an external SSO URL.
+ * 归一化侧边栏项目，并把历史管理入口迁移到 KT Admin SSO。
+ * @param items Blog 主题接口提供的原始侧边栏项目。
+ * @param siteHome 用于把同站链接折叠为 RouterLink 路径的公开 Blog 首页地址。
+ * @returns 仅替换历史管理目标为外部 SSO 地址后的侧边栏项目。
  */
 function normalizeSidebarMenuItems(
   items: BlogThemeMenuItem[],

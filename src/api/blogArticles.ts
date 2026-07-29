@@ -4,6 +4,10 @@ type VbenResponse<T> = {
   msg?: string;
 };
 
+const BLOG_ARTICLE_LIST_URL = '/api/blog/article/public/list';
+const BLOG_ARTICLE_DETAIL_URL = '/api/blog/article/public/detail';
+const LOCAL_BLOG_ORIGIN = 'https://blog.local';
+
 export type WordpressResolvedTerm = {
   count?: number;
   id?: number;
@@ -48,9 +52,11 @@ export type BlogArticleListParams = {
 };
 
 export async function fetchBlogArticleList(params: BlogArticleListParams = {}) {
-  return requestWordpress<WordpressPublicArticleList>(
-    import.meta.env.VITE_BLOG_ARTICLE_LIST_URL ||
-      '/api/blog/article/public/list',
+  return requestBlog<WordpressPublicArticleList>(
+    resolveLocalBlogApiUrl(
+      import.meta.env.VITE_BLOG_ARTICLE_LIST_URL,
+      BLOG_ARTICLE_LIST_URL,
+    ),
     {
       pageNo: params.pageNo ?? 1,
       pageSize: params.pageSize ?? 50,
@@ -60,16 +66,63 @@ export async function fetchBlogArticleList(params: BlogArticleListParams = {}) {
 }
 
 export async function fetchBlogArticleDetail(slug: string) {
-  return requestWordpress<WordpressPublicArticle>(
-    import.meta.env.VITE_BLOG_ARTICLE_DETAIL_URL ||
-      '/api/blog/article/public/detail',
+  return requestBlog<WordpressPublicArticle>(
+    resolveLocalBlogApiUrl(
+      import.meta.env.VITE_BLOG_ARTICLE_DETAIL_URL,
+      BLOG_ARTICLE_DETAIL_URL,
+    ),
     {
       slug,
     },
   );
 }
 
-async function requestWordpress<T>(url: string, params: Record<string, unknown>) {
+export function resolveLocalBlogApiUrl(
+  configuredUrl: string | undefined,
+  fallbackUrl: string,
+) {
+  const candidate = configuredUrl;
+  if (
+    !candidate ||
+    candidate !== candidate.trim() ||
+    !candidate.startsWith('/') ||
+    candidate.startsWith('//') ||
+    candidate.includes('#')
+  ) {
+    return fallbackUrl;
+  }
+
+  try {
+    const queryIndex = candidate.indexOf('?');
+    const rawPath =
+      queryIndex >= 0 ? candidate.slice(0, queryIndex) : candidate;
+    if (
+      rawPath.includes('%') ||
+      rawPath.includes('\\') ||
+      rawPath.includes('//') ||
+      /[\u0000-\u0020\u007f]/u.test(rawPath) ||
+      /(?:^|\/)\.{1,2}(?:\/|$)/u.test(rawPath)
+    ) {
+      return fallbackUrl;
+    }
+
+    const target = new URL(candidate, LOCAL_BLOG_ORIGIN);
+    if (
+      target.origin !== LOCAL_BLOG_ORIGIN ||
+      target.pathname !== rawPath ||
+      !target.pathname.startsWith('/api/blog/') ||
+      target.pathname.includes('//')
+    ) {
+      return fallbackUrl;
+    }
+
+    return `${target.pathname}${target.search}`;
+  } catch {
+    return fallbackUrl;
+  }
+}
+
+async function requestBlog<T>(url: string, params: Record<string, unknown>) {
   const target = new URL(url, window.location.origin);
 
   Object.entries(params).forEach(([key, value]) => {

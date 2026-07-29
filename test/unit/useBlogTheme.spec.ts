@@ -2,7 +2,10 @@ import { nextTick } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { buildBlogAdminSsoUrl } from '@/factories/blogAdminSsoFactory';
-import { useBlogTheme } from '@/hooks/useBlogTheme';
+import {
+  resolveBlogThemeConfigUrl,
+  useBlogTheme,
+} from '@/hooks/useBlogTheme';
 
 vi.mock('antdv-next', () => ({
   theme: {
@@ -15,6 +18,21 @@ describe('useBlogTheme', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it('keeps configured theme requests inside the local Blog API contract', () => {
+    expect(resolveBlogThemeConfigUrl()).toBe('/api/blog/theme/config');
+    expect(
+      resolveBlogThemeConfigUrl('/api/blog/theme/config?preview=1'),
+    ).toBe('/api/blog/theme/config?preview=1');
+    expect(
+      resolveBlogThemeConfigUrl('/api/wordpress/theme/config'),
+    ).toBe('/api/blog/theme/config');
+    expect(
+      resolveBlogThemeConfigUrl(
+        'https://legacy.example.com/api/blog/theme/config',
+      ),
+    ).toBe('/api/blog/theme/config');
   });
 
   it('applies WordPress Argon theme config to runtime theme state', async () => {

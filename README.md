@@ -35,7 +35,7 @@ pnpm exec playwright test test/e2e/argon-parity/baseline.spec.ts --project=chrom
 - `test/e2e/argon-parity` 保存与旧 WordPress Argon 基准对齐的页面、视口和交互矩阵；公开域名切到 KT Blog Web 后，基准抓取必须显式使用旧 WordPress 入口。
 - 本地 hash 路由按语义映射 WordPress query 路由：文章、分类、标签、搜索和月份归档都用同一套矩阵验证。
 - 页面根节点通过 `kt-blog--home/search/category/tag/archive/post` 暴露 Argon 页面语义，方便样式、测试和 Admin iframe 预览复用。
-- 公开 Blog API 返回非空文章列表时优先使用 API；API 不可用或返回空列表时保留内置 WordPress 抓取文章种子，避免数据未迁移期间线上静态站变成空站。
+- 公开文章和主题只请求当前 Origin 下的 `/api/blog/*` 契约；列表不可用或返回空列表时展示本地空态，不再注入 WordPress 抓取文章种子，也不接受 `/api/wordpress` 或跨 Origin 的接口覆盖。
 - 主题接口若仍返回 `/argon/theme/*` 历史 demo 占位图，前端必须映射回旧线上博客资源；本地备份只用于兜底，避免静态站重新露出模板图。
 - 文章正文以线上 WordPress `#post_content` 渲染结果和 Argon `style.css` / `argontheme.js` 为准；代码块控制条、复制 toast、Fancybox 图片预览、正文链接 hover、分隔线和图片 lazyload 都必须有 Playwright 断言。
 - `hljs-codeblock` 静态快照需要恢复 Argon `highlightjs-line-numbers` 运行时生成的 `data-line-number` 与 `.hljs-ln-n::before`，否则行号列会坍塌成 0px。

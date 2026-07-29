@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { articles as fallbackArticles } from '@/data/blog';
-
 type FetchMock = ReturnType<typeof vi.fn>;
 
 const encodedSlug = '%e6%b5%8b%e8%af%95-milkdown';
@@ -41,6 +39,8 @@ describe('useBlogArticles', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it('loads and normalizes public blog articles for Blog Web views', async () => {
@@ -111,7 +111,7 @@ describe('useBlogArticles', () => {
     expect(blogArticles.loadedFromApi.value).toBe(true);
   });
 
-  it('falls back to static articles when blog public list is unavailable', async () => {
+  it('keeps a local empty state when blog public list is unavailable', async () => {
     mockFetch([
       {
         body: {
@@ -127,10 +127,10 @@ describe('useBlogArticles', () => {
     await blogArticles.loadArticles();
 
     expect(blogArticles.loadedFromApi.value).toBe(false);
-    expect(blogArticles.articles.value).toEqual(fallbackArticles);
+    expect(blogArticles.articles.value).toEqual([]);
   });
 
-  it('falls back to static articles when blog public list is reachable but has no articles', async () => {
+  it('accepts an empty local Blog response without injecting static articles', async () => {
     mockFetch([
       {
         body: {
@@ -148,16 +148,34 @@ describe('useBlogArticles', () => {
 
     await blogArticles.loadArticles();
 
-    expect(blogArticles.loadedFromApi.value).toBe(false);
-    expect(blogArticles.articles.value).toEqual(fallbackArticles);
+    expect(blogArticles.loadedFromApi.value).toBe(true);
+    expect(blogArticles.articles.value).toEqual([]);
   });
 
-  it('keeps fallback article covers on previous blog assets instead of Argon demo images', async () => {
-    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/landing.jpg');
-    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/img-2-1200x1000.jpg');
-    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/img-1-1200x1000.jpg');
-    expect(fallbackArticles.map((article) => article.cover)).not.toContain('/argon/theme/promo-1.png');
-    expect(fallbackArticles.every((article) => article.cover.startsWith('https://s3.kwitsukasa.top/images/'))).toBe(true);
+  it('does not revive a captured article when both local Blog requests fail', async () => {
+    mockFetch([
+      {
+        body: {
+          code: 502,
+          msg: '博客文章列表接口不可用',
+        },
+        status: 502,
+      },
+      {
+        body: {
+          code: 502,
+          msg: '博客文章详情接口不可用',
+        },
+        status: 502,
+      },
+    ]);
+    const { useBlogArticles } = await import('@/hooks/useBlogArticles');
+    const blogArticles = useBlogArticles();
+
+    const article = await blogArticles.loadArticle('qqbot-nas-access-record');
+
+    expect(article).toBeUndefined();
+    expect(blogArticles.articles.value).toEqual([]);
   });
 
   it('uses the previous blog cover when public API articles have no cover', async () => {
@@ -235,6 +253,84 @@ describe('useBlogArticles', () => {
     expect(blogArticles.getArticleBySlug(decodedSlug)?.content).toEqual([
       '详情标题 详情正文',
     ]);
+  });
+
+  it('normalizes legacy endpoint overrides to local Blog contracts', async () => {
+    vi.stubEnv(
+      'VITE_BLOG_ARTICLE_LIST_URL',
+      '/api/wordpress/article/public/list',
+    );
+    vi.stubEnv(
+      'VITE_BLOG_ARTICLE_DETAIL_URL',
+      'https://legacy.example.com/api/wordpress/article/public/detail',
+    );
+    const fetchMock = mockFetch([
+      {
+        body: {
+          code: 200,
+          data: {
+            list: [
+              {
+                ...publicArticle,
+                contentHtml: '',
+              },
+            ],
+            total: 1,
+          },
+        },
+        status: 200,
+      },
+      {
+        body: {
+          code: 200,
+          data: publicArticle,
+        },
+        status: 200,
+      },
+    ]);
+    const { useBlogArticles } = await import('@/hooks/useBlogArticles');
+    const blogArticles = useBlogArticles();
+
+    await blogArticles.loadArticle(encodedSlug);
+
+    const requestedUrls = fetchMock.mock.calls.map(([url]) => new URL(`${url}`));
+    expect(requestedUrls.map((url) => url.pathname)).toEqual([
+      '/api/blog/article/public/list',
+      '/api/blog/article/public/detail',
+    ]);
+    expect(requestedUrls.every((url) => url.origin === window.location.origin)).toBe(true);
+    expect(requestedUrls.some((url) => url.pathname.startsWith('/api/wordpress'))).toBe(false);
+  });
+
+  it('preserves old slugs and wp-block HTML returned by the local Blog API', async () => {
+    const contentHtml =
+      '<h2 class="wp-block-heading" id="legacy-heading">旧文章</h2><pre class="wp-block-code"><code>const legacy = true;</code></pre>';
+    mockFetch([
+      {
+        body: {
+          code: 200,
+          data: {
+            list: [
+              {
+                ...publicArticle,
+                contentHtml,
+              },
+            ],
+            total: 1,
+          },
+        },
+        status: 200,
+      },
+    ]);
+    const { useBlogArticles } = await import('@/hooks/useBlogArticles');
+    const blogArticles = useBlogArticles();
+
+    await blogArticles.loadArticles();
+
+    expect(blogArticles.articles.value[0]?.slug).toBe(decodedSlug);
+    expect(blogArticles.articles.value[0]?.contentHtml).toBe(contentHtml);
+    expect(blogArticles.articles.value[0]?.contentHtml).toContain('wp-block-heading');
+    expect(blogArticles.articles.value[0]?.contentHtml).toContain('wp-block-code');
   });
 
   it('derives article catalog headings from public API html when heading metadata is absent', async () => {

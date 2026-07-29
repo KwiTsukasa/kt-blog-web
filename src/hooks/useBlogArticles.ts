@@ -6,7 +6,6 @@ import {
   type WordpressPublicArticle,
 } from '@/api/blogArticles';
 import {
-  articles as fallbackArticles,
   categories as fallbackCategories,
   getArticleCategories,
   hasSharedCategory,
@@ -22,7 +21,7 @@ import { blogGeneratedHeadingId } from '@/factories/blogDomFactory';
 
 const defaultCover = PREVIOUS_BLOG_BACKGROUND_IMAGE;
 const colorPool = ['blue', 'purple', 'green', 'orange', 'geekblue', 'cyan', 'volcano', 'magenta'];
-const blogArticles = ref<BlogArticle[]>(fallbackArticles);
+const blogArticles = ref<BlogArticle[]>([]);
 const loading = ref(false);
 const loadedFromApi = ref(false);
 let loadPromise: Promise<void> | null = null;
@@ -55,10 +54,6 @@ export function useBlogArticles() {
   };
   const getTagSlugByLabel = (label: string) =>
     tags.value.find((tag) => tag.label === label)?.slug || toSlug(label);
-  /**
-   * @param slug Category slug from a local WordPress-equivalent term route.
-   * @returns Articles that belong to the category, including secondary WordPress categories.
-   */
   const getArticlesByCategory = (slug: string) => {
     const normalizedSlug = decodeSlug(slug);
 
@@ -118,13 +113,6 @@ export function useBlogArticles() {
   };
 }
 
-/**
- * Loads the public WordPress article list and keeps the static capture when the API has no usable rows.
- *
- * The production Blog API can be reachable before WordPress article data is migrated. An empty successful
- * response is therefore treated as an unavailable content source so the Argon mirror keeps rendering the
- * captured WordPress article set instead of turning every route into an empty state.
- */
 async function loadArticles() {
   if (loadedFromApi.value) return;
   if (loadPromise) return loadPromise;
@@ -132,17 +120,12 @@ async function loadArticles() {
   loading.value = true;
   loadPromise = fetchBlogArticleList()
     .then((result) => {
-      const nextArticles = result.list.map(normalizeWordpressArticle);
-      if (!nextArticles.length) {
-        blogArticles.value = fallbackArticles;
-        loadedFromApi.value = false;
-        return;
-      }
-      blogArticles.value = nextArticles;
+      blogArticles.value = result.list.map(normalizeWordpressArticle);
       loadedFromApi.value = true;
     })
     .catch(() => {
-      blogArticles.value = fallbackArticles;
+      blogArticles.value = [];
+      loadedFromApi.value = false;
     })
     .finally(() => {
       loading.value = false;
@@ -177,16 +160,13 @@ async function loadArticle(slug: string) {
 
     return article;
   } catch {
-    return (
-      cachedArticle ||
-      fallbackArticles.find((article) => article.slug === normalizedSlug)
-    );
+    return cachedArticle;
   }
 }
 
 /**
- * @param article Public WordPress article DTO from KT API, including resolved terms when available.
- * @returns Local Blog article model with a primary category plus full WordPress category membership.
+ * @param article KT API 返回的公开文章 DTO，包含已解析的分类与标签。
+ * @returns 本地 Blog 文章模型，保留主分类和完整分类成员关系。
  */
 function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle {
   const categories = normalizeArticleCategories(article.categoriesResolved);
@@ -234,9 +214,9 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
 }
 
 /**
- * @param headings Optional heading outline supplied directly by the public API.
- * @param contentHtml Rendered WordPress HTML used as the source of truth when the API omits headings.
- * @returns Heading outline used only to decide whether Argon's article/sidebar catalog tab should be visible.
+ * @param headings 公开接口可选返回的标题目录。
+ * @param contentHtml 接口未返回目录时作为解析来源的 WordPress 兼容 HTML。
+ * @returns 用于判断 Argon 文章目录标签是否显示的标题列表。
  */
 function normalizeArticleHeadings(
   headings: WordpressPublicArticle['headings'],
@@ -254,8 +234,8 @@ function normalizeArticleHeadings(
 }
 
 /**
- * @param contentHtml Rendered WordPress article HTML returned by the public article API.
- * @returns Ordered h1-h6 headings parsed from the article body so post pages can expose the catalog tab.
+ * @param contentHtml 公开文章接口返回的 WordPress 兼容 HTML。
+ * @returns 从正文中按顺序解析的 h1 到 h6 标题，供详情页目录使用。
  */
 function extractArticleHeadingsFromHtml(contentHtml: string): BlogArticleHeading[] {
   const parser = typeof DOMParser === 'undefined' ? null : new DOMParser();
@@ -273,8 +253,8 @@ function extractArticleHeadingsFromHtml(contentHtml: string): BlogArticleHeading
 }
 
 /**
- * @param value Heading level from API metadata or a parsed HTML tag name.
- * @returns Safe heading level constrained to the h1-h6 range accepted by the catalog model.
+ * @param value 接口元数据或 HTML 标签名提供的标题层级。
+ * @returns 限定在目录模型可接受 h1 到 h6 范围内的安全层级。
  */
 function normalizeHeadingLevel(value: unknown): BlogArticleHeading['level'] {
   const level = Number(value);
@@ -284,8 +264,8 @@ function normalizeHeadingLevel(value: unknown): BlogArticleHeading['level'] {
 }
 
 /**
- * @param articles Local article list whose WordPress category memberships should be counted.
- * @returns Category list with counts based on all article category terms, not only the primary term.
+ * @param articles 需要统计 WordPress 兼容分类成员关系的本地文章列表。
+ * @returns 按文章全部分类而非仅主分类计算数量的分类列表。
  */
 function buildCategories(articles: BlogArticle[]): BlogCategory[] {
   const fallbackMap = new Map(fallbackCategories.map((category) => [category.slug, category]));
@@ -310,8 +290,8 @@ function buildCategories(articles: BlogArticle[]): BlogCategory[] {
 }
 
 /**
- * @param categoriesResolved WordPress category terms from the public article API.
- * @returns Non-empty decoded category candidates in the same order WordPress returned them.
+ * @param categoriesResolved 公开文章接口返回的 WordPress 兼容分类条目。
+ * @returns 按接口原始顺序保留且完成解码的非空分类候选。
  */
 function normalizeArticleCategories(categoriesResolved: WordpressPublicArticle['categoriesResolved']) {
   return (categoriesResolved || [])

@@ -2,7 +2,11 @@ import { App as AntdApp, ConfigProvider } from 'antdv-next';
 import { computed, defineComponent, onBeforeUnmount, onMounted, watch } from 'vue';
 import { RouterView, type RouteLocationNormalizedLoaded, useRoute } from 'vue-router';
 
-import { type WordpressArgonThemeConfig, useBlogTheme } from './hooks/useBlogTheme';
+import {
+  resolveBlogThemeConfigUrl,
+  type WordpressArgonThemeConfig,
+  useBlogTheme,
+} from './hooks/useBlogTheme';
 
 declare global {
   interface Window {
@@ -166,11 +170,7 @@ async function applyInitialBlogThemeConfig(
     applyWordpressThemeConfig(inlineConfig);
   }
 
-  const primaryConfigUrl =
-    import.meta.env.VITE_BLOG_THEME_CONFIG_URL || '/api/blog/theme/config';
-  if (!primaryConfigUrl) {
-    return;
-  }
+  const primaryConfigUrl = resolveBlogThemeConfigUrl();
 
   try {
     const response = await fetch(primaryConfigUrl);

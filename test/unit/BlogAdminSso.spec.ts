@@ -58,4 +58,25 @@ describe('Blog Admin SSO URL factory', () => {
     )
     expect(isLegacyBlogManagementHref('https://example.com/manage')).toBe(false)
   })
+
+  it('maps a legacy wp-admin entry to the current-origin Admin gateway', () => {
+    const origin = 'https://nas4.kwitsukasa.top:45123'
+    const legacyHref = 'https://blog.kwitsukasa.top/wp-admin/'
+
+    expect(isLegacyBlogManagementHref(legacyHref)).toBe(true)
+
+    const adminBaseUrl = resolveBlogAdminBaseUrl(
+      {
+        PROD: true,
+        VITE_KT_ADMIN_BASE_URL: '/admin/',
+      },
+      origin,
+    )
+    const href = buildBlogAdminSsoUrl(adminBaseUrl)
+
+    expect(href).toBe(
+      `${origin}/admin/#/auth/login?sso=1&redirect=%2Fblog%2Farticle`,
+    )
+    expect(href).not.toContain('/wp-admin')
+  })
 })
