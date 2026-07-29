@@ -2,7 +2,20 @@ import { expect, test } from '@playwright/test'
 
 const BLOG_PREFIX = '/blog/'
 const API_PREFIX = '/api/'
+const LOCAL_ORIGIN = 'http://localhost:4173'
 const STATIC_FILE_PATTERN = /\.(?:css|gif|ico|jpe?g|js|mjs|png|svg|ttf|woff2?)$/i
+const WORDPRESS_REQUEST_PATTERN = /(?:wordpress|wp-json)/i
+const GATEWAY_ARTICLE = {
+  authorName: 'KT Gateway',
+  contentHtml: '<p>Gateway subpath smoke</p>',
+  date: '2026-07-29T00:00:00.000Z',
+  excerptText: 'Gateway subpath smoke',
+  id: 1,
+  slug: 'gateway-subpath-smoke',
+  title: {
+    rendered: 'Gateway Subpath Smoke',
+  },
+}
 
 test('runs one production build below the gateway Blog prefix without escaping it', async ({
   page,
@@ -10,12 +23,23 @@ test('runs one production build below the gateway Blog prefix without escaping i
   const apiRequests: string[] = []
   const emittedResourceRequests: string[] = []
   const escapedSameOriginRequests: string[] = []
+  const forbiddenFallbackRequests: string[] = []
 
   page.on('request', (request) => {
     const url = new URL(request.url())
-    if (url.origin !== 'http://localhost:4173') return
+    const isApiRequest = url.pathname.startsWith(API_PREFIX)
+    const isWordPressRequest = WORDPRESS_REQUEST_PATTERN.test(
+      `${url.hostname}${url.pathname}`,
+    )
 
-    if (url.pathname.startsWith(API_PREFIX)) {
+    if (isWordPressRequest || (url.origin !== LOCAL_ORIGIN && isApiRequest)) {
+      forbiddenFallbackRequests.push(url.toString())
+      return
+    }
+
+    if (url.origin !== LOCAL_ORIGIN) return
+
+    if (isApiRequest) {
       apiRequests.push(url.pathname)
       return
     }
@@ -31,8 +55,17 @@ test('runs one production build below the gateway Blog prefix without escaping i
   await page.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
+    const isApiRequest = url.pathname.startsWith(API_PREFIX)
+    const isWordPressRequest = WORDPRESS_REQUEST_PATTERN.test(
+      `${url.hostname}${url.pathname}`,
+    )
 
-    if (url.pathname.startsWith(API_PREFIX)) {
+    if (isWordPressRequest || (url.origin !== LOCAL_ORIGIN && isApiRequest)) {
+      await route.abort('blockedbyclient')
+      return
+    }
+
+    if (url.origin === LOCAL_ORIGIN && isApiRequest) {
       if (url.pathname.endsWith('/index.json')) {
         await route.fulfill({
           body: JSON.stringify({
@@ -57,7 +90,11 @@ test('runs one production build below the gateway Blog prefix without escaping i
 
       await route.fulfill({
         body: JSON.stringify({
-          data: url.pathname.includes('/article/public/list') ? { list: [], total: 0 } : {},
+          data: url.pathname.includes('/article/public/list')
+            ? { list: [GATEWAY_ARTICLE], total: 1 }
+            : url.pathname.includes('/article/public/detail')
+              ? GATEWAY_ARTICLE
+              : {},
         }),
         contentType: 'application/json',
         status: 200,
@@ -66,7 +103,7 @@ test('runs one production build below the gateway Blog prefix without escaping i
     }
 
     if (
-      url.origin === 'http://localhost:4173' &&
+      url.origin === LOCAL_ORIGIN &&
       url.pathname.startsWith(BLOG_PREFIX) &&
       STATIC_FILE_PATTERN.test(url.pathname)
     ) {
@@ -80,7 +117,12 @@ test('runs one production build below the gateway Blog prefix without escaping i
   })
 
   await page.goto('/blog/#/')
-  await expect(page.locator('main .kt-blog__post-title').first()).toBeVisible()
+  await expect(page.locator('main .kt-blog__post-title').first()).toHaveText(
+    GATEWAY_ARTICLE.title.rendered,
+  )
+  await expect
+    .poll(() => apiRequests.includes('/api/blog/article/public/list'))
+    .toBe(true)
 
   const emittedIndexReferences = await page
     .locator(
@@ -107,4 +149,5 @@ test('runs one production build below the gateway Blog prefix without escaping i
   expect(emittedResourceRequests.some((path) => /\.js$/i.test(path))).toBe(true)
   expect(emittedResourceRequests.some((path) => /\.css$/i.test(path))).toBe(true)
   expect(escapedSameOriginRequests).toEqual([])
+  expect(forbiddenFallbackRequests).toEqual([])
 })

@@ -26,9 +26,17 @@ pnpm test:unit
 pnpm exec playwright test test/e2e/argon-parity/pages.spec.ts --project=chromium
 pnpm exec playwright test test/e2e/argon-parity/interactions.spec.ts --project=chromium
 pnpm exec playwright test test/e2e/argon-parity/baseline.spec.ts --project=chromium
+CI=1 pnpm exec playwright test test/e2e/gateway-subpath.spec.ts --project=chromium
 ```
 
 `baseline.spec.ts` 只在需要重新抓旧 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。公开域名 `https://blog.kwitsukasa.top/` 当前是 KT Blog Web 静态站入口，不是只读基准站；旧 WordPress 端口只作为视觉/交互基准和回滚入口。
+
+同一生产构建支持旧正式域名根挂载和
+`https://nas4.kwitsukasa.top:{动态端口}/blog/` 子路径挂载；静态资源保持
+`./` 相对引用，API 与 Live2D 继续使用同 Origin 根相对 `/api/blog/*`。
+`gateway-subpath.spec.ts` 使用生产 preview 验证资源不逃出 `/blog/`。完整
+路由、动态端口、Caddy 回退和 WordPress 两阶段退役步骤见根仓库
+`docs/unified-natmap-tls-gateway-operations.md`。
 
 ## Argon 还原范围
 
