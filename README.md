@@ -38,6 +38,23 @@ CI=1 pnpm exec playwright test test/e2e/gateway-subpath.spec.ts --project=chromi
 路由、动态端口、Caddy 回退和 WordPress 两阶段退役步骤见根仓库
 `docs/unified-natmap-tls-gateway-operations.md`。
 
+## 生产发布
+
+Jenkins 生产发布必须显式传入当前 release commit 的
+`EXPECTED_SOURCE_COMMIT`，且 checkout HEAD、远端 `main`、远端 `dev`
+必须同时等于该 40 位小写 SHA。只有非 PR 的 `main` 可以进入 release mode，
+`PUBLISH_BRANCH_PATTERN` 不能给其他分支授予生产写入权限。发布参数固定为
+`VITE_BASE=./`、`VITE_KT_ADMIN_BASE_URL=/admin/`，任一参数带前后空白或
+发生漂移都会在安装依赖前失败。首次引入参数后，Jenkins 旧任务若以空 SHA
+启动，会按设计先刷新参数并停止，随后再用当前 commit 显式触发。
+
+启用 `DEPLOY_NGINX_CONFIG` 时，流水线只接受仓库内
+`deploy/nginx-blog.conf` 和既有 `kt-frontends-nginx` 挂载路径。发布先保存
+并校验不可覆盖的生产配置硬链接备份；同一构建号存在 backup、candidate 或
+restore 残留时立即停止。随后排他写入同目录候选并用 `mv` 原子替换；只有
+`nginx -t`、reload 和容器内 SHA256 回读全部通过才提交结果。任一步失败或
+收到终止信号，都会通过保留的备份原子恢复并重新 validate/reload。
+
 ## Argon 还原范围
 
 - `test/e2e/argon-parity` 保存与旧 WordPress Argon 基准对齐的页面、视口和交互矩阵；公开域名切到 KT Blog Web 后，基准抓取必须显式使用旧 WordPress 入口。
