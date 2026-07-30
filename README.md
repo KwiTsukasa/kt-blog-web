@@ -45,8 +45,10 @@ Jenkins 生产发布必须显式传入当前 release commit 的
 必须同时等于该 40 位小写 SHA。只有非 PR 的 `main` 可以进入 release mode，
 `PUBLISH_BRANCH_PATTERN` 不能给其他分支授予生产写入权限。发布参数固定为
 `VITE_BASE=./`、`VITE_KT_ADMIN_BASE_URL=/admin/`，任一参数带前后空白或
-发生漂移都会在安装依赖前失败。首次引入参数后，Jenkins 旧任务若以空 SHA
-启动，会按设计先刷新参数并停止，随后再用当前 commit 显式触发。
+发生漂移都会在安装依赖前失败。远端 `main/dev` 查询复用 Jenkins SCM 凭据
+`github-ssh-kt-template`，不得在 checkout 后裸连私有仓库。首次引入参数后，
+Jenkins 旧任务若以空 SHA 启动，会按设计先刷新参数并停止，随后再用当前
+commit 显式触发。
 
 启用 `DEPLOY_NGINX_CONFIG` 时，流水线只接受仓库内
 `deploy/nginx-blog.conf` 和既有 `kt-frontends-nginx` 挂载路径。发布先保存

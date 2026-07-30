@@ -43,6 +43,10 @@ describe('Blog Jenkins release contract', () => {
 
   it('allows production writes only from synchronized non-PR main', () => {
     const prepare = extractStage('Prepare')
+    const scmCredentialScope = extractBlockAfter(
+      prepare,
+      "sshagent(credentials: ['github-ssh-kt-template'])",
+    )
     const staticDeploy = extractStage('Deploy Static')
     const nginxDeploy = extractStage('Deploy Nginx Config')
     const releaseModeIndex = prepare.indexOf('env.IS_RELEASE_MODE = (')
@@ -66,6 +70,12 @@ describe('Blog Jenkins release contract', () => {
     expect(releaseEligibility).not.toContain('env.IS_PUBLISH_BRANCH')
     expect(prepare).not.toContain("if (env.BRANCH_NAME == 'main')")
     expect(remoteLookupIndex).toBeGreaterThan(releaseContractIndex)
+    expect(scmCredentialScope).toContain(
+      'git ls-remote --exit-code --heads origin refs/heads/main refs/heads/dev',
+    )
+    expect(
+      prepare.match(/git ls-remote --exit-code --heads origin refs\/heads\/main refs\/heads\/dev/g),
+    ).toHaveLength(1)
     expect(prepare).toContain("remoteHeads['refs/heads/main'] != expectedSourceCommit")
     expect(prepare).toContain("remoteHeads['refs/heads/dev'] != expectedSourceCommit")
     expect(prepare).toContain(
