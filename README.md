@@ -29,7 +29,7 @@ pnpm exec playwright test test/e2e/argon-parity/baseline.spec.ts --project=chrom
 CI=1 pnpm exec playwright test test/e2e/gateway-subpath.spec.ts --project=chromium
 ```
 
-`baseline.spec.ts` 只在需要重新抓旧 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。公开域名 `https://blog.kwitsukasa.top/` 当前是 KT Blog Web 静态站入口，不是只读基准站；旧 WordPress 端口只作为视觉/交互基准和回滚入口。
+`baseline.spec.ts` 只在需要重新抓旧 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。公开域名 `https://blog.kwitsukasa.top/` 当前是 KT Blog Web 静态站入口，不是只读基准站；旧 WordPress 只作为历史视觉/交互来源，`48088` 已停用且不是当前可用的回滚入口。恢复必须另行授权，并按完整备份恢复演练执行。
 
 同一生产构建支持旧正式域名根挂载和
 `https://nas4.kwitsukasa.top:{动态端口}/blog/` 子路径挂载；静态资源保持
