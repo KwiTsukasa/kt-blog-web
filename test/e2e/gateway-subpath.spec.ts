@@ -4,7 +4,7 @@ const BLOG_PREFIX = '/blog/'
 const API_PREFIX = '/api/'
 const LOCAL_ORIGIN = 'http://localhost:4173'
 const STATIC_FILE_PATTERN = /\.(?:css|gif|ico|jpe?g|js|mjs|png|svg|ttf|woff2?)$/i
-const WORDPRESS_REQUEST_PATTERN = /(?:wordpress|wp-json)/i
+const WORDPRESS_REQUEST_PATTERN = /(?:wordpress|wp-json|wp-content|:48088)/i
 const GATEWAY_ARTICLE = {
   authorName: 'KT Gateway',
   contentHtml: '<p>Gateway subpath smoke</p>',
@@ -29,7 +29,7 @@ test('runs one production build below the gateway Blog prefix without escaping i
     const url = new URL(request.url())
     const isApiRequest = url.pathname.startsWith(API_PREFIX)
     const isWordPressRequest = WORDPRESS_REQUEST_PATTERN.test(
-      `${url.hostname}${url.pathname}`,
+      `${url.host}${url.pathname}`,
     )
 
     if (isWordPressRequest || (url.origin !== LOCAL_ORIGIN && isApiRequest)) {
@@ -57,7 +57,7 @@ test('runs one production build below the gateway Blog prefix without escaping i
     const url = new URL(request.url())
     const isApiRequest = url.pathname.startsWith(API_PREFIX)
     const isWordPressRequest = WORDPRESS_REQUEST_PATTERN.test(
-      `${url.hostname}${url.pathname}`,
+      `${url.host}${url.pathname}`,
     )
 
     if (isWordPressRequest || (url.origin !== LOCAL_ORIGIN && isApiRequest)) {
