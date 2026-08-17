@@ -4,7 +4,7 @@ export const BLOG_ANIMATION_TIMING_MS = {
   floatSideUnload: 300,
   scrollToTop: 800,
   toastVisible: 5000,
-} as const;
+} as const
 
 export const BLOG_SCROLL_GEOMETRY = {
   backTopVisibleScrollY: 400,
@@ -23,11 +23,11 @@ export const BLOG_SCROLL_GEOMETRY = {
   toolbarMaxOpacityBlur: 0.65,
   toolbarMaxOpacitySolid: 0.85,
   toolbarStartTransitionPx: 30,
-} as const;
+} as const
 
 export const BLOG_VIEWPORT_GEOMETRY = {
   live2dDesktopMinWidthPx: 1200,
-} as const;
+} as const
 
 export const BLOG_MOTION_CSS_VARS = {
   backgroundEase: 'background 0.3s ease',
@@ -40,94 +40,108 @@ export const BLOG_MOTION_CSS_VARS = {
     'border-color 0.32s ease, background-color 0.32s ease, opacity 0.28s ease, transform 0.42s cubic-bezier(0.4, 0, 0, 1)',
   sidebarTabBorder: 'border-bottom-color 0.2s ease',
   sidebarTabFade: 'opacity 0.15s linear',
-} as const;
+} as const
 
 export interface BlogFrameScheduler {
-  cancel: () => void;
-  schedule: () => void;
+  cancel: () => void
+  schedule: () => void
 }
 
 /**
- * @returns CSS custom property block generated from the Blog animation factory.
+ * 把博客动效时长映射序列化为带 kt-blog-motion 前缀的 CSS 自定义属性声明块。
+ * @returns 带 kt-blog-motion 前缀的 CSS 自定义属性声明块。
  */
 export function createBlogMotionCssVariables() {
   return Object.entries(BLOG_MOTION_CSS_VARS)
-    .map(([key, value]) => `  --kt-blog-motion-${key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)}: ${value};`)
-    .join('\n');
+    .map(
+      ([key, value]) =>
+        `  --kt-blog-motion-${key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)}: ${value};`,
+    )
+    .join('\n')
 }
 
 /**
- * @param callback Visual update that should run on the next browser animation frame.
- * @returns Browser frame id, allowing callers to cancel the queued visual work.
+ * 把博客界面更新排入下一次浏览器动画帧，并返回可用于取消的帧编号。
+ * @param callback - 操作完成或状态变化时调用的回调。
+ * @returns 浏览器分配的动画帧编号。
  */
 export function requestBlogFrame(callback: FrameRequestCallback) {
-  return window.requestAnimationFrame(callback);
+  return window.requestAnimationFrame(callback)
 }
 
 /**
- * @param frameId Browser frame id returned by `requestBlogFrame`; zero means no queued work.
+ * 当动画帧编号非零时取消对应的浏览器调度。
+ * @param frameId - 待取消的浏览器动画帧编号。
  */
 export function cancelBlogFrame(frameId: number) {
   if (frameId) {
-    window.cancelAnimationFrame(frameId);
+    window.cancelAnimationFrame(frameId)
   }
 }
 
 /**
- * @param callback Coalesced DOM read/write work that should run at most once per frame.
- * @returns Scheduler with explicit `schedule` and `cancel` methods for component lifecycles.
+ * 创建同一动画帧内只排队一次回调的调度器，并允许在组件卸载时取消待执行帧。
+ * @param callback - 操作完成或状态变化时调用的回调。
+ * @returns 新建的同一动画帧内只排队一次回调的调度器，并允许在组件卸载时取消待执行帧，包含 `cancel`、`schedule` 等字段。
  */
 export function createBlogFrameScheduler(callback: () => void): BlogFrameScheduler {
-  let frameId = 0;
+  let frameId = 0
 
   return {
     cancel: () => {
-      cancelBlogFrame(frameId);
-      frameId = 0;
+      cancelBlogFrame(frameId)
+      frameId = 0
     },
     schedule: () => {
       if (frameId) {
-        return;
+        return
       }
 
       frameId = requestBlogFrame(() => {
-        frameId = 0;
-        callback();
-      });
+        frameId = 0
+        callback()
+      })
     },
-  };
-}
-
-/**
- * @param callback Delayed UI state mutation, usually matching an Argon transition window.
- * @param delayMs Delay in milliseconds from `BLOG_ANIMATION_TIMING_MS`.
- * @returns Browser timeout id so callers can cancel route or component teardown work.
- */
-export function runAfterBlogDelay(callback: () => void, delayMs: number) {
-  return window.setTimeout(callback, delayMs);
-}
-
-/**
- * @param timerId Timeout id returned by `runAfterBlogDelay`; null means no queued timer.
- */
-export function clearBlogDelay(timerId: number | null) {
-  if (timerId !== null) {
-    window.clearTimeout(timerId);
   }
 }
 
 /**
- * @param progress Animation progress from 0 to 1.
- * @returns Exponential easing close to Argon's jQuery `easeOutExpo` scroll motion.
+ * 按给定毫秒数延后执行博客界面状态变更，并返回可取消的浏览器计时器编号。
+ * @param callback - 操作完成或状态变化时调用的回调。
+ * @param delayMs - 代码复制提示保持显示的毫秒数。
+ * @returns 可取消的浏览器计时器编号。
  */
-export function easeOutExpo(progress: number) {
-  return progress >= 1 ? 1 : 1 - 2 ** (-10 * progress);
+export function runAfterBlogDelay(callback: () => void, delayMs: number) {
+  return window.setTimeout(callback, delayMs)
 }
 
 /**
- * @param progress Animation progress from 0 to 1.
- * @returns jQuery UI `swing` value on the live Argon site, whose default easing resolves to `easeOutQuad`.
+ * 当浏览器延迟计时器存在时取消它，null 表示无需执行清理。
+ * @param timerId - runAfterBlogDelay 返回的计时器编号或 null。
+ */
+export function clearBlogDelay(timerId: number | null) {
+  if (timerId !== null) {
+    window.clearTimeout(timerId)
+  }
+}
+
+/**
+ * 按指数缓出曲线映射动画进度，结束位置固定为一。
+ * @param progress - 限制在零到一之间的动画进度。
+ * @returns 指数缓出曲线映射后的进度。
+ */
+export function easeOutExpo(progress: number) {
+  if (progress >= 1) {
+    return 1
+  }
+  return 1 - 2 ** (-10 * progress)
+}
+
+/**
+ * 按二次缓出曲线映射动画进度。
+ * @param progress - 限制在零到一之间的动画进度。
+ * @returns 二次缓出曲线映射后的进度。
  */
 export function easeOutQuad(progress: number) {
-  return 1 - (1 - progress) * (1 - progress);
+  return 1 - (1 - progress) * (1 - progress)
 }

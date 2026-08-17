@@ -4,13 +4,13 @@ import {
   EyeOutlined,
   ReadOutlined,
   TagsOutlined,
-} from '@antdv-next/icons';
-import { defineComponent, type PropType } from 'vue';
-import { RouterLink } from 'vue-router';
+} from '@antdv-next/icons'
+import { defineComponent, type PropType } from 'vue'
+import { RouterLink } from 'vue-router'
 
-import { getArticleCategories, type BlogArticle } from '@/data/blog';
-import { blogPostCardId } from '@/factories/blogDomFactory';
-import { useBlogArticles } from '@/hooks/useBlogArticles';
+import { getArticleCategories, type BlogArticle } from '@/data/blog'
+import { blogPostCardId } from '@/factories/blogDomFactory'
+import { useBlogArticles } from '@/hooks/useBlogArticles'
 
 export default defineComponent({
   name: 'ArticleCard',
@@ -21,7 +21,7 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const { getTagSlugByLabel } = useBlogArticles();
+    const { getTagSlugByLabel } = useBlogArticles()
 
     return () => (
       <article
@@ -74,22 +74,27 @@ export default defineComponent({
 
         <div class="kt-blog__post-content post-content">{props.article.excerpt}</div>
 
-        {props.article.tags.length ? (
-          <div class="kt-blog__post-tags post-tags">
-            <TagsOutlined />
-            {props.article.tags.map((tag) => (
-              <RouterLink
-                key={tag}
-                class="kt-blog__tag kt-blog__tag--secondary kt-blog__post-tag tag badge badge-secondary post-meta-detail-tag"
-                target="_blank"
-                to={`/tag/${getTagSlugByLabel(tag)}`}
-              >
-                {tag}
-              </RouterLink>
-            ))}
-          </div>
-        ) : null}
+        {(() => {
+          if (props.article.tags.length) {
+            return (
+              <div class="kt-blog__post-tags post-tags">
+                <TagsOutlined />
+                {props.article.tags.map((tag) => (
+                  <RouterLink
+                    key={tag}
+                    class="kt-blog__tag kt-blog__tag--secondary kt-blog__post-tag tag badge badge-secondary post-meta-detail-tag"
+                    target="_blank"
+                    to={`/tag/${getTagSlugByLabel(tag)}`}
+                  >
+                    {tag}
+                  </RouterLink>
+                ))}
+              </div>
+            )
+          }
+          return null
+        })()}
       </article>
-    );
+    )
   },
-});
+})

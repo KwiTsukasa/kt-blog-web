@@ -29,6 +29,10 @@ pnpm exec playwright test test/e2e/argon-parity/baseline.spec.ts --project=chrom
 CI=1 pnpm exec playwright test test/e2e/gateway-subpath.spec.ts --project=chromium
 ```
 
+## 目录结构
+
+`src/components/blog` 是博客组件业务域，直属组件按职责归入 `content`、`dialogs`、`layout`、`live2d` 和 `ui`；页面装配位于 `src/views/blog`。业务域根不再直接堆放组件文件，新增组件必须进入对应职责目录。
+
 `baseline.spec.ts` 只在需要重新抓旧 WordPress Argon 基准时运行；常规本地回归跑 `pages.spec.ts` 和 `interactions.spec.ts`。公开域名 `https://blog.kwitsukasa.top/` 当前是 KT Blog Web 静态站入口，不是只读基准站；旧 WordPress 只作为历史视觉/交互来源，`48088` 已停用且不是当前可用的回滚入口。恢复必须另行授权，并按完整备份恢复演练执行。
 
 同一生产构建支持旧正式域名根挂载和

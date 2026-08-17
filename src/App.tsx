@@ -54,16 +54,18 @@ export default defineComponent({
 });
 
 /**
- * @param route 当前 Vue Router 路由，用于把 hash route 映射回 Argon 页面类型。
- * @returns Argon 页面类型，供根 class 和测试语义使用。
+ * 读取路由元数据中的 Argon 页面类型，缺失时回退 home。
+ * @param route - 用于推导页面类型或地址的当前路由。
+ * @returns 读取到的路由元数据中的 Argon 页面类型，缺失时回退 home。
  */
 function getArgonRouteKind(route: RouteLocationNormalizedLoaded) {
   return String(route.meta.argonKind || 'home');
 }
 
 /**
- * @param route 当前 Vue Router 路由，用于补齐 WordPress body class 的本地等价语义。
- * @returns `.kt-blog` 根节点上的页面语义 class。
+ * 把当前 Argon 页面类型拼成博客根节点修饰类。
+ * @param route - 用于推导页面类型或地址的当前路由。
+ * @returns 当前 Argon 页面类型对应的博客根节点修饰类。
  */
 function getArgonRouteRootClass(route: RouteLocationNormalizedLoaded) {
   const kind = getArgonRouteKind(route);
@@ -72,9 +74,10 @@ function getArgonRouteRootClass(route: RouteLocationNormalizedLoaded) {
 }
 
 /**
- * @param route 当前路由，用于把 Vue 页面状态同步成 WordPress Argon 的 html/body class 视角。
- * @param shouldUseDarkMode 当前主题是否处于暗色模式，决定是否写入 `html.darkmode`。
- * @param filterMode 当前滤镜模式，按 Argon 语义写到 `html.filter-*` 以保持 fixed 按钮参照视口。
+ * 清除上一路由遗留类，并按页面类型、明暗模式与滤镜同步 html 和 body 的 Argon 类。
+ * @param route - 用于推导页面类型或地址的当前路由。
+ * @param shouldUseDarkMode - 是否给文档根节点启用深色主题类。
+ * @param filterMode - 决定 Argon 页面滤镜样式的主题模式。
  */
 function mirrorArgonDocumentClasses(
   route: RouteLocationNormalizedLoaded,
@@ -127,8 +130,9 @@ function clearArgonDocumentClasses() {
 }
 
 /**
- * @param route 当前路由，用于推导 WordPress body class 等价语义。
- * @returns 需要写入 `document.body` 的 Argon class 集合。
+ * 把 home、文章、分类、标签、归档或搜索路由映射为 WordPress Argon body 类集合。
+ * @param route - 用于推导页面类型或地址的当前路由。
+ * @returns 当前路由对应的 WordPress Argon body 类集合。
  */
 function getArgonBodyClasses(route: RouteLocationNormalizedLoaded) {
   const kind = getArgonRouteKind(route);
@@ -157,7 +161,8 @@ function getArgonBodyClasses(route: RouteLocationNormalizedLoaded) {
 }
 
 /**
- * @param applyWordpressThemeConfig 主题配置落地函数，负责把内联或接口返回的 Argon 配置写入运行态。
+ * 优先应用页面内联主题配置，再请求远端配置覆盖；请求失败时保留本地默认主题。
+ * @param applyWordpressThemeConfig - 把远端 WordPress 配置规范化并写入主题状态的函数。
  */
 async function applyInitialBlogThemeConfig(
   applyWordpressThemeConfig: (config: WordpressArgonThemeConfig) => void,

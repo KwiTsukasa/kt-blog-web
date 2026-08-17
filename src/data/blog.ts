@@ -1,51 +1,51 @@
-import { articleContentHtml } from './blogArticleContent';
-import { PREVIOUS_BLOG_BACKGROUND_IMAGE } from './blogStaticAssets';
+import { articleContentHtml } from './blogArticleContent'
+import { PREVIOUS_BLOG_BACKGROUND_IMAGE } from './blogStaticAssets'
 
 export interface BlogArticle {
-  id: number;
-  slug: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  categorySlug: string;
-  categories?: BlogArticleCategoryTerm[];
-  tags: string[];
-  cover: string;
-  date: string;
-  readTime: string;
-  author: string;
-  views: number;
-  comments: number;
-  words: number;
-  content: string[];
-  headings?: BlogArticleHeading[];
-  contentHtml?: string;
+  id: number
+  slug: string
+  title: string
+  excerpt: string
+  category: string
+  categorySlug: string
+  categories?: BlogArticleCategoryTerm[]
+  tags: string[]
+  cover: string
+  date: string
+  readTime: string
+  author: string
+  views: number
+  comments: number
+  words: number
+  content: string[]
+  headings?: BlogArticleHeading[]
+  contentHtml?: string
 }
 
 export interface BlogArticleHeading {
-  id: string;
-  level: 1 | 2 | 3 | 4 | 5 | 6;
-  text: string;
+  id: string
+  level: 1 | 2 | 3 | 4 | 5 | 6
+  text: string
 }
 
 export interface BlogArticleCategoryTerm {
-  slug: string;
-  label: string;
+  slug: string
+  label: string
 }
 
 export interface BlogCategory {
-  slug: string;
-  label: string;
-  description: string;
-  count: number;
-  color: string;
+  slug: string
+  label: string
+  description: string
+  count: number
+  color: string
 }
 
 export interface BlogTag {
-  slug: string;
-  label: string;
-  color: string;
-  count: number;
+  slug: string
+  label: string
+  color: string
+  count: number
 }
 
 export const categories: BlogCategory[] = [
@@ -84,14 +84,14 @@ export const categories: BlogCategory[] = [
     count: 1,
     color: 'orange',
   },
-];
+]
 
 export const tags: BlogTag[] = [
   { slug: 'nas', label: 'NAS', color: 'blue', count: 3 },
   { slug: 'vue', label: 'Vue', color: 'purple', count: 2 },
   { slug: 'node', label: 'Node', color: 'green', count: 1 },
   { slug: 'mqtt', label: 'MQTT', color: 'orange', count: 1 },
-];
+]
 
 const articleHeadings: Record<number, BlogArticleHeading[]> = {
   9: [
@@ -105,11 +105,19 @@ const articleHeadings: Record<number, BlogArticleHeading[]> = {
     { level: 2, id: 'header-id-8', text: '3. 创建 controller 接口' },
     { level: 3, id: 'header-id-9', text: '3-1. 按模块开发，创建 user 文件夹存放 user 模块文件' },
     { level: 3, id: 'header-id-10', text: '3-2. 包含上述中一个完整模块需要的四个文件' },
-    { level: 3, id: 'header-id-11', text: '3-3. 编写 service 和 controller 文件，并在 module 文件内注入并抛出 module 文件' },
+    {
+      level: 3,
+      id: 'header-id-11',
+      text: '3-3. 编写 service 和 controller 文件，并在 module 文件内注入并抛出 module 文件',
+    },
     { level: 4, id: 'header-id-12', text: '1. 实现此模块需要的方法' },
     { level: 4, id: 'header-id-13', text: '2. 实现此模块接口' },
     { level: 4, id: 'header-id-14', text: '3. 将文件在 module.ts 文件内引入并抛出 module.ts' },
-    { level: 4, id: 'header-id-15', text: '4. 在 app.module.ts 项目模块入口文件中中引入自定义模块' },
+    {
+      level: 4,
+      id: 'header-id-15',
+      text: '4. 在 app.module.ts 项目模块入口文件中中引入自定义模块',
+    },
     { level: 2, id: 'header-id-16', text: '4. 启动 node 服务' },
   ],
   20: [
@@ -241,15 +249,14 @@ const articleHeadings: Record<number, BlogArticleHeading[]> = {
     { level: 2, id: 'header-id-9', text: '经常下线排查' },
     { level: 2, id: 'header-id-10', text: '参考来源' },
   ],
-};
+}
 
 export const articles: BlogArticle[] = [
   {
     id: 61,
     slug: 'qqbot-nas-access-record',
     title: 'QQBot NAS 接入记录',
-    excerpt:
-      '记录 QQBot 迁入 NAS 后的运行状态、容器部署、NapCat 登录链路与后续稳定性观察。',
+    excerpt: '记录 QQBot 迁入 NAS 后的运行状态、容器部署、NapCat 登录链路与后续稳定性观察。',
     category: 'public',
     categorySlug: 'public',
     tags: [],
@@ -262,9 +269,7 @@ export const articles: BlogArticle[] = [
     words: 4035,
     headings: articleHeadings[61],
     contentHtml: articleContentHtml[61],
-    content: [
-      'QQBot/NapCat 在 NAS、K8s、WordPress 管理链路中的接入、部署与验证记录。',
-    ],
+    content: ['QQBot/NapCat 在 NAS、K8s、WordPress 管理链路中的接入、部署与验证记录。'],
   },
   {
     id: 50,
@@ -388,8 +393,7 @@ export const articles: BlogArticle[] = [
     id: 9,
     slug: 'nestjs-typeorm-node-service',
     title: '使用Nest.js与TypeORM搭建Node服务',
-    excerpt:
-      '官方文档、TypeORM、项目 demo、环境准备、全局安装 CLI 并初始化服务。',
+    excerpt: '官方文档、TypeORM、项目 demo、环境准备、全局安装 CLI 并初始化服务。',
     category: 'Node',
     categorySlug: 'node',
     tags: ['Node'],
@@ -407,49 +411,50 @@ export const articles: BlogArticle[] = [
       'TypeORM 负责实体映射、数据源配置和数据库查询。',
     ],
   },
-];
+]
 
-export const getArticleBySlug = (slug: string) => articles.find((article) => article.slug === slug);
+export const getArticleBySlug = (slug: string) => articles.find((article) => article.slug === slug)
 
 export const getCategoryBySlug = (slug: string) =>
-  categories.find((category) => category.slug === slug);
+  categories.find((category) => category.slug === slug)
 
-export const getTagBySlug = (slug: string) => tags.find((tag) => tag.slug === slug);
+export const getTagBySlug = (slug: string) => tags.find((tag) => tag.slug === slug)
 
 export const getTagSlugByLabel = (label: string) =>
-  tags.find((tag) => tag.label === label)?.slug ?? label.toLowerCase().replace(/\s+/g, '-');
+  tags.find((tag) => tag.label === label)?.slug ?? label.toLowerCase().replace(/\s+/g, '-')
 
-/**
+/*
  * @param article Blog article whose WordPress heading outline should drive the Argon leftbar catalog.
  * @returns Captured heading outline; empty means Argon's `have_catalog()` would hide the catalog tab.
  */
-export const getArticleCatalogHeadings = (article: Pick<BlogArticle, 'headings'> | null | undefined) =>
-  article?.headings ?? [];
+export const getArticleCatalogHeadings = (
+  article: Pick<BlogArticle, 'headings'> | null | undefined,
+) => article?.headings ?? []
 
-/**
+/*
  * @param slug Category slug from a local route or taxonomy link.
  * @returns Static fallback articles whose full WordPress category list contains the slug.
  */
 export const getArticlesByCategory = (slug: string) =>
-  articles.filter((article) => isArticleInCategory(article, slug));
+  articles.filter((article) => isArticleInCategory(article, slug))
 
 export const getArticlesByTag = (slug: string) => {
-  const tag = getTagBySlug(slug);
+  const tag = getTagBySlug(slug)
   if (!tag) {
-    return [];
+    return []
   }
 
-  return articles.filter((article) => article.tags.includes(tag.label));
-};
+  return articles.filter((article) => article.tags.includes(tag.label))
+}
 
-/**
+/*
  * @param keyword Search text entered through the Argon header or sidebar search.
  * @returns Static fallback articles matching title, excerpt, category terms, tags, or body text.
  */
 export const searchArticles = (keyword: string) => {
-  const normalizedKeyword = keyword.trim().toLowerCase();
+  const normalizedKeyword = keyword.trim().toLowerCase()
   if (!normalizedKeyword) {
-    return articles;
+    return articles
   }
 
   return articles.filter((article) => {
@@ -463,24 +468,25 @@ export const searchArticles = (keyword: string) => {
       stripHtmlText(article.contentHtml ?? ''),
     ]
       .join(' ')
-      .toLowerCase();
+      .toLowerCase()
 
-    return haystack.includes(normalizedKeyword);
-  });
-};
+    return haystack.includes(normalizedKeyword)
+  })
+}
 
 /**
- * @param html WordPress-rendered article body that may contain block tags and code snippets.
- * @returns Plain text index material so local search still sees the full article body without rendering HTML.
+ * 移除文章 HTML 标签、折叠连续空白并裁剪首尾，得到本地全文检索文本。
+ * @param html - 待扫描、注入或渲染的 HTML 文本。
+ * @returns 移除目标内容后的文章 HTML 标签、折叠连续空白并裁剪首尾，得到本地全文检索文本。
  */
 function stripHtmlText(html: string) {
   return html
     .replace(/<[^>]+>/gu, ' ')
     .replace(/\s+/gu, ' ')
-    .trim();
+    .trim()
 }
 
-/**
+/*
  * @param source Current article whose categories and tags define related-article candidates.
  * @returns Up to three static fallback articles sharing at least one category or tag.
  */
@@ -492,36 +498,41 @@ export const getRelatedArticles = (source: BlogArticle) =>
         (hasSharedCategory(article, source) ||
           article.tags.some((tag) => source.tags.includes(tag))),
     )
-    .slice(0, 3);
+    .slice(0, 3)
 
 /**
- * @param article Blog article whose WordPress category membership should be read.
- * @returns All category terms for the article, falling back to its primary category for older records.
+ * 优先使用文章的多分类列表，未提供时由旧版单分类字段构造一项列表。
+ * @param article - 待读取分类、标题或正文的文章记录。
+ * @returns 读取到的`ArticleCategories`。
  */
-export function getArticleCategories(article: Pick<BlogArticle, 'categories' | 'category' | 'categorySlug'>) {
+export function getArticleCategories(
+  article: Pick<BlogArticle, 'categories' | 'category' | 'categorySlug'>,
+) {
   if (article.categories?.length) {
-    return article.categories;
+    return article.categories
   }
 
-  return [{ label: article.category, slug: article.categorySlug }];
+  return [{ label: article.category, slug: article.categorySlug }]
 }
 
 /**
- * @param article Blog article to test.
- * @param slug Local category slug from the route or taxonomy link.
- * @returns Whether the article belongs to the category, including secondary WordPress categories.
+ * 检查文章的全部分类 slug 是否包含目标值，并兼容只有主分类字段的旧文章记录。
+ * @param article - 待读取分类、标题或正文的文章记录。
+ * @param slug - 用于匹配文章分类或资源的 slug。
+ * @returns 文章的全部分类 slug 是否包含目标值。
  */
 export function isArticleInCategory(article: BlogArticle, slug: string) {
-  return getArticleCategories(article).some((category) => category.slug === slug);
+  return getArticleCategories(article).some((category) => category.slug === slug)
 }
 
 /**
- * @param left First article in a related-article comparison.
- * @param right Second article in a related-article comparison.
- * @returns Whether both articles share at least one WordPress category slug.
+ * 比较两篇文章的分类 slug，只要存在一个交集就返回 true。
+ * @param left - 排序或比较操作的左侧候选项。
+ * @param right - 排序或比较操作的右侧候选项。
+ * @returns 两篇文章是否至少共享一个分类 slug。
  */
 export function hasSharedCategory(left: BlogArticle, right: BlogArticle) {
-  const rightCategorySlugs = new Set(getArticleCategories(right).map((category) => category.slug));
+  const rightCategorySlugs = new Set(getArticleCategories(right).map((category) => category.slug))
 
-  return getArticleCategories(left).some((category) => rightCategorySlugs.has(category.slug));
+  return getArticleCategories(left).some((category) => rightCategorySlugs.has(category.slug))
 }

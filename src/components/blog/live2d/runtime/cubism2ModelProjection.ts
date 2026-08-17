@@ -1,13 +1,17 @@
-import type { Live2DCoreModel } from './live2dRuntimeTypes';
+import type { Live2DCoreModel } from './live2dRuntimeTypes'
 
-type Cubism2ProjectionModel = Pick<Live2DCoreModel, 'getCanvasHeight' | 'getCanvasWidth' | 'setMatrix'>;
-type Cubism2ProjectionCanvas = Pick<HTMLCanvasElement, 'height' | 'width'>;
+type Cubism2ProjectionModel = Pick<
+  Live2DCoreModel,
+  'getCanvasHeight' | 'getCanvasWidth' | 'setMatrix'
+>
+type Cubism2ProjectionCanvas = Pick<HTMLCanvasElement, 'height' | 'width'>
 
 /**
- * Applies the original Cubism2 `projection × view × modelMatrix` transform to a loaded model.
- * @param model Loaded Cubism2 model that owns the WebGL draw matrix.
- * @param canvas Runtime canvas whose aspect ratio defines the projection scale.
- * @param layout Optional `index.json` layout fields applied in the original source order.
+ * 按画布宽高计算并写入 Cubism2 模型投影矩阵。
+ * @param model - 待驱动、投影或渲染的模型实例。
+ * @param canvas - 提供 Live2D 投影宽高的画布。
+ * @param layout - 控制模型或界面投影的布局配置；省略时按 undefined 的缺省分支处理。
+ * @throws 当 `typeof model.setMatrix !== 'function'` 成立时抛出 `new Error('Cubism2 model does not expose setMatrix().')`。
  */
 export function configureCubism2ModelProjection(
   model: Cubism2ProjectionModel,
@@ -15,7 +19,7 @@ export function configureCubism2ModelProjection(
   layout?: Record<string, number>,
 ): void {
   if (typeof model.setMatrix !== 'function') {
-    throw new Error('Cubism2 model does not expose setMatrix().');
+    throw new Error('Cubism2 model does not expose setMatrix().')
   }
   model.setMatrix(
     createCubism2ModelProjectionMatrix(
@@ -25,17 +29,18 @@ export function configureCubism2ModelProjection(
       canvas.height,
       layout,
     ),
-  );
+  )
 }
 
 /**
- * Reconstructs the source L2DModelMatrix, layout overrides, and canvas projection as one matrix.
- * @param modelWidth Cubism2 logical model canvas width.
- * @param modelHeight Cubism2 logical model canvas height.
- * @param canvasWidth WebGL drawing-buffer width.
- * @param canvasHeight WebGL drawing-buffer height.
- * @param layout Optional model layout values from `index.json`.
- * @returns Column-major matrix passed directly to `Live2DModelWebGL.setMatrix()`.
+ * 验证模型与画布尺寸后计算 Cubism2 缩放和平移矩阵，并用有效 layout 字段覆盖默认投影。
+ * @param modelWidth - 用于计算 `2 / modelWidth` 的模型宽度。
+ * @param modelHeight - 用于计算 `modelHeight * scaleY` 的模型高度。
+ * @param canvasWidth - 用于计算 `canvasWidth / canvasHeight` 的画布宽度。
+ * @param canvasHeight - 用于计算 `canvasWidth / canvasHeight` 的画布高度。
+ * @param layout - 控制模型或界面投影的布局配置；省略时按 undefined 的缺省分支处理。
+ * @returns 构造出的`Cubism2ModelProjectionMatrix`。
+ * @throws 当 `![modelWidth, modelHeight, canvasWidth, canvasHeight].every( (value) => Number.is…` 成立时抛出 `new Error('Cubism2 model and canvas dimensions must be positive.')`。
  */
 function createCubism2ModelProjectionMatrix(
   modelWidth: number,
@@ -44,63 +49,85 @@ function createCubism2ModelProjectionMatrix(
   canvasHeight: number,
   layout?: Record<string, number>,
 ): Float32Array {
-  if (![modelWidth, modelHeight, canvasWidth, canvasHeight].every((value) => Number.isFinite(value) && value > 0)) {
-    throw new Error('Cubism2 model and canvas dimensions must be positive.');
+  if (
+    ![modelWidth, modelHeight, canvasWidth, canvasHeight].every(
+      (value) => Number.isFinite(value) && value > 0,
+    )
+  ) {
+    throw new Error('Cubism2 model and canvas dimensions must be positive.')
   }
 
-  let scaleX = 2 / modelWidth;
-  let scaleY = -scaleX;
-  let translateX = -1;
-  let translateY = -(modelHeight * scaleY) / 2;
+  let scaleX = 2 / modelWidth
+  let scaleY = -scaleX
+  let translateX = -1
+  let translateY = -(modelHeight * scaleY) / 2
 
-  const width = readLayoutNumber(layout, 'width');
+  const width = readLayoutNumber(layout, 'width')
   if (width !== undefined) {
-    scaleX = width / modelWidth;
-    scaleY = -scaleX;
+    scaleX = width / modelWidth
+    scaleY = -scaleX
   }
-  const height = readLayoutNumber(layout, 'height');
+  const height = readLayoutNumber(layout, 'height')
   if (height !== undefined) {
-    scaleX = height / modelHeight;
-    scaleY = -scaleX;
+    scaleX = height / modelHeight
+    scaleY = -scaleX
   }
-  translateX = readLayoutNumber(layout, 'x') ?? translateX;
-  translateY = readLayoutNumber(layout, 'y') ?? translateY;
+  translateX = readLayoutNumber(layout, 'x') ?? translateX
+  translateY = readLayoutNumber(layout, 'y') ?? translateY
 
-  const centerX = readLayoutNumber(layout, 'center_x');
+  const centerX = readLayoutNumber(layout, 'center_x')
   if (centerX !== undefined) {
-    translateX = centerX - (modelWidth * scaleX) / 2;
+    translateX = centerX - (modelWidth * scaleX) / 2
   }
-  const centerY = readLayoutNumber(layout, 'center_y');
+  const centerY = readLayoutNumber(layout, 'center_y')
   if (centerY !== undefined) {
-    translateY = centerY - (modelHeight * scaleY) / 2;
+    translateY = centerY - (modelHeight * scaleY) / 2
   }
-  translateY = readLayoutNumber(layout, 'top') ?? translateY;
-  const bottom = readLayoutNumber(layout, 'bottom');
+  translateY = readLayoutNumber(layout, 'top') ?? translateY
+  const bottom = readLayoutNumber(layout, 'bottom')
   if (bottom !== undefined) {
-    translateY = bottom - modelHeight * scaleY;
+    translateY = bottom - modelHeight * scaleY
   }
-  translateX = readLayoutNumber(layout, 'left') ?? translateX;
-  const right = readLayoutNumber(layout, 'right');
+  translateX = readLayoutNumber(layout, 'left') ?? translateX
+  const right = readLayoutNumber(layout, 'right')
   if (right !== undefined) {
-    translateX = right - modelWidth * scaleX;
+    translateX = right - modelWidth * scaleX
   }
 
-  const projectionScaleY = canvasWidth / canvasHeight;
+  const projectionScaleY = canvasWidth / canvasHeight
   return new Float32Array([
-    scaleX, 0, 0, 0,
-    0, scaleY * projectionScaleY, 0, 0,
-    0, 0, 1, 0,
-    translateX, translateY * projectionScaleY, 0, 1,
-  ]);
+    scaleX,
+    0,
+    0,
+    0,
+    0,
+    scaleY * projectionScaleY,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    translateX,
+    translateY * projectionScaleY,
+    0,
+    1,
+  ])
 }
 
 /**
- * Reads one finite numeric layout value without coercing malformed external JSON.
- * @param layout Optional raw layout map.
- * @param key Cubism2 layout key read in source order.
- * @returns Finite numeric value, or undefined when absent or invalid.
+ * 仅从 Live2D layout 读取有限数值，字段缺失或非有限数时返回 undefined。
+ * @param layout - 控制模型或界面投影的布局配置。
+ * @param key - 用于在当前映射或缓存中定位记录的键。
+ * @returns 读取到的`LayoutNumber`；未命中或提前结束时返回 undefined。
  */
-function readLayoutNumber(layout: Record<string, number> | undefined, key: string): number | undefined {
-  const value = layout?.[key];
-  return Number.isFinite(value) ? value : undefined;
+function readLayoutNumber(
+  layout: Record<string, number> | undefined,
+  key: string,
+): number | undefined {
+  const value = layout?.[key]
+  if (Number.isFinite(value)) {
+    return value
+  }
+  return undefined
 }

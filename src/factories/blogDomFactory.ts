@@ -1,4 +1,4 @@
-import { shallowRef, type ComponentPublicInstance, type Ref } from 'vue';
+import { shallowRef, type ComponentPublicInstance, type Ref } from 'vue'
 
 export const BLOG_DOM_IDS = {
   banner: 'banner',
@@ -55,137 +55,159 @@ export const BLOG_DOM_IDS = {
   settingsShadowBig: 'blog_setting_shadow_big',
   settingsShadowSmall: 'blog_setting_shadow_small',
   themeStyle: 'kt-blog-theme-style',
-} as const;
+} as const
 
 export const BLOG_META_NAMES = {
   themeColor: 'theme-color',
   themeColorRgb: 'theme-color-rgb',
-} as const;
+} as const
 
-export type BlogDomIdKey = keyof typeof BLOG_DOM_IDS;
+export type BlogDomIdKey = keyof typeof BLOG_DOM_IDS
 
 /**
- * @param key Semantic key for a stable Argon-compatible DOM id.
- * @returns Concrete DOM id string used by markup, source tests, and Argon compatibility hooks.
+ * 按语义键读取集中维护的博客 DOM 标识。
+ * @param key - 用于在当前映射或缓存中定位记录的键。
+ * @returns 语义键对应的博客 DOM 标识。
  */
 export function blogDomId(key: BlogDomIdKey) {
-  return BLOG_DOM_IDS[key];
+  return BLOG_DOM_IDS[key]
 }
 
 /**
- * @param key Semantic key for a stable Argon-compatible DOM id.
- * @returns CSS id selector for document queries that cannot yet be replaced by a Vue ref.
+ * 读取博客 DOM 标识并转换为 ID 选择器。
+ * @param key - 用于在当前映射或缓存中定位记录的键。
+ * @returns 读取到的博客 DOM 标识并转换为 ID 选择器。
  */
 export function blogDomSelector(key: BlogDomIdKey) {
-  return blogDomSelectorFromId(blogDomId(key));
+  return blogDomSelectorFromId(blogDomId(key))
 }
 
 /**
- * @param id Existing DOM id from WordPress, upstream plugins, or generated Argon content.
- * @returns CSS id selector for legacy ids that are externally defined but still queried by app code.
+ * 把博客 DOM 标识转成可用于查询元素的 ID 选择器。
+ * @param id - 用于定位目标记录的唯一标识。
+ * @returns 带井号前缀的博客 DOM ID 选择器。
  */
 export function blogDomSelectorFromId(id: string) {
-  return `#${id}`;
+  return `#${id}`
 }
 
 /**
- * @param key Semantic key for a stable Argon-compatible DOM id.
- * @returns Hash href pointing at the matching local DOM id.
+ * 按语义键读取集中维护的博客 DOM 标识，并转换为页面跳转使用的井号锚点。
+ * @param key - 用于在当前映射或缓存中定位记录的键。
+ * @returns 语义键指向的井号前缀页面锚点。
  */
 export function blogDomAnchor(key: BlogDomIdKey) {
-  return blogDomAnchorFromId(blogDomId(key));
+  return blogDomAnchorFromId(blogDomId(key))
 }
 
 /**
- * @param id Existing DOM id from WordPress or generated Argon catalog content.
- * @returns Hash href without resolving it through the browser URL.
+ * 把博客 DOM 标识转成可用于链接跳转的井号锚点。
+ * @param id - 用于定位目标记录的唯一标识。
+ * @returns 带井号前缀的博客 DOM 锚点。
  */
 export function blogDomAnchorFromId(id: string) {
-  return `#${id}`;
+  return `#${id}`
 }
 
 /**
- * @param articleId Local article id mirrored as Argon's `post-{id}` card anchor.
- * @returns Stable article card DOM id.
+ * 按文章标识生成卡片 DOM 标识。
+ * @param articleId - 用于定位文章的标识。
+ * @returns 卡片 DOM 标识。
  */
 export function blogPostCardId(articleId: number | string) {
-  return `post-${articleId}`;
+  return `post-${articleId}`
 }
 
 /**
- * @param index One-based paragraph index in fallback article content.
- * @returns Stable fallback paragraph DOM id.
+ * 按段落序号生成文章段落 DOM 标识。
+ * @param index - 目标条目在有序集合中的位置。
+ * @returns 文章段落 DOM 标识。
  */
 export function blogPostParagraphId(index: number) {
-  return `post_paragraph_${index}`;
+  return `post_paragraph_${index}`
 }
 
 /**
- * @param index One-based heading index produced for WordPress content without preserved heading ids.
- * @returns Stable heading id matching Argon's captured `header-id-N` convention.
+ * 按标题序号生成文章目录锚点标识。
+ * @param index - 目标条目在有序集合中的位置。
+ * @returns 文章目录锚点标识。
  */
 export function blogGeneratedHeadingId(index: number) {
-  return `header-id-${index}`;
+  return `header-id-${index}`
 }
 
 /**
- * @param filterMode Blog filter preference value rendered in the settings panel.
- * @returns Stable settings filter button id.
+ * 按设置模式生成过滤器 DOM 标识。
+ * @param filterMode - 拼入设置过滤器 DOM 标识的模式。
+ * @returns 过滤器 DOM 标识。
  */
 export function blogSettingsFilterId(filterMode: string) {
-  return `blog_setting_filter_${filterMode}`;
+  return `blog_setting_filter_${filterMode}`
 }
 
 /**
- * @param postType WordPress search result type rendered in the filter checkbox row.
- * @returns Stable search filter checkbox id.
+ * 按文章类型生成搜索过滤器 DOM 标识。
+ * @param postType - 拼入搜索过滤器 DOM 标识的文章类型。
+ * @returns 搜索过滤器 DOM 标识。
  */
 export function blogSearchFilterId(postType: string) {
-  return `search_filter_${postType}`;
+  return `search_filter_${postType}`
 }
 
 /**
- * @param name Meta tag name controlled by the Blog theme runtime.
- * @returns CSS selector for the matching meta tag.
+ * 按 meta 名称生成属性选择器。
+ * @param name - 用于定位或命名目标资源的名称。
+ * @returns 属性选择器。
  */
 export function blogMetaSelector(name: string) {
-  return `meta[name="${name}"]`;
+  return `meta[name="${name}"]`
 }
 
 /**
- * @param id Concrete DOM id, often from generated WordPress heading anchors.
- * @returns Matching HTMLElement when it exists in the current document.
+ * 按集中维护的 DOM 标识读取博客元素，未命中时返回 null。
+ * @param id - 用于定位目标记录的唯一标识。
+ * @returns 集中 DOM 标识对应的博客元素；未命中时为 null。
  */
 export function getBlogElementById<T extends HTMLElement = HTMLElement>(id: string) {
-  return document.getElementById(id) as T | null;
+  return document.getElementById(id) as T | null
 }
 
 /**
- * @returns Shallow Vue ref for DOM nodes whose identity, not deep fields, drives layout side effects.
+ * DOM 引用通过 shallowRef 只跟踪节点身份，初始未挂载状态保持为 null。
+ * @returns 接受指定 HTMLElement 子类型或 null 的浅层 Vue 引用。
  */
 export function createBlogElementRef<T extends HTMLElement = HTMLElement>() {
-  return shallowRef<T | null>(null);
+  return shallowRef<T | null>(null)
 }
 
 /**
- * @returns Shallow Vue ref for focusable component instances such as antdv-next inputs.
+ * 创建初值为 null、用于保存可聚焦组件实例的浅层 Vue 引用。
+ * @returns 新建的初值为 null、用于保存可聚焦组件实例的浅层 Vue 引用。
  */
 export function createBlogFocusableRef<T = unknown>() {
-  return shallowRef<T | null>(null);
+  return shallowRef<T | null>(null)
 }
 
 /**
- * @param target Vue ref callback payload from native elements or component instances.
- * @returns Native HTMLElement only when the callback payload is a real DOM element.
+ * 仅在输入是 HTMLElement 时保留该 DOM 对象，组件实例或空值返回 null。
+ * @param target - 待更新、比较或导航到的目标。
+ * @returns 转换后的`BlogHTMLElement`；空值分支返回 null。
  */
 export function toBlogHTMLElement(target: Element | ComponentPublicInstance | null) {
-  return target instanceof HTMLElement ? target : null;
+  if (target instanceof HTMLElement) {
+    return target
+  }
+  return null
 }
 
 /**
- * @param targetRef Layout-owned HTMLElement ref that cross-component effects read from.
- * @param target Vue ref callback payload emitted by TSX render functions.
+ * 只把有效 HTMLElement 写入博客 DOM 引用，其他目标写入 null。
+ * @param targetRef - 包含 `targetRef.value` 字段的`targetRef`对象。
+ * @param target - 待更新、比较或导航到的目标。
  */
-export function assignBlogElementRef(targetRef: Ref<HTMLElement | null>, target: Element | ComponentPublicInstance | null) {
-  targetRef.value = toBlogHTMLElement(target);
+export function assignBlogElementRef(
+  targetRef: Ref<HTMLElement | null>,
+  target: Element | ComponentPublicInstance | null,
+) {
+  targetRef.value = toBlogHTMLElement(target)
 }

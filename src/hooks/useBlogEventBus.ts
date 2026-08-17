@@ -10,7 +10,8 @@ type BlogEventMap = {
 const blogEventBus = mitt<BlogEventMap>();
 
 /**
- * @returns 博客主题内跨组件 UI 事件总线，用于搜索、分类、标签等全局交互下发。
+ * 返回博客搜索与分类标签弹窗共用的 mitt 事件总线。
+ * @returns 博客搜索与分类标签弹窗共用的 mitt 事件总线。
  */
 export function useBlogEventBus() {
   return blogEventBus;

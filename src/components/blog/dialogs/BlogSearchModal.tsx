@@ -1,9 +1,9 @@
-import { SearchOutlined } from '@antdv-next/icons';
-import { defineComponent, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { SearchOutlined } from '@antdv-next/icons'
+import { defineComponent, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
-import { BlogButton, BlogForm, BlogInput } from './antdvComponents';
-import BlogModal from './BlogModal';
+import { BlogButton, BlogForm, BlogInput } from '../ui/antdvComponents'
+import BlogModal from './BlogModal'
 
 export default defineComponent({
   name: 'BlogSearchModal',
@@ -15,37 +15,40 @@ export default defineComponent({
   },
   emits: ['close'],
   setup(props, { emit }) {
-    const router = useRouter();
-    const keyword = ref('');
+    const router = useRouter()
+    const keyword = ref('')
 
     watch(
       () => props.open,
       (open) => {
         if (!open) {
-          keyword.value = '';
+          keyword.value = ''
         }
       },
-    );
+    )
 
     const submitSearch = () => {
-      const query = keyword.value.trim();
+      const query = keyword.value.trim()
       if (!query) {
-        return;
+        return
       }
 
       router.push({
         name: 'BlogSearch',
         query: { q: query },
-      });
-      emit('close');
-    };
+      })
+      emit('close')
+    }
 
     return () => (
-      <BlogModal className="kt-blog__search-modal" title="搜索" size="sm" open={props.open} onClose={() => emit('close')}>
-        <BlogForm
-          class="kt-blog__search-modal-form"
-          onFinish={submitSearch}
-        >
+      <BlogModal
+        className="kt-blog__search-modal"
+        title="搜索"
+        size="sm"
+        open={props.open}
+        onClose={() => emit('close')}
+      >
+        <BlogForm class="kt-blog__search-modal-form" onFinish={submitSearch}>
           <div class="kt-blog__form-group kt-blog__form-group--spaced">
             <div class="kt-blog__input-group">
               <div class="kt-blog__input-addon-wrap">
@@ -69,6 +72,6 @@ export default defineComponent({
           </div>
         </BlogForm>
       </BlogModal>
-    );
+    )
   },
-});
+})

@@ -1,8 +1,8 @@
-import { defineComponent, type PropType } from 'vue';
-import { RouterLink } from 'vue-router';
+import { defineComponent, type PropType } from 'vue'
+import { RouterLink } from 'vue-router'
 
-import type { BlogArticle, BlogCategory } from '@/data/blog';
-import { blogDomId } from '@/factories/blogDomFactory';
+import type { BlogArticle, BlogCategory } from '@/data/blog'
+import { blogDomId } from '@/factories/blogDomFactory'
 
 export default defineComponent({
   name: 'BlogRightbar',
@@ -17,11 +17,17 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const archiveMonths = collectArchiveMonths(props.articles);
-    const visibleCategories = [...props.categories].sort((left, right) => left.label.localeCompare(right.label));
+    const archiveMonths = collectArchiveMonths(props.articles)
+    const visibleCategories = [...props.categories].sort((left, right) =>
+      left.label.localeCompare(right.label),
+    )
 
     return () => (
-      <aside id={blogDomId('rightbar')} class="kt-blog__rightbar rightbar widget-area" role="complementary">
+      <aside
+        id={blogDomId('rightbar')}
+        class="kt-blog__rightbar rightbar widget-area"
+        role="complementary"
+      >
         <div class="kt-blog__rightbar-widget kt-blog__card">
           <h2 class="kt-blog__rightbar-title">近期文章</h2>
           <ul class="kt-blog__rightbar-list">
@@ -43,7 +49,9 @@ export default defineComponent({
           <ul class="kt-blog__rightbar-list">
             {archiveMonths.map((month) => (
               <li key={month.value} class="kt-blog__rightbar-list-item">
-                <RouterLink to={{ path: '/archives', query: { month: month.value } }}>{month.label}</RouterLink>
+                <RouterLink to={{ path: '/archives', query: { month: month.value } }}>
+                  {month.label}
+                </RouterLink>
               </li>
             ))}
           </ul>
@@ -60,26 +68,27 @@ export default defineComponent({
           </ul>
         </div>
       </aside>
-    );
+    )
   },
-});
+})
 
 /**
- * @param articles Public article records whose dates determine the rightbar archive links.
- * @returns Unique WordPress-style month entries with both visible label and local route query value.
+ * 从有效文章日期提取并去重年月，生成 WordPress 归档使用的 YYYYMM 值与中文标签。
+ * @param articles - 待筛选、归档或建立关联的文章集合。
+ * @returns 并去重年月。
  */
 function collectArchiveMonths(articles: BlogArticle[]) {
-  const months = new Map<string, string>();
+  const months = new Map<string, string>()
   articles.forEach((article) => {
-    const matched = /^(\d{4})-(\d{1,2})/.exec(article.date);
-    if (!matched) return;
+    const matched = /^(\d{4})-(\d{1,2})/.exec(article.date)
+    if (!matched) return
 
-    const [, year, month] = matched;
-    if (!year || !month) return;
+    const [, year, month] = matched
+    if (!year || !month) return
 
-    const value = `${year}${month.padStart(2, '0')}`;
-    months.set(value, `${year} 年 ${Number(month)} 月`);
-  });
+    const value = `${year}${month.padStart(2, '0')}`
+    months.set(value, `${year} 年 ${Number(month)} 月`)
+  })
 
-  return Array.from(months, ([value, label]) => ({ label, value }));
+  return Array.from(months, ([value, label]) => ({ label, value }))
 }

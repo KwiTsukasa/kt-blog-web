@@ -1,6 +1,6 @@
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, type PropType } from 'vue'
 
-import { BlogModalComponent } from './antdvComponents';
+import { BlogModalComponent } from '../ui/antdvComponents'
 
 export default defineComponent({
   name: 'BlogModal',
@@ -23,21 +23,45 @@ export default defineComponent({
     },
   },
   emits: ['close'],
-  /**
+  /*
    * @param props Modal state and sizing options mapped to the local Blog theme surface.
    * @param emit Emits close requests from escape, close button, or mask interaction.
    * @param slots Modal content supplied by search or taxonomy features.
    * @returns Render function that delegates modal motion to antdv-next and keeps Blog-owned theme classes.
    */
   setup(props, { emit, slots }) {
-    const modalWidth = props.size === 'sm' ? 420 : props.size === 'taxonomy' ? 500 : 620;
+    const modalWidth = (() => {
+      if (props.size === 'sm') {
+        return 420
+      }
+      if (props.size === 'taxonomy') {
+        return 500
+      }
+      return 620
+    })()
 
     return () => {
-      const footerSlot = slots.footer?.();
-      const modalFooter = footerSlot?.length ? <div class="kt-blog__modal-footer">{footerSlot}</div> : null;
+      const footerSlot = slots.footer?.()
+      const modalFooter = (() => {
+        if (footerSlot?.length) {
+          return <div class="kt-blog__modal-footer">{footerSlot}</div>
+        }
+        return null
+      })()
 
       return (
-        <div class={['kt-blog__modal-host', props.open ? 'kt-blog__modal-host--open' : '', props.className]}>
+        <div
+          class={[
+            'kt-blog__modal-host',
+            (() => {
+              if (props.open) {
+                return 'kt-blog__modal-host--open'
+              }
+              return ''
+            })(),
+            props.className,
+          ]}
+        >
           <BlogModalComponent
             centered
             class="kt-blog__modal"
@@ -55,7 +79,7 @@ export default defineComponent({
             </div>
           </BlogModalComponent>
         </div>
-      );
-    };
+      )
+    }
   },
-});
+})

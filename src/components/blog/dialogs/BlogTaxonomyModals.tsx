@@ -1,11 +1,11 @@
-import { computed, defineComponent, type PropType } from 'vue';
-import { RouterLink } from 'vue-router';
+import { computed, defineComponent, type PropType } from 'vue'
+import { RouterLink } from 'vue-router'
 
-import type { BlogCategory, BlogTag } from '@/data/blog';
+import type { BlogCategory, BlogTag } from '@/data/blog'
 
-import BlogModal from './BlogModal';
+import BlogModal from './BlogModal'
 
-type ActiveModal = 'categories' | 'tags' | null;
+type ActiveModal = 'categories' | 'tags' | null
 
 export default defineComponent({
   name: 'BlogTaxonomyModals',
@@ -25,8 +25,8 @@ export default defineComponent({
   },
   emits: ['close'],
   setup(props, { emit }) {
-    const visibleCategories = computed(() => sortTaxonomyByLabel(props.categories));
-    const visibleTags = computed(() => sortTaxonomyByLabel(props.tags));
+    const visibleCategories = computed(() => sortTaxonomyByLabel(props.categories))
+    const visibleTags = computed(() => sortTaxonomyByLabel(props.tags))
 
     return () => (
       <>
@@ -44,9 +44,7 @@ export default defineComponent({
               to={`/category/${category.slug}`}
               onClick={() => emit('close')}
             >
-              {category.label}
-              {' '}
-              <span class="kt-blog__tag-count">{category.count}</span>
+              {category.label} <span class="kt-blog__tag-count">{category.count}</span>
             </RouterLink>
           ))}
         </BlogModal>
@@ -65,21 +63,20 @@ export default defineComponent({
               to={`/tag/${tag.slug}`}
               onClick={() => emit('close')}
             >
-              {tag.label}
-              {' '}
-              <span class="kt-blog__tag-count">{tag.count}</span>
+              {tag.label} <span class="kt-blog__tag-count">{tag.count}</span>
             </RouterLink>
           ))}
         </BlogModal>
       </>
-    );
+    )
   },
-});
+})
 
 /**
- * @param terms Category or tag records exposed by the local article source.
- * @returns Terms sorted like the live WordPress Argon taxonomy widgets.
+ * 复制分类或标签列表，并按可见标签的本地化字典序排序而不修改原数组。
+ * @param terms - 待复制并按可见标签排序的分类或标签列表。
+ * @returns 整理后的`TaxonomyByLabel`。
  */
 function sortTaxonomyByLabel<T extends BlogCategory | BlogTag>(terms: T[]) {
-  return [...terms].sort((left, right) => left.label.localeCompare(right.label));
+  return [...terms].sort((left, right) => left.label.localeCompare(right.label))
 }

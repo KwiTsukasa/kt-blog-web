@@ -1,12 +1,19 @@
-import { SearchOutlined } from '@antdv-next/icons';
-import { defineComponent, nextTick, type ComponentPublicInstance, type PropType, type Ref, ref } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { SearchOutlined } from '@antdv-next/icons'
+import {
+  defineComponent,
+  nextTick,
+  type ComponentPublicInstance,
+  type PropType,
+  type Ref,
+  ref,
+} from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 
-import { assignBlogElementRef, blogDomId, createBlogFocusableRef } from '@/factories/blogDomFactory';
-import { useBlogEventBus } from '@/hooks/useBlogEventBus';
-import { useBlogTheme } from '@/hooks/useBlogTheme';
+import { assignBlogElementRef, blogDomId, createBlogFocusableRef } from '@/factories/blogDomFactory'
+import { useBlogEventBus } from '@/hooks/useBlogEventBus'
+import { useBlogTheme } from '@/hooks/useBlogTheme'
 
-import { BlogButton, BlogInput } from './antdvComponents';
+import { BlogButton, BlogInput } from '../ui/antdvComponents'
 
 export default defineComponent({
   name: 'BlogHeader',
@@ -25,43 +32,43 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const router = useRouter();
-    const eventBus = useBlogEventBus();
-    const { siteConfig } = useBlogTheme();
-    const keyword = ref('');
-    const navSearchOpen = ref(false);
-    const navSearchInputRef = createBlogFocusableRef<any>();
+    const router = useRouter()
+    const eventBus = useBlogEventBus()
+    const { siteConfig } = useBlogTheme()
+    const keyword = ref('')
+    const navSearchOpen = ref(false)
+    const navSearchInputRef = createBlogFocusableRef<any>()
 
-    /**
+    /*
      * @param target antdv-next Input 组件实例或原生 input 节点。
      */
     const focusInput = (target: any) => {
-      target?.focus?.();
-      target?.input?.focus?.();
-    };
+      target?.focus?.()
+      target?.input?.focus?.()
+    }
 
-    /**
+    /*
      * @param target 顶栏 nav DOM 节点，由 layout 传入 ref 统一给滚动副作用使用。
      */
     const setToolbarRef = (target: Element | ComponentPublicInstance | null) => {
-      assignBlogElementRef(props.toolbarRef, target);
-    };
+      assignBlogElementRef(props.toolbarRef, target)
+    }
 
-    /**
+    /*
      * Submits the desktop header search into the local Blog search route.
      */
     const submitSearch = () => {
-      const query = keyword.value.trim();
+      const query = keyword.value.trim()
       if (!query) {
-        return;
+        return
       }
 
       router.push({
         name: 'BlogSearch',
         query: { q: query },
-      });
-      navSearchOpen.value = false;
-    };
+      })
+      navSearchOpen.value = false
+    }
 
     return () => (
       <div class="kt-blog__header">
@@ -110,20 +117,25 @@ export default defineComponent({
                   <ul class="kt-blog__header-nav kt-blog__header-nav--hover">
                     {siteConfig.value.headerMenu.map((item) => (
                       <li key={item.label} class="kt-blog__header-nav-item">
-                        {item.external ? (
-                          <a
-                            class="kt-blog__header-nav-link"
-                            href={item.href}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            {item.label}
-                          </a>
-                        ) : (
-                          <RouterLink class="kt-blog__header-nav-link" to={item.href}>
-                            {item.label}
-                          </RouterLink>
-                        )}
+                        {(() => {
+                          if (item.external) {
+                            return (
+                              <a
+                                class="kt-blog__header-nav-link"
+                                href={item.href}
+                                rel="noopener noreferrer"
+                                target="_blank"
+                              >
+                                {item.label}
+                              </a>
+                            )
+                          }
+                          return (
+                            <RouterLink class="kt-blog__header-nav-link" to={item.href}>
+                              {item.label}
+                            </RouterLink>
+                          )
+                        })()}
                       </li>
                     ))}
                   </ul>
@@ -132,10 +144,13 @@ export default defineComponent({
                 <ul class="kt-blog__header-nav kt-blog__header-nav--end">
                   <li class="kt-blog__header-search-item">
                     <div
-                      class={['kt-blog__header-search', navSearchOpen.value && 'kt-blog__header-search--open']}
+                      class={[
+                        'kt-blog__header-search',
+                        navSearchOpen.value && 'kt-blog__header-search--open',
+                      ]}
                       onClick={() => {
-                        navSearchOpen.value = true;
-                        nextTick(() => focusInput(navSearchInputRef.value));
+                        navSearchOpen.value = true
+                        nextTick(() => focusInput(navSearchInputRef.value))
                       }}
                     >
                       <div class="kt-blog__input-group">
@@ -152,12 +167,12 @@ export default defineComponent({
                           v-model:value={keyword.value}
                           onClick={(event: MouseEvent) => event.stopPropagation()}
                           onBlur={() => {
-                            navSearchOpen.value = false;
+                            navSearchOpen.value = false
                           }}
                           onKeydown={(event: KeyboardEvent) => {
                             if (event.key === 'Enter') {
-                              event.preventDefault();
-                              submitSearch();
+                              event.preventDefault()
+                              submitSearch()
                             }
                           }}
                         />
@@ -180,6 +195,6 @@ export default defineComponent({
           </nav>
         </header>
       </div>
-    );
+    )
   },
-});
+})

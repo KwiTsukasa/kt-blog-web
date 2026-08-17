@@ -10,17 +10,27 @@ const ADMIN_SSO_LOGIN_PATH = '/auth/login'
 export const BLOG_ADMIN_MANAGEMENT_PATH = '/blog/article'
 
 /**
- * 解析 Blog 管理入口使用的 KT Admin 基址。
- * @param env Vite 环境变量；受控的根相对路径或 HTTP(S) 绝对地址优先于环境默认值。
- * @param currentOrigin 当前页面的 origin，用于保留统一网关的动态 Host 与端口。
- * @returns KT Admin 绝对基址。
+ * 管理端基址根据环境配置解析相对或 HTTP(S) 地址，空值、协议错误和无效 URL 回退部署默认值。
+ * @param env - 提供生产标记及可选 KT Admin 地址的前端环境。
+ * @param currentOrigin - 相对管理地址解析时使用的当前站点来源；服务端缺省为空。
+ * @returns 可用于跨入口导航的绝对管理端 URL。
  */
 export function resolveBlogAdminBaseUrl(
   env: BlogAdminEnvironment = import.meta.env,
-  currentOrigin = typeof window === 'undefined' ? '' : window.location.origin,
+  currentOrigin = (() => {
+    if (typeof window === 'undefined') {
+      return ''
+    }
+    return window.location.origin
+  })(),
 ) {
   const configured = env.VITE_KT_ADMIN_BASE_URL?.trim()
-  const fallback = env.PROD ? PRODUCTION_ADMIN_BASE_URL : LOCAL_ADMIN_BASE_URL
+  const fallback = (() => {
+    if (env.PROD) {
+      return PRODUCTION_ADMIN_BASE_URL
+    }
+    return LOCAL_ADMIN_BASE_URL
+  })()
 
   if (!configured) return fallback
 
@@ -36,16 +46,19 @@ export function resolveBlogAdminBaseUrl(
 
   try {
     const url = new URL(configured)
-    return /^https?:$/.test(url.protocol) ? url.toString() : fallback
+    if (/^https?:$/.test(url.protocol)) {
+      return url.toString()
+    }
+    return fallback
   } catch {
     return fallback
   }
 }
 
 /**
- * 构建 Blog 文章管理使用的跨入口 Admin SSO 地址。
- * @param adminBaseUrl KT Admin 绝对基址，默认遵循 Vite 环境契约。
- * @returns 不携带 token、指向 Admin SSO 启动页的顶层跳转地址。
+ * 文章管理地址把 SSO 标记与固定回跳路由写入 Admin hash 登录页，并丢弃基址原查询参数。
+ * @param adminBaseUrl - 管理端绝对基址，省略时按当前环境解析。
+ * @returns 登录成功后跳转文章管理页的 Admin SSO URL。
  */
 export function buildBlogAdminSsoUrl(adminBaseUrl = resolveBlogAdminBaseUrl()) {
   const url = new URL(adminBaseUrl)
@@ -61,8 +74,8 @@ export function buildBlogAdminSsoUrl(adminBaseUrl = resolveBlogAdminBaseUrl()) {
 
 /**
  * 识别远端 Argon 主题数据仍可能返回的历史 Blog 管理入口。
- * @param href 已规范化的侧栏地址，可以是绝对地址或站内相对地址。
- * @returns 该地址是否为旧 WordPress 或站内 Blog 管理路由。
+ * @param href - 待规范化或导航的链接地址。
+ * @returns 链接是否指向需要迁移的旧 Blog 管理入口；URL 无效时为 false。
  */
 export function isLegacyBlogManagementHref(href: string) {
   try {

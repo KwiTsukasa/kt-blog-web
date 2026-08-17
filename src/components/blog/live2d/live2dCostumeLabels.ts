@@ -213,9 +213,9 @@ const FALLBACK_WORD_TRANSLATIONS: Readonly<Record<string, string>> = {
 }
 
 /**
- * Converts one Cubism texture filename into a stable Chinese costume name.
- * @param texture Texture path from a model settings file.
- * @returns Semantic Chinese display label derived from the captured catalog name.
+ * 服装标签根据完整名称覆盖、基础词典和变体前后缀逐级解析，未收录名称使用通用翻译兜底。
+ * @param texture - 待提取服装名称的 Live2D 纹理路径。
+ * @returns 由覆盖、词典或通用翻译得到的中文服装名。
  */
 export function resolveLive2DCostumeLabel(texture: string): string {
   const normalizedName = normalizeCostumeName(texture)
@@ -247,9 +247,9 @@ export function resolveLive2DCostumeLabel(texture: string): string {
 }
 
 /**
- * Produces a semantic word-level translation for names added after the captured catalogs.
- * @param normalizedName Normalized basename without its generic costume token.
- * @returns Readable translated label without index-based placeholder naming.
+ * 翻译未收录服装名，并在结果缺少服装后缀时补上“服装”。
+ * @param normalizedName - 已规范化、待拆分服装后缀的名称。
+ * @returns 带服装后缀的中文名称。
  */
 function translateUncataloguedCostumeName(normalizedName: string): string {
   const translatedName = normalizedName
@@ -268,9 +268,9 @@ function translateUncataloguedCostumeName(normalizedName: string): string {
 }
 
 /**
- * Normalizes WordPress and captured-model filename styles into one lookup key.
- * @param texture Texture path whose basename may use spaces, hyphens, or underscores.
- * @returns Lowercase costume key without extension or the generic `costume` token.
+ * 从纹理路径提取文件名，移除扩展名与 costume 通用词，并统一分隔符、大小写和空白。
+ * @param texture - 待提取服装名称的 Live2D 纹理路径。
+ * @returns 文件名。
  */
 function normalizeCostumeName(texture: string): string {
   const filename = texture.split('/').pop() || ''
