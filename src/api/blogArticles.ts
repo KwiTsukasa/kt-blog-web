@@ -35,6 +35,8 @@ export type WordpressPublicArticle = {
   id: number
   link?: string
   modified?: string
+  publishTime?: string
+  updateTime?: string
   slug: string
   tagsResolved?: WordpressResolvedTerm[]
   title?: string | { raw?: string; rendered?: string }

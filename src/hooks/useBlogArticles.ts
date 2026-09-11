@@ -199,7 +199,7 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
     ''
   const contentText = stripHtml(contentHtml)
   const excerpt =
-    article.excerptText ||
+    stripHtml(article.excerptText) ||
     stripHtml(
       (() => {
         if (typeof article.excerpt === 'object') {
@@ -229,7 +229,7 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
     })(),
     contentHtml,
     cover: resolveBlogStaticAsset(article.cover, defaultCover),
-    date: formatDate(article.date || article.modified),
+    date: formatDate(article.publishTime || article.date || article.modified || article.updateTime),
     excerpt,
     headings: normalizeArticleHeadings(article.headings, contentHtml),
     id: article.id,
@@ -407,7 +407,7 @@ function stripHtml(value?: unknown) {
 }
 
 /**
- * 把文章文本中的常用引号、&、尖括号 HTML 实体还原为字符。
+ * 还原文章文本中的常用实体，避免迁移摘要显示省略号实体源码。
  * @param value - 待校验、转换或写入的原始值。
  * @returns 解析后的HTML。
  */
@@ -418,6 +418,8 @@ function decodeHtml(value: string) {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&hellip;/g, '…')
+    .replace(/&nbsp;/g, ' ')
 }
 
 /**

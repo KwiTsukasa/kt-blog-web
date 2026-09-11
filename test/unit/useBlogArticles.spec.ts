@@ -111,6 +111,20 @@ describe('useBlogArticles', () => {
     expect(blogArticles.loadedFromApi.value).toBe(true);
   });
 
+  it('renders the local API publish time and decodes migrated excerpts', async () => {
+    mockFetch([{
+      body: { code: 200, data: { list: [{ ...publicArticle, date: undefined,
+        publishTime: '2026-05-16 16:43:24', excerptText: '方案 [&hellip;]' }], total: 1 } },
+      status: 200,
+    }]);
+    const { useBlogArticles } = await import('@/hooks/useBlogArticles');
+    const blogArticles = useBlogArticles();
+    await blogArticles.loadArticles();
+    expect(blogArticles.articles.value[0]).toMatchObject({
+      date: '2026-05-16 16:43', excerpt: '方案 […]',
+    });
+  });
+
   it('keeps a local empty state when blog public list is unavailable', async () => {
     mockFetch([
       {
