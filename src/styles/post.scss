@@ -655,19 +655,19 @@ body.fancybox-active {
       .hljs-selector-tag,
       .hljs-literal,
       .hljs-number {
-        color: var(--themecolor);
+        color: var(--argon-code-keyword);
       }
 
       .hljs-string,
       .hljs-attr,
       .hljs-title,
       .hljs-built_in {
-        color: var(--argon-title);
+        color: var(--argon-code-string);
       }
 
       .hljs-comment,
       .hljs-meta {
-        color: var(--argon-muted);
+        color: var(--argon-code-comment);
         font-style: italic;
       }
     }
@@ -814,6 +814,7 @@ body.fancybox-active {
     pre.hljs-codeblock .hljs-ln-code,
     pre.wp-block-code.hljs-codeblock .hljs-ln-code {
       display: table-cell;
+      height: 1.5em;
       padding: 0 0 0 30px !important;
       text-align: left;
       white-space: pre;

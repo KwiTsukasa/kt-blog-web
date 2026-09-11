@@ -558,6 +558,9 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
   --argon-text: ${palette.text};
   --argon-muted: ${palette.muted};
   --argon-title: ${palette.title};
+  --argon-code-keyword: #c792ea;
+  --argon-code-string: #c3e88d;
+  --argon-code-comment: #a0aab8;
   --argon-border: var(--color-border);
   --argon-meta: ${palette.meta};
   --argon-widget-text: ${palette.widgetText};
