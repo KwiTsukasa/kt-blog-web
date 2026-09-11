@@ -1,6 +1,10 @@
 @use './tokens' as blog;
 
 @include blog.block {
+  &__rightbar--settled &__rightbar-widget {
+    animation: none;
+  }
+
   &__rightbar-widget {
     display: flex;
     flex-direction: column;

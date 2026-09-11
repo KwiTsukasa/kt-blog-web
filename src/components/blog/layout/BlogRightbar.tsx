@@ -1,8 +1,10 @@
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, onMounted, type PropType } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import type { BlogArticle, BlogCategory } from '@/data/blog'
 import { blogDomId } from '@/factories/blogDomFactory'
+
+let rightbarHasEntered = false
 
 export default defineComponent({
   name: 'BlogRightbar',
@@ -17,6 +19,10 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const skipEntrance = rightbarHasEntered
+    onMounted(() => {
+      rightbarHasEntered = true
+    })
     const archiveMonths = collectArchiveMonths(props.articles)
     const visibleCategories = [...props.categories].sort((left, right) =>
       left.label.localeCompare(right.label),
@@ -25,7 +31,10 @@ export default defineComponent({
     return () => (
       <aside
         id={blogDomId('rightbar')}
-        class="kt-blog__rightbar rightbar widget-area"
+        class={[
+          'kt-blog__rightbar rightbar widget-area',
+          skipEntrance && 'kt-blog__rightbar--settled',
+        ]}
         role="complementary"
       >
         <div class="kt-blog__rightbar-widget kt-blog__card">
