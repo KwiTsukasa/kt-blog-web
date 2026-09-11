@@ -13,6 +13,39 @@ function registerArgonCodeblockFactoryTests() {
   it('upgrades backend-generated base codeblocks into Argon line tables and controls', runBaseCodeblockUpgradeTest);
   it('ignores the serializer newline appended to markdown fenced code blocks', runTrailingNewlineCodeblockTest);
   it('keeps existing WordPress runtime codeblocks idempotent', runExistingRuntimeCodeblockIdempotenceTest);
+
+  it('upgrades unmarked WordPress and standard fences while leaving prose pre alone', () => {
+    document.body.innerHTML = '<pre class="wp-block-code"><code>const x = 1;<br>  console.log(x);</code></pre><pre><code class="language-json">{&quot;ok&quot;:true}</code></pre><pre>prose</pre>';
+    upgradeArgonCodeblocks(document.body);
+    upgradeArgonCodeblocks(document.body);
+    expect(document.querySelectorAll('pre.hljs-codeblock')).toHaveLength(2);
+    expect(document.querySelectorAll('.hljs-control')).toHaveLength(2);
+    const lines = document.querySelectorAll('.hljs-ln-code');
+    expect(lines[1]?.textContent).toBe('  console.log(x);');
+    expect(document.querySelector('.hljs-attr')).not.toBeNull();
+  });
+
+  it('preserves multiline highlighting, blank lines and escaped source without injecting HTML', () => {
+    const pre = document.createElement('pre');
+    const code = document.createElement('code');
+    code.className = 'language-typescript';
+    code.textContent = '/* first\n  second */\n\nconst html = "<img src=x onerror=alert(1)>";\n';
+    pre.append(code);
+    document.body.append(pre);
+    upgradeArgonCodeblocks(document.body);
+    const lines = Array.from(pre.querySelectorAll('.hljs-ln-code'));
+    expect(lines.map((line) => line.textContent).join('\n')).toBe('/* first\n  second */\n\nconst html = "<img src=x onerror=alert(1)>";');
+    expect(lines[1]?.querySelector('.hljs-comment')?.textContent).toBe('  second */');
+    expect(lines[3]?.querySelector('.hljs-string')).not.toBeNull();
+    expect(pre.querySelector('img')).toBeNull();
+  });
+
+  it('keeps explicit unknown and plaintext languages readable without auto detection', () => {
+    document.body.innerHTML = '<pre><code class="language-unknown">const a = 1;</code></pre><pre><code class="hljs plaintext">const b = 2;</code></pre>';
+    upgradeArgonCodeblocks(document.body);
+    expect(document.querySelectorAll('.hljs-keyword')).toHaveLength(0);
+    expect(document.querySelectorAll('.hljs-ln-code')).toHaveLength(2);
+  });
 }
 
 /**

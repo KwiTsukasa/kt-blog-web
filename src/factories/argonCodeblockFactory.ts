@@ -1,11 +1,30 @@
-const ARGON_CODEBLOCK_SELECTOR = 'pre.hljs-codeblock, pre.wp-block-code.hljs-codeblock'
+import hljs from 'highlight.js/lib/core'
+import bash from 'highlight.js/lib/languages/bash'
+import css from 'highlight.js/lib/languages/css'
+import json from 'highlight.js/lib/languages/json'
+import powershell from 'highlight.js/lib/languages/powershell'
+import sql from 'highlight.js/lib/languages/sql'
+import typescript from 'highlight.js/lib/languages/typescript'
+import xml from 'highlight.js/lib/languages/xml'
+import yaml from 'highlight.js/lib/languages/yaml'
+
+hljs.registerLanguage('bash', bash)
+hljs.registerLanguage('css', css)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('powershell', powershell)
+hljs.registerLanguage('sql', sql)
+hljs.registerLanguage('typescript', typescript)
+hljs.registerAliases(['js', 'javascript', 'jsx', 'tsx'], { languageName: 'typescript' })
+hljs.registerLanguage('xml', xml)
+hljs.registerAliases(['vue'], { languageName: 'xml' })
+hljs.registerLanguage('yaml', yaml)
 
 /**
  * 扫描文章代码块并补齐 Argon 控制区与行号结构。
  * @param root - 限制查找或路径解析范围的根节点。
  */
 export function upgradeArgonCodeblocks(root: HTMLElement) {
-  root.querySelectorAll<HTMLElement>(ARGON_CODEBLOCK_SELECTOR).forEach(upgradeArgonCodeblock)
+  root.querySelectorAll<HTMLElement>('pre').forEach(upgradeArgonCodeblock)
 }
 
 /**
@@ -18,15 +37,75 @@ function upgradeArgonCodeblock(codeBlock: HTMLElement) {
     return
   }
 
+  codeBlock.classList.add('hljs-codeblock')
+
   if (!hasDirectLineNumberTable(codeElement)) {
-    const lines = splitCodeText(codeElement.textContent ?? '')
+    const source = codeElement.cloneNode(true) as HTMLElement
+    source.querySelectorAll('br').forEach((element) => element.replaceWith('\n'))
+    const text = splitCodeText(source.textContent ?? '').join('\n')
+    const lines = highlightCodeLines(text, codeElement)
     codeElement.replaceChildren(createArgonLineTable(lines))
+    codeElement.classList.add('hljs')
     codeElement.setAttribute('hljs-codeblock-inner', '')
   }
 
   if (!getDirectControl(codeBlock)) {
     codeBlock.append(createArgonControl())
   }
+}
+
+/**
+ * 对完整源码高亮后按文本换行拆分节点，保留跨行注释与字符串的颜色及原始缩进。
+ * @param text - 已统一换行并去掉渲染器末尾换行的源码。
+ * @param codeElement - 提供显式语言标记的原始代码节点。
+ * @returns 每行独立且只含高亮器安全文本及样式节点的文档片段。
+ */
+function highlightCodeLines(text: string, codeElement: HTMLElement) {
+  const container = document.createElement('div')
+  const classes = [...codeElement.classList, ...codeElement.parentElement!.classList]
+  const declared = classes.find((name) => /^(language|lang)-/.test(name))
+  let language = declared?.replace(/^(language|lang)-/, '')
+  if (!language) {
+    language = classes.find((name) => name === 'plaintext' || name === 'text' || Boolean(hljs.getLanguage(name)))
+  }
+
+  if (text.length > 100000 || classes.includes('nohighlight') || classes.includes('no-highlight')) {
+    container.textContent = text
+  } else if (language) {
+    if (hljs.getLanguage(language)) {
+      container.innerHTML = hljs.highlight(text, { language, ignoreIllegals: true }).value
+    } else {
+      container.textContent = text
+    }
+  } else {
+    container.innerHTML = hljs.highlightAuto(text, ['typescript', 'bash', 'json', 'yaml', 'sql', 'xml']).value
+  }
+
+  const lines = [document.createDocumentFragment()]
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  let node = walker.nextNode()
+  while (node) {
+    const ancestors: HTMLElement[] = []
+    let parent = node.parentElement
+    while (parent && parent !== container) {
+      ancestors.unshift(parent)
+      parent = parent.parentElement
+    }
+    const segments = (node.textContent ?? '').split('\n')
+    segments.forEach((segment, index) => {
+      if (index > 0) lines.push(document.createDocumentFragment())
+      let target: Node = lines[lines.length - 1]!
+      for (const ancestor of ancestors) {
+        const span = document.createElement('span')
+        span.className = ancestor.className
+        target.appendChild(span)
+        target = span
+      }
+      target.appendChild(document.createTextNode(segment))
+    })
+    node = walker.nextNode()
+  }
+  return lines
 }
 
 /**
@@ -93,13 +172,13 @@ function splitCodeText(codeText: string) {
  * @param lines - 待转换为 Argon 行号表格的源码行列表。
  * @returns 包含行号栏与代码栏的 Argon 表格。
  */
-function createArgonLineTable(lines: string[]) {
+function createArgonLineTable(lines: DocumentFragment[]) {
   const table = document.createElement('table')
   const tbody = document.createElement('tbody')
   table.className = 'hljs-ln'
 
   for (let index = 0; index < lines.length; index += 1) {
-    tbody.append(createArgonLineRow(lines[index] ?? '', index + 1))
+    tbody.append(createArgonLineRow(lines[index]!, index + 1))
   }
 
   table.append(tbody)
@@ -108,12 +187,12 @@ function createArgonLineTable(lines: string[]) {
 }
 
 /**
- * 构建同时包含行号单元格与纯文本代码单元格的 Argon 行。
- * @param line - 写入 Argon 代码单元格的单行源码文本。
+ * 构建同时包含行号单元格与高亮代码单元格的 Argon 行。
+ * @param line - 保留安全高亮节点的单行源码片段。
  * @param lineNumber - 写入代码行元素的行号。
- * @returns 构造完成的同时包含行号单元格与纯文本代码单元格的 Argon 行。
+ * @returns 包含行号及高亮源码片段的表格行。
  */
-function createArgonLineRow(line: string, lineNumber: number) {
+function createArgonLineRow(line: DocumentFragment, lineNumber: number) {
   const row = document.createElement('tr')
   row.append(createArgonLineNumberCell(lineNumber), createArgonLineCodeCell(line, lineNumber))
 
@@ -140,17 +219,17 @@ function createArgonLineNumberCell(lineNumber: number) {
 }
 
 /**
- * Argon 代码单元格将序号写入元数据并仅用 textContent 放置源码，避免代码被解释为 HTML。
- * @param line - 写入 Argon 代码单元格的单行源码文本。
+ * 将已经转义并高亮的源码节点写入单元格，不重新解析原始代码中的 HTML。
+ * @param line - 高亮器生成且已经按换行拆分的节点片段。
  * @param lineNumber - 写入代码行元素的行号。
- * @returns 构造完成的携带行号元数据且只写入纯文本源码的 Argon 代码单元格。
+ * @returns 携带行号元数据和安全高亮内容的代码单元格。
  */
-function createArgonLineCodeCell(line: string, lineNumber: number) {
+function createArgonLineCodeCell(line: DocumentFragment, lineNumber: number) {
   const cell = document.createElement('td')
 
   cell.className = 'hljs-ln-line hljs-ln-code'
   cell.dataset.lineNumber = String(lineNumber)
-  cell.textContent = line
+  cell.append(line)
 
   return cell
 }

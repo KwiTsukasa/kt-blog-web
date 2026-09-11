@@ -650,6 +650,28 @@ body.fancybox-active {
       white-space: pre;
     }
 
+    pre.hljs-codeblock {
+      .hljs-keyword,
+      .hljs-selector-tag,
+      .hljs-literal,
+      .hljs-number {
+        color: var(--themecolor);
+      }
+
+      .hljs-string,
+      .hljs-attr,
+      .hljs-title,
+      .hljs-built_in {
+        color: var(--argon-title);
+      }
+
+      .hljs-comment,
+      .hljs-meta {
+        color: var(--argon-muted);
+        font-style: italic;
+      }
+    }
+
     table {
       display: block;
       max-width: 100%;
