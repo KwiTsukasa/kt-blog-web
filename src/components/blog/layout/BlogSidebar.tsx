@@ -5,6 +5,7 @@ import {
   defineComponent,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   type ComponentPublicInstance,
   type PropType,
   type Ref,
@@ -56,6 +57,7 @@ interface ArgonCatalogNode {
 const catalogListSlideFrames = new WeakMap<HTMLUListElement, number>()
 const elementScrollFrames = new WeakMap<HTMLElement, number>()
 let windowScrollFrame = 0
+let sidebarHasEntered = false
 
 type SidebarTabKey = 'catalog' | 'overview'
 
@@ -84,6 +86,10 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const skipEntrance = sidebarHasEntered
+    onMounted(() => {
+      sidebarHasEntered = true
+    })
     const route = useRoute()
     const router = useRouter()
     const eventBus = useBlogEventBus()
@@ -286,7 +292,11 @@ export default defineComponent({
     }
 
     return () => (
-      <aside id={blogDomId('leftbar')} class="kt-blog__sidebar" role="complementary">
+      <aside
+        id={blogDomId('leftbar')}
+        class={['kt-blog__sidebar', skipEntrance && 'kt-blog__sidebar--settled']}
+        role="complementary"
+      >
         <div
           id={blogDomId('leftbarPart1')}
           ref={props.part1Ref}

@@ -6,6 +6,10 @@
     flex-direction: column;
   }
 
+  &__sidebar--settled &__sidebar-panel {
+    animation: none;
+  }
+
   &__sidebar-banner {
     display: block;
     height: 78px;
