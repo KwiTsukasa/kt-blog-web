@@ -240,7 +240,11 @@ const themeConfig = computed(() => {
       borderRadius: preferences.radius,
       colorBgBase: palette.page,
       colorBgContainer: palette.card,
+      colorBgElevated: palette.card,
       colorBorder: palette.border,
+      colorLink: palette.link,
+      colorLinkHover: palette.linkHover,
+      colorLinkActive: palette.linkActive,
       colorPrimary: preferences.colorPrimary,
       colorText: palette.text,
       colorTextSecondary: palette.muted,
@@ -558,6 +562,9 @@ function applyCssVariables(currentPreferences: BlogThemePreferences) {
   --argon-text: ${palette.text};
   --argon-muted: ${palette.muted};
   --argon-title: ${palette.title};
+  --argon-link: ${palette.link};
+  --argon-link-hover: ${palette.linkHover};
+  --argon-link-active: ${palette.linkActive};
   --argon-code-keyword: #c792ea;
   --argon-code-string: #c3e88d;
   --argon-code-comment: #a0aab8;
@@ -673,6 +680,9 @@ function createThemePalette(colorPrimary: string, mode: BlogThemeMode) {
       controlSoft: `hsl(${h}, ${Math.min(paleSaturation + 6, 50)}%, 92%)`,
       faint: 'rgba(23, 32, 51, 0.28)',
       meta: 'rgba(23, 32, 51, 0.56)',
+      link: `hsl(${h}, ${Math.min(s, 70)}%, 28%)`,
+      linkHover: `hsl(${h}, ${Math.min(s, 70)}%, 22%)`,
+      linkActive: `hsl(${h}, ${Math.min(s, 70)}%, 18%)`,
       muted: '#5b6472',
       page: '#f7f8fb',
       pill: `hsl(${h}, ${Math.min(paleSaturation + 10, 56)}%, 90%)`,
@@ -704,6 +714,9 @@ function createThemePalette(colorPrimary: string, mode: BlogThemeMode) {
     controlSoft: `hsl(${h}, ${baseSaturation + 10}%, 24%)`,
     faint: 'rgba(238, 238, 238, 0.34)',
     meta: '#eeeeee',
+    link: `hsl(${h}, ${Math.min(s, 70)}%, 78%)`,
+    linkHover: `hsl(${h}, ${Math.min(s, 70)}%, 88%)`,
+    linkActive: `hsl(${h}, ${Math.min(s, 70)}%, 72%)`,
     muted: `hsl(${h}, ${mutedSaturation}%, 72%)`,
     page: `hsl(${h}, ${baseSaturation}%, 14%)`,
     pill: `hsl(${h}, ${baseSaturation + 12}%, 26%)`,
@@ -714,7 +727,7 @@ function createThemePalette(colorPrimary: string, mode: BlogThemeMode) {
     scrollbarTrack: 'transparent',
     subtle: 'rgba(238, 238, 238, 0.6)',
     text: '#eeeeee',
-    title: '#deccf5',
+    title: `hsl(${h}, ${textSaturation}%, 86%)`,
     toolbarRgb: `${r}, ${g}, ${b}`,
     widgetText: 'rgba(238, 238, 238, 0.66)',
   }

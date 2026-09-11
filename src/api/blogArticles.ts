@@ -22,6 +22,7 @@ export type WordpressArticleHeading = {
 }
 
 export type WordpressPublicArticle = {
+  views?: number
   authorName?: string
   categoriesResolved?: WordpressResolvedTerm[]
   comment_status?: string
@@ -168,4 +169,25 @@ async function requestBlog<T>(url: string, params: Record<string, unknown>) {
   }
 
   return data as T
+}
+
+/**
+ * 在文章实际打开后发送阅读事件，并取得数据库确认的总数。
+ * @param slug - 已加载公开文章的唯一别名。
+ * @returns 后端确认的最新阅读总数。
+ * @throws 计数请求失败或响应缺少有效总数时抛出错误。
+ */
+export async function recordBlogArticleView(slug: string): Promise<number> {
+  const response = await fetch(new URL('/api/blog/article/public/view', window.location.origin).toString(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slug }),
+  })
+  if (!response.ok) throw new Error('文章阅读记录失败')
+  const payload = (await response.json()) as VbenResponse<{ views: number }>
+  const views = payload.data?.views
+  if (typeof views !== 'number' || !Number.isFinite(views) || views < 0) {
+    throw new Error('文章阅读数响应无效')
+  }
+  return views
 }

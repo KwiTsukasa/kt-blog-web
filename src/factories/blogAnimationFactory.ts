@@ -35,9 +35,9 @@ export const BLOG_MOTION_CSS_VARS = {
   menuHover: 'background 0.2s ease-in-out',
   modalPopover: 'opacity 0.25s ease, transform 0.25s ease',
   sidebarSearchInput:
-    'border-color 0.32s ease, box-shadow 0.32s ease, opacity 0.3s ease, transform 0.42s cubic-bezier(0.4, 0, 0, 1)',
+    'width 0.3s cubic-bezier(0.4, 0, 0, 1), height 0.3s cubic-bezier(0.4, 0, 0, 1), opacity 0.3s cubic-bezier(0.4, 0, 0, 1), border-color 0.3s ease, box-shadow 0.15s ease',
   sidebarSearchTrigger:
-    'border-color 0.32s ease, background-color 0.32s ease, opacity 0.28s ease, transform 0.42s cubic-bezier(0.4, 0, 0, 1)',
+    'width 0.3s cubic-bezier(0.4, 0, 0, 1), height 0.3s cubic-bezier(0.4, 0, 0, 1), opacity 0.3s cubic-bezier(0.4, 0, 0, 1), box-shadow 0.15s ease',
   sidebarTabBorder: 'border-bottom-color 0.2s ease',
   sidebarTabFade: 'opacity 0.15s linear',
 } as const

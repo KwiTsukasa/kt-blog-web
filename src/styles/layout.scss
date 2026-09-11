@@ -1,6 +1,16 @@
 @use './tokens' as blog;
 
 @include blog.block {
+  &__page-scroll {
+    position: relative;
+    height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    overscroll-behavior-y: contain;
+    background: transparent;
+  }
+
   &__content {
     position: relative;
     z-index: 2;

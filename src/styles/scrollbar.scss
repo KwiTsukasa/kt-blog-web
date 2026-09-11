@@ -3,12 +3,20 @@
 html {
   scrollbar-color: var(--kt-blog-scrollbar-thumb, rgba(0, 0, 0, 0.25))
     var(--kt-blog-scrollbar-track, transparent);
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   scrollbar-width: thin;
 }
 
-body {
-  overflow-y: auto;
+html:has(.kt-blog__page-scroll),
+body:has(.kt-blog__page-scroll) {
+  overflow: hidden;
+}
+
+html.noscroll .kt-blog__page-scroll,
+html.leftbar-opened .kt-blog__page-scroll,
+body.fancybox-active .kt-blog__page-scroll,
+.kt-blog:has(.kt-blog__modal-host--open) .kt-blog__page-scroll {
+  overflow-y: hidden;
 }
 
 ::-webkit-scrollbar {

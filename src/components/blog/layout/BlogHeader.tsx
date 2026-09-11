@@ -1,4 +1,4 @@
-import { SearchOutlined } from '@antdv-next/icons'
+import { CloseOutlined, MenuOutlined, SearchOutlined } from '@antdv-next/icons'
 import {
   defineComponent,
   nextTick,
@@ -83,10 +83,14 @@ export default defineComponent({
                 id={blogDomId('openSidebar')}
                 class="kt-blog__header-toggle kt-blog__button"
                 aria-expanded={String(props.mobileSidebarOpen)}
-                aria-label="Toggle sidebar"
+                type="text"
+                aria-label="侧栏菜单"
                 onClick={props.onToggleMobileSidebar}
               >
-                <span class="kt-blog__header-toggle-icon" />
+                {(() => {
+                  if (props.mobileSidebarOpen) return <CloseOutlined />
+                  return <MenuOutlined />
+                })()}
               </BlogButton>
 
               <div class="kt-blog__header-brand">
@@ -164,12 +168,23 @@ export default defineComponent({
                           class="kt-blog__header-search-input kt-blog__input"
                           placeholder="搜索什么..."
                           autocomplete="off"
+                          aria-label="顶部搜索"
+                          onFocus={() => {
+                            navSearchOpen.value = true
+                          }}
                           v-model:value={keyword.value}
                           onClick={(event: MouseEvent) => event.stopPropagation()}
                           onBlur={() => {
                             navSearchOpen.value = false
                           }}
                           onKeydown={(event: KeyboardEvent) => {
+                            if (
+                              event.key === 'Escape' ||
+                              (event.key === 'Enter' && !keyword.value.trim())
+                            ) {
+                              if (event.target instanceof HTMLElement) event.target.blur()
+                              return
+                            }
                             if (event.key === 'Enter') {
                               event.preventDefault()
                               submitSearch()
@@ -185,11 +200,11 @@ export default defineComponent({
               <div class="kt-blog__header-menu-mask" />
               <BlogButton
                 class="kt-blog__header-toggle kt-blog__header-mobile-search-toggle kt-blog__button"
-                aria-expanded="false"
-                aria-label="Toggle navigation"
+                type="text"
+                aria-label="搜索文章"
                 onClick={() => eventBus.emit('blog:search:open', undefined)}
               >
-                <span class="kt-blog__header-toggle-icon kt-blog__header-toggle-icon--search" />
+                <SearchOutlined />
               </BlogButton>
             </div>
           </nav>

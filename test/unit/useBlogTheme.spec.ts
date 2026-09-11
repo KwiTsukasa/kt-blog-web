@@ -15,6 +15,30 @@ vi.mock('antdv-next', () => ({
 }));
 
 describe('useBlogTheme', () => {
+  it('updates link states with the selected hue and light or dark palette', async () => {
+    const { preferences, setPrimaryColor, setThemeMode, themeConfig } = useBlogTheme();
+    const original = { color: preferences.colorPrimary, mode: preferences.mode };
+    try {
+      setThemeMode('dark');
+      setPrimaryColor('#2dce89');
+      await nextTick();
+      const green = { ...themeConfig.value.token };
+      setPrimaryColor('#fb6340');
+      await nextTick();
+      const orange = themeConfig.value.token;
+      for (const key of ['colorLink', 'colorLinkHover', 'colorLinkActive'] as const) {
+        expect(orange[key]).not.toBe(green[key]);
+      }
+      expect(orange.colorLink).not.toBe(orange.colorLinkHover);
+      setThemeMode('light');
+      await nextTick();
+      expect(themeConfig.value.token.colorLink).not.toBe(orange.colorLink);
+    } finally {
+      setPrimaryColor(original.color);
+      setThemeMode(original.mode);
+    }
+  });
+
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();

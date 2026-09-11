@@ -8,6 +8,8 @@ import {
   requestBlogFrame,
 } from '@/factories/blogAnimationFactory'
 
+import { useBlogDomRefs } from './useBlogDomRefs'
+
 type Cleanup = () => void
 
 interface ArgonEffectRefs {
@@ -16,6 +18,29 @@ interface ArgonEffectRefs {
   leftbarPart1Ref: Ref<HTMLElement | null>
   leftbarPart2Ref: Ref<HTMLElement | null>
   toolbarRef: Ref<HTMLElement | null>
+}
+
+/**
+ * 取得当前页面的原生滚动位置，布局尚未挂载时回退到文档滚动位置。
+ * @returns 当前滚动源距内容顶部的像素数。
+ */
+export function getBlogScrollTop() {
+  const { pageScrollRef } = useBlogDomRefs()
+  if (pageScrollRef.value) return pageScrollRef.value.scrollTop
+  return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop
+}
+
+/**
+ * 将目录或回顶动画的位置写入页面原生滚动容器，未挂载时使用窗口。
+ * @param top - 相对于滚动内容顶部的目标像素数。
+ */
+export function setBlogScrollTop(top: number) {
+  const { pageScrollRef } = useBlogDomRefs()
+  if (pageScrollRef.value) {
+    pageScrollRef.value.scrollTop = top
+    return
+  }
+  window.scrollTo(0, top)
 }
 
 /**
@@ -37,7 +62,7 @@ export function useArgonEffects(refs: ArgonEffectRefs) {
 
   onMounted(() => {
     scheduleUpdate()
-    document.addEventListener('scroll', scheduleUpdate, { passive: true })
+    document.addEventListener('scroll', scheduleUpdate, { passive: true, capture: true })
     window.addEventListener('resize', scheduleUpdate, { passive: true })
   })
 
@@ -45,7 +70,7 @@ export function useArgonEffects(refs: ArgonEffectRefs) {
     frameScheduler.cancel()
 
     document.body.classList.remove('leftbar-can-headroom')
-    document.removeEventListener('scroll', scheduleUpdate)
+    document.removeEventListener('scroll', scheduleUpdate, true)
     window.removeEventListener('resize', scheduleUpdate)
   })
 }
@@ -56,7 +81,7 @@ export function useArgonEffects(refs: ArgonEffectRefs) {
  * @param duration - 用于计算 `(now - startTime) / duration` 的`duration`；未提供时使用 `BLOG_ANIMATION_TIMING_MS.scrollToTop`。
  */
 export function smoothScrollTo(top = 0, duration = BLOG_ANIMATION_TIMING_MS.scrollToTop) {
-  const start = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop
+  const start = getBlogScrollTop()
   const distance = top - start
   const startTime = performance.now()
 
@@ -65,7 +90,7 @@ export function smoothScrollTo(top = 0, duration = BLOG_ANIMATION_TIMING_MS.scro
    */
   const step = (now: number) => {
     const progress = Math.min((now - startTime) / duration, 1)
-    window.scrollTo(0, start + distance * easeOutExpo(progress))
+    setBlogScrollTop(start + distance * easeOutExpo(progress))
     if (progress < 1) {
       requestBlogFrame(step)
     }
@@ -87,13 +112,13 @@ export function onArgonScroll(callback: () => void): Cleanup {
   }
 
   scheduleUpdate()
-  document.addEventListener('scroll', scheduleUpdate, { passive: true })
+  document.addEventListener('scroll', scheduleUpdate, { passive: true, capture: true })
   window.addEventListener('resize', scheduleUpdate, { passive: true })
 
   return () => {
     frameScheduler.cancel()
 
-    document.removeEventListener('scroll', scheduleUpdate)
+    document.removeEventListener('scroll', scheduleUpdate, true)
     window.removeEventListener('resize', scheduleUpdate)
   }
 }
@@ -110,7 +135,7 @@ function syncToolbar(refs: ArgonEffectRefs) {
 
   const themeRoot = toolbar.closest('.kt-blog')
   const isNoBanner = themeRoot?.classList.contains('kt-blog--no-banner') ?? false
-  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop || window.scrollY
+  const scrollTop = getBlogScrollTop()
 
   if (isNoBanner) {
     toolbar.classList.toggle(
@@ -194,7 +219,7 @@ function syncLeftbar(refs: ArgonEffectRefs) {
     return
   }
 
-  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop || window.scrollY
+  const scrollTop = getBlogScrollTop()
   const part1Rect = leftbarPart1.getBoundingClientRect()
   const part1OffsetTop = part1Rect.top + scrollTop
   const leftbarBottom =

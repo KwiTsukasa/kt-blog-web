@@ -62,11 +62,18 @@ html.filter-darkness .kt-blog__primary::after {
     display: none;
   }
 
-  &__content::before,
-  &__content::after {
+  &__background {
     position: fixed;
     inset: 0;
-    z-index: -2;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &__background::before,
+  &__background::after {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
     pointer-events: none;
     content: '';
     background-position: center center;
@@ -76,28 +83,28 @@ html.filter-darkness .kt-blog__primary::after {
     transition: var(--kt-blog-motion-background-image-opacity, opacity 0.5s ease);
   }
 
-  &__content::before {
+  &__background::before {
     background-image: var(--argon-background-light-image, var(--argon-background-image));
     filter: var(--argon-background-filter, none);
     opacity: 0;
   }
 
-  &__content::after {
+  &__background::after {
     background-image: var(--argon-background-dark-image, var(--argon-background-image));
     opacity: var(--argon-background-opacity, 1);
   }
 
-  &--light &__content::before {
+  &--light &__background::before {
     filter: none;
     opacity: var(--argon-background-light-opacity, 1);
   }
 
-  &--light &__content::after {
+  &--light &__background::after {
     opacity: 0;
   }
 
-  &--no-banner &__content::before,
-  &--no-banner &__content::after {
+  &--no-banner &__background::before,
+  &--no-banner &__background::after {
     background: var(--argon-page);
   }
 

@@ -6,6 +6,7 @@ const encodedSlug = '%e6%b5%8b%e8%af%95-milkdown';
 const decodedSlug = '测试-milkdown';
 
 const publicArticle = {
+  views: 12,
   authorName: '作者',
   categoriesResolved: [
     {
@@ -36,6 +37,28 @@ const publicArticle = {
 };
 
 describe('useBlogArticles', () => {
+  it('records only opened articles, merges concurrent view requests and updates cached counts', async () => {
+    const fetchMock = mockFetch([
+      { status: 200, body: { data: { list: [publicArticle], total: 1 } } },
+      { status: 200, body: { data: { views: 13 } } },
+      { status: 503, body: {} },
+    ]);
+    const { useBlogArticles } = await import('@/hooks/useBlogArticles');
+    const blog = useBlogArticles();
+    await blog.loadArticles();
+    expect(blog.articles.value[0]?.views).toBe(12);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await Promise.all([blog.loadArticle(decodedSlug), blog.loadArticle(decodedSlug)]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
+      method: 'POST', body: JSON.stringify({ slug: decodedSlug }),
+    });
+    expect(blog.articles.value[0]?.views).toBe(13);
+    await blog.loadArticle(decodedSlug);
+    expect(blog.articles.value[0]?.views).toBe(13);
+    expect(blog.articles.value[0]?.contentHtml).toContain('正文');
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
@@ -311,6 +334,7 @@ describe('useBlogArticles', () => {
     expect(requestedUrls.map((url) => url.pathname)).toEqual([
       '/api/blog/article/public/list',
       '/api/blog/article/public/detail',
+      '/api/blog/article/public/view',
     ]);
     expect(requestedUrls.every((url) => url.origin === window.location.origin)).toBe(true);
     expect(requestedUrls.some((url) => url.pathname.startsWith('/api/wordpress'))).toBe(false);

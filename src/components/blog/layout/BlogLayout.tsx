@@ -1,5 +1,8 @@
-import { computed, onBeforeUnmount, onMounted, type PropType, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, type PropType, watch } from 'vue'
 import { defineComponent, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { useBlogDomRefs } from '@/hooks/useBlogDomRefs'
+import wordmarkUrl from '@/assets/kwitsukasa-wordmark.svg'
 
 import { blogDomId, createBlogElementRef } from '@/factories/blogDomFactory'
 import { type BlogTaxonomyModal, useBlogEventBus } from '@/hooks/useBlogEventBus'
@@ -41,6 +44,15 @@ export default defineComponent({
     },
   },
   setup(props, { slots }) {
+    const route = useRoute()
+    const { pageScrollRef } = useBlogDomRefs()
+    watch(
+      () => route.fullPath,
+      async () => {
+        await nextTick()
+        pageScrollRef.value?.scrollTo({ top: 0, behavior: 'instant' })
+      },
+    )
     const activeModal = ref<BlogTaxonomyModal | null>(null)
     const mobileSidebarOpen = ref(false)
     const searchOpen = ref(false)
@@ -144,67 +156,85 @@ export default defineComponent({
           }}
         />
 
-        <section
-          id={blogDomId('banner')}
-          class="kt-blog__banner banner section section-lg section-shaped"
-        >
-          <div class="shape shape-primary" aria-hidden="true" />
-          <div
-            ref={bannerContainerRef}
-            id={blogDomId('bannerContainer')}
-            class="kt-blog__banner-container banner-container container text-center"
-            aria-hidden="true"
-          />
-        </section>
-
+        <div class="kt-blog__background" aria-hidden="true" />
         <BlogFloatActions />
         <BlogLive2D />
-
-        <div id={blogDomId('content')} ref={contentRef} class="kt-blog__content site-content">
-          {(() => {
-            if (props.showPageInfo && slots.pageInfo) {
-              return slots.pageInfo()
-            }
-            if (props.showPageInfo && props.pageTitle) {
-              return (
-                <PageInfoCard
-                  title={props.pageTitle}
-                  description={props.pageDescription}
-                  meta={props.pageMeta}
-                />
-              )
-            }
-            return null
-          })()}
-
-          <div
-            id={blogDomId('sidebarMask')}
-            class="kt-blog__sidebar-mask"
-            onClick={closeMobileSidebar}
-          />
-          <BlogSidebar
-            categories={categories.value}
-            tags={tags.value}
-            articles={articles.value}
-            part1Ref={leftbarPart1Ref}
-            part2Ref={leftbarPart2Ref}
-          />
-          <BlogRightbar articles={articles.value} categories={categories.value} />
-
-          <div id={blogDomId('primary')} class="kt-blog__primary content-area">
-            <main
-              id={blogDomId('main')}
-              class={['kt-blog__main site-main', props.mainClass]}
-              role="main"
+        <div
+          ref={pageScrollRef}
+          class="kt-blog__page-scroll"
+          tabindex={0}
+          role="region"
+          aria-label="正文浏览区域"
+        >
+          <section
+            id={blogDomId('banner')}
+            class="kt-blog__banner banner section section-lg section-shaped"
+          >
+            <div class="shape shape-primary" aria-hidden="true" />
+            <div
+              ref={bannerContainerRef}
+              id={blogDomId('bannerContainer')}
+              class="kt-blog__banner-container banner-container container text-center"
             >
-              {slots.default?.()}
-              <footer
-                id={blogDomId('footer')}
-                class="kt-blog__footer kt-blog__card site-footer card shadow-sm border-0"
+              <div class="kt-blog__banner-title">
+                <img
+                  class="kt-blog__banner-wordmark"
+                  src={wordmarkUrl}
+                  alt="KwiTsukasa"
+                  draggable={false}
+                  width="317"
+                  height="40"
+                />
+              </div>
+            </div>
+          </section>
+
+          <div id={blogDomId('content')} ref={contentRef} class="kt-blog__content site-content">
+            {(() => {
+              if (props.showPageInfo && slots.pageInfo) {
+                return slots.pageInfo()
+              }
+              if (props.showPageInfo && props.pageTitle) {
+                return (
+                  <PageInfoCard
+                    title={props.pageTitle}
+                    description={props.pageDescription}
+                    meta={props.pageMeta}
+                  />
+                )
+              }
+              return null
+            })()}
+
+            <div
+              id={blogDomId('sidebarMask')}
+              class="kt-blog__sidebar-mask"
+              onClick={closeMobileSidebar}
+            />
+            <BlogSidebar
+              categories={categories.value}
+              tags={tags.value}
+              articles={articles.value}
+              part1Ref={leftbarPart1Ref}
+              part2Ref={leftbarPart2Ref}
+            />
+            <BlogRightbar articles={articles.value} categories={categories.value} />
+
+            <div id={blogDomId('primary')} class="kt-blog__primary content-area">
+              <main
+                id={blogDomId('main')}
+                class={['kt-blog__main site-main', props.mainClass]}
+                role="main"
               >
-                <div class="kt-blog__footer-info">Theme Argon By solstice23</div>
-              </footer>
-            </main>
+                {slots.default?.()}
+                <footer
+                  id={blogDomId('footer')}
+                  class="kt-blog__footer kt-blog__card site-footer card shadow-sm border-0"
+                >
+                  <div class="kt-blog__footer-info">Theme Argon By solstice23</div>
+                </footer>
+              </main>
+            </div>
           </div>
         </div>
       </>

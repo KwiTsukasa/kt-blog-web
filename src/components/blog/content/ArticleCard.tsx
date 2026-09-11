@@ -19,6 +19,8 @@ export default defineComponent({
       type: Object as PropType<BlogArticle>,
       required: true,
     },
+    opening: Boolean,
+    openingOffset: { type: Number, default: 0 },
   },
   setup(props) {
     const { getTagSlugByLabel } = useBlogArticles()
@@ -26,7 +28,13 @@ export default defineComponent({
     return () => (
       <article
         id={blogPostCardId(props.article.id)}
-        class="kt-blog__post kt-blog__post--preview kt-blog__card post card bg-white shadow-sm border-0"
+        class={[
+          'kt-blog__post kt-blog__post--preview kt-blog__card post card bg-white shadow-sm border-0',
+          props.opening && 'kt-blog__post--opening',
+        ]}
+        style={{ '--kt-blog-post-opening-offset': `${props.openingOffset}px` }}
+        data-article-slug={props.article.slug}
+        aria-busy={props.opening}
       >
         <header class="kt-blog__post-header kt-blog__post-header--center post-header text-center">
           <RouterLink class="kt-blog__post-title post-title" to={`/post/${props.article.slug}`}>
@@ -73,6 +81,14 @@ export default defineComponent({
         </header>
 
         <div class="kt-blog__post-content post-content">{props.article.excerpt}</div>
+
+        {props.opening && (
+          <div class="kt-blog__post-opening-loader" role="status" aria-label="正在打开文章">
+            {Array.from({ length: 8 }, (_, index) => (
+              <span key={index} style={{ '--kt-blog-loading-dot': index }} />
+            ))}
+          </div>
+        )}
 
         {(() => {
           if (props.article.tags.length) {

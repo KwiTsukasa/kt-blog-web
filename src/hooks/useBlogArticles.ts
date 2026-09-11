@@ -3,6 +3,7 @@ import { computed, getCurrentInstance, onMounted, ref } from 'vue'
 import {
   fetchBlogArticleDetail,
   fetchBlogArticleList,
+  recordBlogArticleView,
   type WordpressPublicArticle,
 } from '@/api/blogArticles'
 import {
@@ -25,6 +26,7 @@ const blogArticles = ref<BlogArticle[]>([])
 const loading = ref(false)
 const loadedFromApi = ref(false)
 let loadPromise: Promise<void> | null = null
+const viewRequests = new Map<string, Promise<void>>()
 
 /**
  * 提供文章、分类与标签的响应式列表及查询方法。
@@ -155,7 +157,10 @@ async function loadArticle(slug: string) {
   await loadArticles()
 
   const cachedArticle = blogArticles.value.find((article) => article.slug === normalizedSlug)
-  if (cachedArticle?.contentHtml) return cachedArticle
+  if (cachedArticle?.contentHtml) {
+    await recordArticleView(cachedArticle)
+    return cachedArticle
+  }
 
   try {
     const article = normalizeWordpressArticle(await fetchBlogArticleDetail(normalizedSlug))
@@ -171,10 +176,33 @@ async function loadArticle(slug: string) {
       blogArticles.value = [article, ...blogArticles.value]
     }
 
+    await recordArticleView(article)
     return article
   } catch {
     return cachedArticle
   }
+}
+
+/**
+ * 合并同一文章并发触发的阅读请求，并回填共享列表；计数失败不妨碍正文阅读。
+ * @param article - 已成功加载且正在打开的文章。
+ * @returns 阅读请求结束后兑现，不向阅读页面传播统计故障。
+ */
+async function recordArticleView(article: BlogArticle): Promise<void> {
+  const pending = viewRequests.get(article.slug)
+  if (pending) return pending
+  const request = recordBlogArticleView(article.slug)
+    .then((views) => {
+      article.views = views
+      const current = blogArticles.value.find((item) => item.slug === article.slug)
+      if (current) current.views = views
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      viewRequests.delete(article.slug)
+    })
+  viewRequests.set(article.slug, request)
+  return request
 }
 
 /**
@@ -237,7 +265,7 @@ function normalizeWordpressArticle(article: WordpressPublicArticle): BlogArticle
     slug: decodeSlug(article.slug),
     tags,
     title: getRenderedText(article.title) || '未命名文章',
-    views: 0,
+    views: Math.max(0, Number(article.views) || 0),
     words,
   }
 }

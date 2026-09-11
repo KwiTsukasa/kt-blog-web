@@ -211,13 +211,13 @@ body.fancybox-active {
   }
 
   &__post-title {
-    color: var(--argon-title, #deccf5);
+    color: var(--argon-title);
     font-size: 26px;
     line-height: 1.35;
     letter-spacing: 0;
 
     &:hover {
-      color: var(--themecolor, #c3a1ed);
+      color: var(--argon-link-hover);
     }
   }
 
@@ -248,10 +248,10 @@ body.fancybox-active {
     line-height: 24px;
 
     a {
-      color: var(--argon-title, #deccf5);
+      color: var(--argon-title);
 
       &:hover {
-        color: var(--themecolor, #c3a1ed);
+        color: var(--argon-link-hover);
       }
     }
   }
@@ -283,7 +283,7 @@ body.fancybox-active {
 
     a {
       position: relative;
-      color: var(--themecolor-light, rgb(222, 204, 245));
+      color: var(--argon-link);
       text-decoration: none;
       overflow-wrap: break-word;
       border-bottom: 0;
@@ -295,7 +295,7 @@ body.fancybox-active {
         left: 0;
         width: 100%;
         height: 1px;
-        background-color: var(--themecolor, #c3a1ed);
+        background-color: var(--argon-link-hover);
         backface-visibility: hidden;
         content: '';
         transform: scaleX(0);
@@ -303,7 +303,7 @@ body.fancybox-active {
       }
 
       &:hover {
-        color: var(--themecolor, #c3a1ed);
+        color: var(--argon-link-hover);
       }
 
       &:hover::before {
@@ -617,9 +617,10 @@ body.fancybox-active {
       padding: 14px;
       color: var(--argon-text);
       background: var(--color-codeblock, rgb(60, 54, 67));
-      font-family: Consolas, Menlo, Monaco, 'Andale Mono WT', 'Andale Mono', 'Lucida Console', 'Lucida Sans Typewriter',
-        'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Liberation Mono', 'Nimbus Mono L', 'Courier New', Courier,
-        monospace;
+      font-family:
+        Consolas, Menlo, Monaco, 'Andale Mono WT', 'Andale Mono', 'Lucida Console',
+        'Lucida Sans Typewriter', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Liberation Mono',
+        'Nimbus Mono L', 'Courier New', Courier, monospace;
       font-size: 14px;
       line-height: 1.65;
       overflow-wrap: break-word;
@@ -632,9 +633,10 @@ body.fancybox-active {
       padding: 2px 5px;
       color: var(--argon-text);
       background: var(--color-codeblock, rgb(60, 54, 67));
-      font-family: Consolas, Menlo, Monaco, 'Andale Mono WT', 'Andale Mono', 'Lucida Console', 'Lucida Sans Typewriter',
-        'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Liberation Mono', 'Nimbus Mono L', 'Courier New', Courier,
-        monospace;
+      font-family:
+        Consolas, Menlo, Monaco, 'Andale Mono WT', 'Andale Mono', 'Lucida Console',
+        'Lucida Sans Typewriter', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Liberation Mono',
+        'Nimbus Mono L', 'Courier New', Courier, monospace;
       font-size: 14px;
       word-break: break-word;
       overflow-wrap: break-word;
@@ -706,11 +708,13 @@ body.fancybox-active {
       tab-size: 4;
       max-width: 100%;
       margin: 0 0 16px;
+      border: 0;
       padding: 0;
       overflow: visible;
       color: rgb(33, 37, 41);
       background: transparent;
-      font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-family:
+        SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
       font-size: 14px;
       line-height: 25.2px;
       white-space: pre;
@@ -726,8 +730,7 @@ body.fancybox-active {
       height: 14px;
       margin-left: 5px;
       content: '';
-      background:
-        url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NCIgaGVpZ2h0PSIxNCIgdmlld0JveD0iMCAwIDU0IDE0Ij48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEgMSkiPjxjaXJjbGUgY3g9IjYiIGN5PSI2IiByPSI2IiBmaWxsPSIjRkY1RjU2IiBzdHJva2U9IiNFMDQ0M0UiIHN0cm9rZS13aWR0aD0iLjUiPjwvY2lyY2xlPjxjaXJjbGUgY3g9IjI2IiBjeT0iNiIgcj0iNiIgZmlsbD0iI0ZGQkQyRSIgc3Ryb2tlPSIjREVBMTIzIiBzdHJva2Utd2lkdGg9Ii41Ij48L2NpcmNsZT48Y2lyY2xlIGN4PSI0NiIgY3k9IjYiIHI9IjYiIGZpbGw9IiMyN0M5M0YiIHN0cm9rZT0iIzFBQUIyOSIgc3Ryb2tlLXdpZHRoPSIuNSI+PC9jaXJjbGU+PC9nPjwvc3ZnPg==')
+      background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NCIgaGVpZ2h0PSIxNCIgdmlld0JveD0iMCAwIDU0IDE0Ij48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEgMSkiPjxjaXJjbGUgY3g9IjYiIGN5PSI2IiByPSI2IiBmaWxsPSIjRkY1RjU2IiBzdHJva2U9IiNFMDQ0M0UiIHN0cm9rZS13aWR0aD0iLjUiPjwvY2lyY2xlPjxjaXJjbGUgY3g9IjI2IiBjeT0iNiIgcj0iNiIgZmlsbD0iI0ZGQkQyRSIgc3Ryb2tlPSIjREVBMTIzIiBzdHJva2Utd2lkdGg9Ii41Ij48L2NpcmNsZT48Y2lyY2xlIGN4PSI0NiIgY3k9IjYiIHI9IjYiIGZpbGw9IiMyN0M5M0YiIHN0cm9rZT0iIzFBQUIyOSIgc3Ryb2tlLXdpZHRoPSIuNSI+PC9jaXJjbGU+PC9nPjwvc3ZnPg==')
         no-repeat;
       background-position-y: center;
     }
@@ -735,14 +738,15 @@ body.fancybox-active {
     pre.hljs-codeblock > code,
     pre.wp-block-code.hljs-codeblock > code {
       display: block;
-      margin: 15px 0;
+      margin: 0;
       border: 0;
       border-radius: 8px;
       padding: 55px 20px 22px;
       color: rgb(171, 178, 191);
       background: rgb(40, 44, 52);
       box-shadow: rgba(0, 0, 0, 0.2) 0 5px 20px;
-      font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-family:
+        SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
       font-size: 16px;
       line-height: 1.5;
       word-break: normal;
@@ -761,7 +765,8 @@ body.fancybox-active {
       border-collapse: collapse;
       color: rgb(171, 178, 191);
       background: transparent;
-      font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-family:
+        SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
       font-size: 16px;
       line-height: 24px;
       word-break: break-word;
@@ -827,7 +832,8 @@ body.fancybox-active {
       top: 16px;
       right: 20px;
       color: rgb(97, 174, 238);
-      font-family: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-family:
+        SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
       font-size: 14px;
       line-height: 25.2px;
       opacity: 0;
@@ -923,7 +929,9 @@ body.fancybox-active {
     }
 
     pre.hljs-codeblock.hljs-codeblock-fullscreen .hljs-control-fullscreen > i::before,
-    pre.wp-block-code.hljs-codeblock.hljs-codeblock-fullscreen .hljs-control-fullscreen > i::before {
+    pre.wp-block-code.hljs-codeblock.hljs-codeblock-fullscreen
+      .hljs-control-fullscreen
+      > i::before {
       content: '\f066';
     }
 
@@ -1231,6 +1239,65 @@ body.fancybox-active {
     display: contents;
   }
 
+  &__post--preview {
+    transition:
+      opacity 0.5s ease,
+      transform 0.5s ease;
+  }
+
+  &__post--preview &__post-title {
+    display: inline-block;
+    transform-origin: center;
+    transition:
+      color 0.3s ease,
+      transform 0.3s ease;
+
+    &:hover,
+    &:focus-visible {
+      transform: scale(1.02);
+      text-rendering: optimizeLegibility;
+    }
+  }
+
+  &__post-transition--opening &__post--preview {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__post-transition--opening &__post--opening {
+    opacity: 1;
+    transform: translateY(var(--kt-blog-post-opening-offset));
+  }
+
+  &__post-opening-loader {
+    padding: 20px 0 10px;
+    text-align: center;
+    overflow: hidden;
+
+    span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--themecolor);
+      opacity: 0;
+      transform: translateX(-300px);
+      animation: kt-blog-post-loading 4s infinite ease;
+      animation-delay: calc((8 - var(--kt-blog-loading-dot)) * 0.1s);
+    }
+  }
+
+  @keyframes kt-blog-post-loading {
+    40% {
+      transform: translateX(0);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateX(300px);
+      opacity: 0;
+    }
+  }
+
   &__post-transition-enter-active,
   &__post-transition-leave-active {
     transition:
@@ -1244,21 +1311,34 @@ body.fancybox-active {
     transform: translateY(10px) scale(0.98);
   }
 
-  &__post-page-transition-enter-active,
-  &__post-page-transition-leave-active {
-    transition:
-      opacity 0.34s ease,
-      transform 0.34s cubic-bezier(0.4, 0, 0, 1);
+  &__post-page-transition-enter-active {
+    animation: kt-blog-card-show 0.25s ease-out;
+    transform-origin: center top;
   }
 
-  &__post-page-transition-enter-from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.985);
+  &__post-page-transition-leave-active {
+    transition: opacity 0.3s ease;
   }
 
   &__post-page-transition-leave-to {
     opacity: 0;
-    transform: translateY(-8px) scale(0.99);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__post--preview,
+    &__post--preview &__post-title,
+    &__post-page-transition-enter-active,
+    &__post-page-transition-leave-active {
+      transition: none;
+      animation: none;
+    }
+    &__post--preview &__post-title:hover,
+    &__post--preview &__post-title:focus-visible {
+      transform: none;
+    }
+    &__post-opening-loader {
+      display: none;
+    }
   }
 
   &__post-navigation {
@@ -1367,7 +1447,11 @@ body.fancybox-active {
     align-items: flex-end;
     padding: 12px;
     color: #fff;
-    background: linear-gradient(180deg, var(--argon-card-overlay-weak), var(--argon-card-overlay-strong));
+    background: linear-gradient(
+      180deg,
+      var(--argon-card-overlay-weak),
+      var(--argon-card-overlay-strong)
+    );
   }
 
   &__related-post-title {

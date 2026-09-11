@@ -15,7 +15,12 @@
     inset: 0;
     pointer-events: none;
     content: '';
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.15) 35%, rgba(0, 0, 0, 0) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.25) 0%,
+      rgba(0, 0, 0, 0.15) 35%,
+      rgba(0, 0, 0, 0) 100%
+    );
   }
 
   &__banner .shape {
@@ -28,9 +33,29 @@
     position: relative;
     z-index: 1;
     width: min(1180px, calc(100% - 40px));
+    height: calc(40vh - 120px);
     margin: 0 auto;
-    padding-top: 34px;
     text-align: center;
+  }
+
+  &__banner-title {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+  }
+
+  &__banner-wordmark {
+    display: block;
+    width: auto;
+    height: 40px;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: visible;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
   }
 
   &--no-banner &__banner {

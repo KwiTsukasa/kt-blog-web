@@ -11,8 +11,10 @@ import {
   type PropType,
   watch,
 } from 'vue'
+import { useRouter } from 'vue-router'
 
 import type { BlogArticle } from '@/data/blog'
+import { getBlogScrollTop, setBlogScrollTop } from '@/hooks/useArgonEffects'
 
 import ArticleCard from './ArticleCard'
 
@@ -33,6 +35,53 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const router = useRouter()
+    const openingSlug = ref('')
+    const openingOffset = ref(0)
+    let openingTimer: ReturnType<typeof setTimeout> | undefined
+    let scrollFrame = 0
+    let disposed = false
+    const openArticle = (event: MouseEvent) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+        return
+      if (!(event.target instanceof Element)) return
+      const title = event.target.closest<HTMLAnchorElement>('a.kt-blog__post-title')
+      const card = title?.closest<HTMLElement>('.kt-blog__post--preview')
+      const main = card?.closest<HTMLElement>('.kt-blog__main')
+      const targetSlug = card?.dataset.articleSlug
+      if (!title || !card || !main || !targetSlug || title.target === '_blank') return
+      event.preventDefault()
+      if (openingSlug.value) return
+
+      openingOffset.value = main.getBoundingClientRect().top - card.getBoundingClientRect().top
+      openingSlug.value = targetSlug
+      const navigate = async () => {
+        try {
+          await router.push(`/post/${targetSlug}`)
+        } finally {
+          openingSlug.value = ''
+        }
+      }
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setBlogScrollTop(0)
+        void navigate()
+        return
+      }
+
+      // 复用 Argon 的 450ms swing 回顶与 500ms 卡片移位，滚动源改为页面原生容器。
+      const initialScroll = getBlogScrollTop()
+      const startedAt = performance.now()
+      const scrollToTop = (now: number) => {
+        if (disposed) return
+        const progress = Math.min((now - startedAt) / 450, 1)
+        setBlogScrollTop((initialScroll * (1 + Math.cos(progress * Math.PI))) / 2)
+        if (progress < 1) scrollFrame = requestAnimationFrame(scrollToTop)
+      }
+      scrollFrame = requestAnimationFrame(scrollToTop)
+      openingTimer = setTimeout(() => {
+        if (!disposed) void navigate()
+      }, 500)
+    }
     const loadMoreTarget = ref<HTMLElement | null>(null)
     const visibleCount = ref(0)
     let observer: IntersectionObserver | null = null
@@ -122,6 +171,9 @@ export default defineComponent({
     })
 
     onBeforeUnmount(() => {
+      disposed = true
+      clearTimeout(openingTimer)
+      cancelAnimationFrame(scrollFrame)
       observer?.disconnect()
     })
 
@@ -130,10 +182,21 @@ export default defineComponent({
         {(() => {
           if (props.articles.length > 0) {
             return (
-              <div class="kt-blog__post-transition">
+              <div
+                class={[
+                  'kt-blog__post-transition',
+                  openingSlug.value && 'kt-blog__post-transition--opening',
+                ]}
+                {...{ onClickCapture: openArticle }}
+              >
                 <TransitionGroup name="kt-blog__post-transition" tag="div">
                   {visibleArticles.value.map((article) => (
-                    <ArticleCard key={article.id} article={article} />
+                    <ArticleCard
+                      key={article.id}
+                      article={article}
+                      opening={openingSlug.value === article.slug}
+                      openingOffset={openingOffset.value}
+                    />
                   ))}
                 </TransitionGroup>
                 {(() => {

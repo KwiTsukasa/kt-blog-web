@@ -1,3 +1,4 @@
+import { getBlogScrollTop, setBlogScrollTop, onArgonScroll } from '@/hooks/useArgonEffects'
 import { SearchOutlined } from '@antdv-next/icons'
 import {
   computed,
@@ -266,6 +267,7 @@ export default defineComponent({
     const focusInput = (target: any) => {
       target?.focus?.()
       target?.input?.focus?.()
+      target?.input?.select?.()
     }
 
     /*
@@ -338,6 +340,8 @@ export default defineComponent({
             <BlogButton
               id={blogDomId('leftbarSearchContainer')}
               class="kt-blog__sidebar-search-trigger kt-blog__button kt-blog__button--secondary kt-blog__button--small kt-blog__button--block"
+              aria-expanded={leftbarSearchOpen.value}
+              aria-label="展开侧栏搜索"
               onClick={() => {
                 leftbarSearchOpen.value = true
                 nextTick(() => focusInput(leftbarSearchInputRef.value))
@@ -352,11 +356,18 @@ export default defineComponent({
               placeholder="搜索什么..."
               class="kt-blog__sidebar-search-input kt-blog__input"
               autocomplete="off"
+              aria-label="侧栏搜索"
+              readonly={!leftbarSearchOpen.value}
+              tabindex={Number(leftbarSearchOpen.value) - 1}
               v-model:value={keyword.value}
               onBlur={() => {
                 leftbarSearchOpen.value = false
               }}
               onKeydown={(event: KeyboardEvent) => {
+                if (event.key === 'Escape' || (event.key === 'Enter' && !keyword.value.trim())) {
+                  if (event.target instanceof HTMLElement) event.target.blur()
+                  return
+                }
                 if (event.key === 'Enter') {
                   event.preventDefault()
                   submitSearch()
@@ -577,7 +588,7 @@ function mountArgonHeadIndex(
     }
 
     updateArgonNodeTopHeights(nodes)
-    const currentNode = searchArgonCatalogNode(nodes, 0, nodes.length - 1, window.scrollY)
+    const currentNode = searchArgonCatalogNode(nodes, 0, nodes.length - 1, getBlogScrollTop())
     if (!currentNode) {
       return
     }
@@ -629,7 +640,7 @@ function mountArgonHeadIndex(
   catalogRoot.addEventListener('click', handleCatalogClick)
   indexScrollBox?.addEventListener('mouseenter', handleMouseEnter)
   indexScrollBox?.addEventListener('mouseleave', handleMouseLeave)
-  window.addEventListener('scroll', updateCurrentFromScroll, { passive: true })
+  const cleanupPageScroll = onArgonScroll(updateCurrentFromScroll)
   updateCurrentFromScroll()
 
   return () => {
@@ -640,7 +651,7 @@ function mountArgonHeadIndex(
     catalogRoot.removeEventListener('click', handleCatalogClick)
     indexScrollBox?.removeEventListener('mouseenter', handleMouseEnter)
     indexScrollBox?.removeEventListener('mouseleave', handleMouseLeave)
-    window.removeEventListener('scroll', updateCurrentFromScroll)
+    cleanupPageScroll()
   }
 }
 
@@ -833,7 +844,7 @@ function searchArgonCatalogNode(
 function getArgonHeadingTop(element: HTMLElement) {
   return (
     element.getBoundingClientRect().top +
-    window.scrollY -
+    getBlogScrollTop() -
     BLOG_SCROLL_GEOMETRY.catalogActivationOffsetPx
   )
 }
@@ -1089,12 +1100,12 @@ function animateElementScrollTop(element: HTMLElement, targetScrollTop: number) 
 }
 
 /**
- * 页面窗口通过指数缓出滚动到目标位置，并保证同一时刻只有一个活动动画帧。
+ * 页面原生滚动容器通过指数缓出定位标题，并保证同一时刻只有一个活动动画帧。
  * @param targetScrollTop - 过渡结束时页面的纵向滚动像素值。
  */
 function animateWindowScrollTo(targetScrollTop: number) {
   cancelWindowScrollAnimation()
-  const start = window.scrollY
+  const start = getBlogScrollTop()
   const distance = targetScrollTop - start
   const startTime = performance.now()
 
@@ -1103,7 +1114,7 @@ function animateWindowScrollTo(targetScrollTop: number) {
    */
   const tick = (now: number) => {
     const progress = Math.min((now - startTime) / BLOG_ANIMATION_TIMING_MS.catalogNormal, 1)
-    window.scrollTo(0, start + distance * easeOutExpo(progress))
+    setBlogScrollTop(start + distance * easeOutExpo(progress))
     if (progress < 1) {
       windowScrollFrame = requestBlogFrame(tick)
       return
