@@ -2,6 +2,7 @@ import { App as AntdApp, ConfigProvider } from 'antdv-next';
 import { computed, defineComponent, onBeforeUnmount, onMounted, watch } from 'vue';
 import { RouterView, type RouteLocationNormalizedLoaded, useRoute } from 'vue-router';
 
+import BlogLive2D from './components/blog/live2d/BlogLive2D';
 import {
   resolveBlogThemeConfigUrl,
   type WordpressArgonThemeConfig,
@@ -46,6 +47,7 @@ export default defineComponent({
             data-argon-route-kind={getArgonRouteKind(route)}
           >
             <RouterView />
+            <BlogLive2D />
           </div>
         </AntdApp>
       </ConfigProvider>

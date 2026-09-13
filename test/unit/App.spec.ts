@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
+import { defineComponent, getCurrentInstance, h, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../../src/App';
@@ -391,5 +391,58 @@ describe('App', () => {
     expect(styleText).toContain(
       "--argon-author-avatar: url('http://s3.kwitsukasa.top/images/wp-avatar.jpg'), url('/blog-assets/avatar-tsukasa-1.jpg');",
     );
+  });
+
+  it('preserves the Live2D instance and interaction state across page routes', async () => {
+    const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo');
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value: vi.fn() });
+    const mounted = vi.fn();
+    const destroyed = vi.fn();
+    const live2d = defineComponent({
+      name: 'BlogLive2D',
+      setup() {
+        const instance = getCurrentInstance()?.proxy;
+        const selection = ref('pio:0');
+        onMounted(() => mounted(instance));
+        onBeforeUnmount(() => destroyed(instance));
+        return () => h('button', {
+          class: 'live2d-state-probe',
+          onClick: () => { selection.value = 'tia:2'; },
+        }, selection.value);
+      },
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({ data: { list: [], total: 0 } }),
+      { headers: { 'Content-Type': 'application/json' } },
+    )));
+    await router.push('/');
+    await router.isReady();
+    const wrapper = mount(App, {
+      global: { plugins: [router], stubs: { BlogLive2D: live2d } },
+    });
+    const instance = wrapper.findComponent(live2d).vm;
+    try {
+      await flushPromises();
+      const element = wrapper.get('.live2d-state-probe').element;
+      await wrapper.get('.live2d-state-probe').trigger('click');
+      for (const path of ['/post/live2d-persistence', '/category/nas', '/tag/vue', '/archives', '/search?q=vue', '/']) {
+        await router.push(path);
+        await flushPromises();
+        expect(wrapper.findAllComponents(live2d)).toHaveLength(1);
+        expect(wrapper.findComponent(live2d).vm === instance).toBe(true);
+        expect(wrapper.get('.live2d-state-probe').element).toBe(element);
+        expect(wrapper.get('.live2d-state-probe').text()).toBe('tia:2');
+        expect(mounted.mock.calls.filter(([value]) => value === instance)).toHaveLength(1);
+        expect(destroyed.mock.calls.filter(([value]) => value === instance)).toHaveLength(0);
+      }
+    } finally {
+      wrapper.unmount();
+      if (originalScrollTo) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollTo', originalScrollTo);
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
+      }
+    }
+    expect(destroyed.mock.calls.filter(([value]) => value === instance)).toHaveLength(1);
   });
 });

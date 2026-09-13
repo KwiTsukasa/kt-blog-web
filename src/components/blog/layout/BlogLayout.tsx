@@ -12,7 +12,6 @@ import { useBlogTheme } from '@/hooks/useBlogTheme'
 
 import BlogFloatActions from './BlogFloatActions'
 import BlogHeader from './BlogHeader'
-import BlogLive2D from '../live2d/BlogLive2D'
 import BlogRightbar from './BlogRightbar'
 import BlogSearchModal from '../dialogs/BlogSearchModal'
 import BlogSidebar from './BlogSidebar'
@@ -158,7 +157,6 @@ export default defineComponent({
 
         <div class="kt-blog__background" aria-hidden="true" />
         <BlogFloatActions />
-        <BlogLive2D />
         <div
           ref={pageScrollRef}
           class="kt-blog__page-scroll"
