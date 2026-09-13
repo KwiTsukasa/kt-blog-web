@@ -3,6 +3,7 @@ import { computed, defineComponent, onBeforeUnmount, onMounted, watch } from 'vu
 import { RouterView, type RouteLocationNormalizedLoaded, useRoute } from 'vue-router';
 
 import BlogLive2D from './components/blog/live2d/BlogLive2D';
+import BlogShell from './components/blog/layout/BlogShell';
 import {
   resolveBlogThemeConfigUrl,
   type WordpressArgonThemeConfig,
@@ -46,7 +47,9 @@ export default defineComponent({
             class={[themeRootClass.value, routeRootClass.value]}
             data-argon-route-kind={getArgonRouteKind(route)}
           >
-            <RouterView />
+            <BlogShell>
+              <RouterView />
+            </BlogShell>
             <BlogLive2D />
           </div>
         </AntdApp>

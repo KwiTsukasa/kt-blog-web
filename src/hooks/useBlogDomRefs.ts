@@ -5,6 +5,8 @@ import { createBlogElementRef, createBlogFocusableRef } from '@/factories/blogDo
 type FocusableTarget = HTMLElement | ComponentPublicInstance | null;
 
 const pageScrollRef = createBlogElementRef<HTMLElement>();
+const toolbarRef = createBlogElementRef<HTMLElement>();
+const bannerContainerRef = createBlogElementRef<HTMLElement>();
 const postArticleRef = createBlogElementRef<HTMLElement>();
 const postCommentRef = createBlogElementRef<HTMLElement>();
 const postCommentInputRef = createBlogFocusableRef<FocusableTarget>();
@@ -43,12 +45,14 @@ export function setBlogPostCommentInputRef(target: FocusableTarget) {
 }
 
 /**
- * 返回页面原生滚动容器和文章正文、评论区的共享引用，供目录及阅读进度使用。
- * @returns 文章容器、正文、评论区与评论输入的共享响应式引用，包含 `postArticleRef`、`postCommentInputRef`、`postCommentRef`、`postContentRef` 等字段。
+ * 提供跨路由保留的页面外壳引用和当前文章引用，供滚动效果、目录及阅读进度使用。
+ * @returns 页头、横幅、原生滚动容器与当前文章及评论区的共享响应式引用。
  */
 export function useBlogDomRefs() {
   return {
     pageScrollRef,
+    toolbarRef,
+    bannerContainerRef,
     postArticleRef,
     postCommentInputRef,
     postCommentRef,

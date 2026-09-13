@@ -29,6 +29,41 @@ export const BLOG_VIEWPORT_GEOMETRY = {
   live2dDesktopMinWidthPx: 1200,
 } as const
 
+export interface BlogReadingGeometry {
+  scrollTop: number
+  scrollHeight: number
+  viewportHeight: number
+  articleTop: number
+  articleHeight: number
+}
+
+/**
+ * 在实际滚动容器坐标中计算文章阅读比例，以正文末端可见或滚动到底为完成边界。
+ * @param geometry - 当前滚动位置、容器尺寸和文章在同一滚动坐标系中的起点与高度。
+ * @returns 零到一的阅读比例；不可测量的布局返回零，已完整显示的短文章返回一。
+ */
+export function calculateBlogReadingProgress(geometry: BlogReadingGeometry): number {
+  const { scrollTop, scrollHeight, viewportHeight, articleTop, articleHeight } = geometry
+  if (!Object.values(geometry).every(Number.isFinite) || viewportHeight <= 0 || articleHeight <= 0) {
+    return 0
+  }
+
+  const maxScroll = Math.max(0, scrollHeight - viewportHeight)
+  const start = Math.max(0, articleTop - BLOG_SCROLL_GEOMETRY.readingArticleOffsetPx)
+  const end = Math.max(0, Math.min(
+    maxScroll,
+    articleTop + articleHeight + BLOG_SCROLL_GEOMETRY.readingExtraHeightPx - viewportHeight,
+  ))
+  // 原生 scrollTop 可带小数，容器尺寸则按整数像素报告。
+  if (scrollTop >= end - 1) {
+    return 1
+  }
+  if (end <= start) {
+    return 0
+  }
+  return Math.min(1, Math.max(0, (scrollTop - start) / (end - start)))
+}
+
 export const BLOG_MOTION_CSS_VARS = {
   backgroundEase: 'background 0.3s ease',
   backgroundImageOpacity: 'opacity 0.5s ease',

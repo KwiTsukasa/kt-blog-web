@@ -6,11 +6,12 @@ import {
   VerticalAlignTopOutlined,
 } from '@antdv-next/icons'
 import { Popover, Segmented } from 'antdv-next'
-import { computed, defineComponent, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, defineComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import {
   BLOG_ANIMATION_TIMING_MS,
   BLOG_SCROLL_GEOMETRY,
+  calculateBlogReadingProgress,
   clearBlogDelay,
   runAfterBlogDelay,
 } from '@/factories/blogAnimationFactory'
@@ -126,27 +127,33 @@ export default defineComponent({
         return
       }
 
-      const articleTop =
-        article.getBoundingClientRect().top +
-        getBlogScrollTop() -
-        BLOG_SCROLL_GEOMETRY.readingArticleOffsetPx
-      const availableDistance = Math.max(
-        article.offsetHeight + BLOG_SCROLL_GEOMETRY.readingExtraHeightPx - window.innerHeight,
-        (pageScrollRef.value?.scrollHeight || document.documentElement.scrollHeight) -
-          window.innerHeight,
-      )
-      if (availableDistance <= 0) {
-        readingProgress.value = 0
-        return
+      const scroller = pageScrollRef.value
+      const scrollTop = getBlogScrollTop()
+      let viewportTop = 0
+      let viewportHeight = document.documentElement.clientHeight
+      let scrollHeight = document.documentElement.scrollHeight
+      if (scroller) {
+        viewportTop = scroller.getBoundingClientRect().top + scroller.clientTop
+        viewportHeight = scroller.clientHeight
+        scrollHeight = scroller.scrollHeight
       }
-
-      const progress = (getBlogScrollTop() - articleTop) / availableDistance
-      if (Number.isFinite(progress)) {
-        readingProgress.value = Math.min(Math.max(progress, 0), 1)
-      } else {
-        readingProgress.value = 0
-      }
+      readingProgress.value = calculateBlogReadingProgress({
+        scrollTop,
+        scrollHeight,
+        viewportHeight,
+        articleTop: article.getBoundingClientRect().top - viewportTop + scrollTop,
+        articleHeight: article.offsetHeight,
+      })
     }
+
+    watch([postArticleRef, pageScrollRef], ([article, scroller], _, onCleanup) => {
+      syncFabStatus()
+      if (!article || typeof ResizeObserver === 'undefined') return
+      const observer = new ResizeObserver(syncFabStatus)
+      observer.observe(article)
+      if (scroller) observer.observe(scroller)
+      onCleanup(() => observer.disconnect())
+    }, { flush: 'post', immediate: true })
 
     /*
      * 切换悬浮按钮左右位置，并复刻 Argon 的 300ms unloaded 过渡。

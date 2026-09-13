@@ -393,7 +393,7 @@ describe('App', () => {
     );
   });
 
-  it('preserves the Live2D instance and interaction state across page routes', async () => {
+  it('preserves the wordmark, native scroller and Live2D state across page routes', async () => {
     const originalScrollTo = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollTo');
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value: vi.fn() });
     const mounted = vi.fn();
@@ -424,10 +424,14 @@ describe('App', () => {
     try {
       await flushPromises();
       const element = wrapper.get('.live2d-state-probe').element;
+      const wordmark = wrapper.get('.kt-blog__banner-wordmark').element;
+      const scroller = wrapper.get('.kt-blog__page-scroll').element;
       await wrapper.get('.live2d-state-probe').trigger('click');
       for (const path of ['/post/live2d-persistence', '/category/nas', '/tag/vue', '/archives', '/search?q=vue', '/']) {
         await router.push(path);
         await flushPromises();
+        expect(wrapper.get('.kt-blog__banner-wordmark').element === wordmark).toBe(true);
+        expect(wrapper.get('.kt-blog__page-scroll').element === scroller).toBe(true);
         expect(wrapper.findAllComponents(live2d)).toHaveLength(1);
         expect(wrapper.findComponent(live2d).vm === instance).toBe(true);
         expect(wrapper.get('.live2d-state-probe').element).toBe(element);
