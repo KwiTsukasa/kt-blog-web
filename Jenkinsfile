@@ -24,7 +24,7 @@ pipeline {
     booleanParam(name: 'DEPLOY_STATIC_FILES', defaultValue: true, description: '构建成功后是否发布 dist 到 Nginx 静态目录；仅非 PR 的 main 生效')
     booleanParam(name: 'DEPLOY_NGINX_CONFIG', defaultValue: true, description: '构建成功后是否原子发布并热加载 Blog Nginx 配置；仅非 PR 的 main 生效')
     string(name: 'PUBLISH_BRANCH_PATTERN', defaultValue: '^(main|master|release/.+)$', description: '历史分支分类正则，仅用于状态展示，不授予生产写入权限')
-    string(name: 'EXPECTED_SOURCE_COMMIT', defaultValue: '', description: '发布对应的 40 位小写 Git commit；必须等于 checkout HEAD')
+    string(name: 'EXPECTED_SOURCE_COMMIT', defaultValue: '', description: '可选发布提交；留空绑定本次 checkout，仍要求远程 main/dev 与之相同')
     string(name: 'DEPLOY_TARGET_DIR', defaultValue: '/home/jenkins/agent/frontends/html/blog', description: 'Nginx 挂载目录中 blog-web 项目的静态文件目录')
     string(name: 'NGINX_CONTAINER_NAME', defaultValue: 'kt-frontends-nginx', description: '承载 Blog 静态站的 Nginx 容器名')
     string(name: 'NGINX_CONFIG_TARGET', defaultValue: '/etc/nginx/conf.d/nginx-blog.conf', description: 'Nginx 容器内 Blog 配置目标路径')
@@ -81,11 +81,14 @@ pipeline {
               }
             }
 
-            def expectedSourceCommit = params.EXPECTED_SOURCE_COMMIT ?: ''
+            def checkedOutCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+            def expectedSourceCommit = params.EXPECTED_SOURCE_COMMIT?.trim()
+            if (!expectedSourceCommit) {
+              expectedSourceCommit = checkedOutCommit
+            }
             if (!(expectedSourceCommit ==~ /[0-9a-f]{40}/)) {
               error('EXPECTED_SOURCE_COMMIT must be a 40-character lowercase Git commit.')
             }
-            def checkedOutCommit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
             if (checkedOutCommit != expectedSourceCommit) {
               error("Checked-out HEAD ${checkedOutCommit} does not match EXPECTED_SOURCE_COMMIT ${expectedSourceCommit}.")
             }
